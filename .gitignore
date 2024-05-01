@@ -3,5 +3,5 @@ debug/
 **/*.rs.bk
 *.pdb
 
-*.parquet
+resources/
 *.svg
