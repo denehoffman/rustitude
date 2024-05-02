@@ -17,8 +17,8 @@ crate-type = ["cdylib"]
 
 [dependencies]
 rayon = "1.10.0"
-rustitude-core = { version = "0.3.2", git = "https://github.com/denehoffman/rustitude-core.git" }
-rustitude-gluex = { version = "0.1.2", optional = true, git = "https://github.com/denehoffman/rustitude-gluex.git" }
+rustitude-core = { version = "0.3.3", git = "https://github.com/denehoffman/rustitude-core.git" }
+rustitude-gluex = { version = "0.1.3", optional = true, git = "https://github.com/denehoffman/rustitude-gluex.git" }
 
 [dependencies.pyo3]
 version = "0.21.2"

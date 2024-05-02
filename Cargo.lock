@@ -1117,7 +1117,7 @@ dependencies = [
 [[package]]
 name = "rustitude-core"
 version = "0.3.2"
-source = "git+https://github.com/denehoffman/rustitude-core.git#ceac972d1235d434d5f36ef83402e772f3e9fbc5"
+source = "git+https://github.com/denehoffman/rustitude-core.git#be2c1f1bc9928d1674120260ced3cb2d4b107370"
 dependencies = [
  "approx",
  "indexmap",
@@ -1129,17 +1129,19 @@ dependencies = [
  "oxyroot",
  "parking_lot",
  "parquet",
+ "pyo3",
  "rayon",
 ]
 
 [[package]]
 name = "rustitude-gluex"
 version = "0.1.2"
-source = "git+https://github.com/denehoffman/rustitude-gluex.git#a94baf2dc37165d5911bb72c336fdae0355dff92"
+source = "git+https://github.com/denehoffman/rustitude-gluex.git#3e3619b4736c93ecd5094c4bbd150221afb17bd6"
 dependencies = [
  "factorial",
  "nalgebra",
  "num-complex",
+ "pyo3",
  "rayon",
  "rustitude-core",
  "sphrs",
