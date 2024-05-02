@@ -1116,8 +1116,8 @@ dependencies = [
 
 [[package]]
 name = "rustitude-core"
-version = "0.3.2"
-source = "git+https://github.com/denehoffman/rustitude-core.git#be2c1f1bc9928d1674120260ced3cb2d4b107370"
+version = "0.3.3"
+source = "git+https://github.com/denehoffman/rustitude-core.git#f35d785ac58b4266a308b8c9ea85f57ce476bf43"
 dependencies = [
  "approx",
  "indexmap",
@@ -1135,8 +1135,8 @@ dependencies = [
 
 [[package]]
 name = "rustitude-gluex"
-version = "0.1.2"
-source = "git+https://github.com/denehoffman/rustitude-gluex.git#3e3619b4736c93ecd5094c4bbd150221afb17bd6"
+version = "0.1.3"
+source = "git+https://github.com/denehoffman/rustitude-gluex.git#bc719b710211917101fc8e0f2c1bb2f163cab59c"
 dependencies = [
  "factorial",
  "nalgebra",
