@@ -5,7 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.3.3 (2024-05-03)
+
+### Chore
+
+ - <csr-id-e0c32f773b601e2703a0803849a1a2db130e2ffc/> update pyproject.toml info
+
+### Other
+
+ - <csr-id-158ddc248dc8463e08eb14b7f633952fc28abcd6/> remove unused library in rustitude-gluex which prevented cross-compilation
+ - <csr-id-f8370544ef666930bfd5f3a1b555e34e53525b6f/> Update maturin.yml
+   don't publish on every push, need to set up more for that
+ - <csr-id-db8b1a32563700203f896c0d357ed96d1144d202/> add maturin github actions
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 4 commits contributed to the release.
+ - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Remove unused library in rustitude-gluex which prevented cross-compilation ([`158ddc2`](https://github.com/denehoffman/rustitude/commit/158ddc248dc8463e08eb14b7f633952fc28abcd6))
+    - Update maturin.yml ([`f837054`](https://github.com/denehoffman/rustitude/commit/f8370544ef666930bfd5f3a1b555e34e53525b6f))
+    - Add maturin github actions ([`db8b1a3`](https://github.com/denehoffman/rustitude/commit/db8b1a32563700203f896c0d357ed96d1144d202))
+    - Update pyproject.toml info ([`e0c32f7`](https://github.com/denehoffman/rustitude/commit/e0c32f773b601e2703a0803849a1a2db130e2ffc))
+</details>
+
 ## 0.3.2 (2024-05-02)
+
+<csr-id-023cfea357b0d6e5c12f724df32d4ed30c9f24c7/>
+<csr-id-7646b89c792c0f55b8898832abe6a743a052fc7a/>
+<csr-id-8bd07de2425e48f4489a59ce4c168eaa9df9cc42/>
+<csr-id-aaa07cd742e03461449269e8261e7f326600b2a0/>
+<csr-id-e2cb6e54946744299506a39a5d3559ee099378fb/>
+<csr-id-310f89c2a2da584beabad3e208484be186e8f7fd/>
 
 ### Chore
 
@@ -35,7 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 9 commits contributed to the release over the course of 1 calendar day.
+ - 10 commits contributed to the release over the course of 1 calendar day.
  - 8 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -46,6 +87,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release rustitude v0.3.2 ([`3e77a7e`](https://github.com/denehoffman/rustitude/commit/3e77a7e589335c6d901cd07232ed558c026007cb))
     - Bump rustitude dependency versions ([`023cfea`](https://github.com/denehoffman/rustitude/commit/023cfea357b0d6e5c12f724df32d4ed30c9f24c7))
     - Opt for implementing all pyo3 bindings in their own submodules - this package will be very lightweight! ([`3126b7a`](https://github.com/denehoffman/rustitude/commit/3126b7a26b835ee24d112883ca540c172d97dd82))
     - Merge branch 'main' of https://github.com/denehoffman/rustitude ([`ee950cd`](https://github.com/denehoffman/rustitude/commit/ee950cda479ebd9b3ee2c9d829aa16b359f39022))
