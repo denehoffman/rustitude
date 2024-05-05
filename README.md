@@ -21,167 +21,116 @@
     <img src="https://img.shields.io/docsrs/rustitude" /></a>
 </p>
 
-
-### Note: This project is still very much under development and not recommended for use in actual research projects (yet)
-
-### Table of Contents
-- [Overview](#Overview)
+### Table of Contents:
+- [Introduction](#Introduction)
+- [Theory](#Theory)
 - [Installation](#Installation)
 - [Usage](#Usage)
 
-## Overview
-Amplitude analysis is the scientific process of fitting models (amplitudes) to data in order to extract additional information. In particle physics, this is often synonymous with partial-wave analysis (PWA), a process commonly used to determine angular momentum quantum numbers for decaying particles. The goal of Rustitude is to establish a framework which is generic enough to fit almost any data to any model, but specific enough to be quick and easy to use in typical particle physics studies. There are three core ideas which this crate tries to follow to make fits fast and efficient:
+# Introduction
+This project began with a desire to make a fast but easy to use iterface for fitting amplitudes to particle physics data. That being said, there are performant methods such as [AmpTools](https://github.com/mashephe/AmpTools), which is written in C++, but in my personal experience, it can be a bit tricky to use and extend, and it generally requires a lot of boilerplate code to generate new amplitudes or plotting scripts. On the other hand, there are also libraries like [PyPWA](https://github.com/JeffersonLab/PyPWA/) (written in Python) which seem like they could be easy to use, but often fail in this aspect due to Python's limiting syntax, speed issues, and a general lack of documentation and ongoing development. There have been attempts to bridge the gap between AmpTools and Python, most recently (and successfully) [PyAmpTools](https://github.com/lan13005/PyAmpTools). The difficulty with this method is that it relies on PyROOT, which also means you need ROOT installed (and built with your version of Python). To call ROOT bloated is an understatement, and I personally don't like using it for many of the same reasons which were apparently problematic [all the way back in 2006](https://www.insectnation.org/articles/problems-with-root.html) ([why does this exist?](https://root.cern.ch/doc/master/classTH1.html#a130c042c1c6f85942b0be4a03785df7e). For now, I'll spare you the anti-ROOT rant and just say that ROOT should be an opt-in, not a requirement. So where does that leave `rustitude`?
 
-1. Every function is automatically paralellized over the dataset using [rayon](https://github.com/rayon-rs/rayon).
-2. Model builders can separate their code efficiently into pieces which only need to be calculated once for the whole dataset and those which depend on parameters, which could change at every evaluation. Amplitudes implement `Node`, which is a trait containing all the required methods for an amplitude to be used in an analysis. By precalculating things which don't change, we trade RAM usage now for evaluation speed later.
-3. `Dataset` structs only allow `Event` structs to be stored, so there is a fixed format that implementers must agree on. As it stands, this format closely follows that of [AmpTools](https://github.com/mashephe/AmpTools), but with the addition of a polarization vector. This format can be added to in the future without breaking backwards compatibility, but members should probably not be removed or modified. Unfortunately, ROOT files do not yet have well-documented R/W libraries like Python's [uproot](https://pypi.org/project/uproot/) or Julia's [UpROOT.jl](https://github.com/JuliaHEP/UpROOT.jl), so the current recommendation is to convert files to a more versatile format like parquet. A ROOT-free Python conversion script is included [here](convert).
+As the name suggests, `rustitude` was written in Rust, so let's get the obvious downside out of the way: not many particle physicists know how to write Rust code. Hopefully, this will change over the next decade (and there has already been some [support](https://www.whitehouse.gov/oncd/briefing-room/2024/02/26/memory-safety-statements-of-support/) from the US government, of all places). While Rust carries the disadvantage of relative obscurity compared to C++, it also has many benefits. No `null` means no null references (Tony Hoare's ["billion dollar mistake"](https://web.archive.org/web/20090628071208/http://qconlondon.com/london-2009/speaker/Tony+Hoare)). Pointers (called references in Rust) are always valid, a guarantee made by a very helpful and only occasionally frustrating borrow checker. Rust "crates" are set up in a way which encourages documentation (see [`rustitude-core`'s documentation](https://docs.rs/rustitude-core/latest/rustitude-core/)), and the basic syntax is fairly easy to learn for people who have been using optional type checking in Python. Perhaps one of the biggest benefits of Rust is how easy it is to employ [parallelization](https://crates.io/crates/rayon), but the two reasons I like it most are that it's incredibly easy to write Python bindings (that's what this library is after all) and it has a package manager. This second point is important -- unlike C/C++, where a developer is swamped with some menagerie `Makefile`, `CMakeLists.txt`, or some `scons` monstrosity which may only work on "X" system and only if you install and use `make`, `cmake`, `g++`, or whatever (oh yeah, and you made sure all your external dependencies are linked correctly, right? Right?), Rust supports adding a package by simply adding a line to `Cargo.toml` (or using the `cargo add` command). In many ways, package management in Rust is actually simpler than Python, since there's only one prefered method of creating and managing projects, formatting, linting, and compiling.
 
-## Installation
+Now I've covered why I don't like some of the existing solutions, and why I chose to use Rust, but what does this project have that makes it stand out? Here are some reasons to entice you:
 
-Cargo provides the usual command for including this crate in a project:
-```sh
-cargo add rustitude
-```
+- `rustitude` will automatically parallelize amplitudes over the events in a dataset. There's no reason for a developer to ever write parallelized code themselves.
+- Implementing [`Node`](https://docs.rs/rustitude-core/latest/rustitude_core/amplitude/trait.Node.html) on a struct is all that is needed to use it as an amplitude. This means developers need only write two to three total methods to describe the entire functionality of their amplitude, and one of these just gives the names and order of the amplitude's input parameters.
+- A major goal of `rustitude` was to increase processing speed by sacrificing memory. This is done by precalculating parts of amplitudes which don't change when the free parameter inputs change. `AmpTools` supports a version of this, but only on the level of each general amplitude rather than on an individual basis. The simplest example of this is the `Ylm` amplitude (spherical harmonic), which can be entirely precalculated given the value of `l` and `m`. In `AmpTools`, different instances of `Ylm` with different `l`s and `m`s share precalculated data, whereas in `rustitude`, they don't. The `AmpTools` implementation of `Ylm` needs to calculate a spherical harmonic for every event on every function call, while `rustitude` just needs to look up a value in an array!
+- The majority of the library (the public interface) has Python bindings, so if there is no need for custom amplitudes, a developer never actually has to write any Rust code, and the resulting calculations will be as performant as if they were written in Rust.
 
-## Usage
-The basic usage pattern is as follows. We start by importing our data files, we create the amplitudes we want to use, we register them with a `Manager` struct that handles all the internal sums and parameters, and then we evaluate the resulting model. For example, we can generate a model which takes evaluates two spherical harmonics as follows (this uses some code from [another repo of mine](https://github.com/denehoffman/rustitude-gluex/) which contains the spherical harmonic struct):
-```rust
-use rustitude::prelude::*;
-use rustitude_gluex::harmonics::{Wave, Ylm};
+# Theory
 
-fn main() {
-    // Load Datasets:
-    let data = Dataset::from_parquet("path/to/data.parquet", false);
-    let mc = Dataset::from_parquet("path/to/mc.parquet", false);
-    // Create Manager:
-    let mut m = ExtendedLogLikelihood::new(&data, &mc);
-    // Create Amplitudes:
-    let s0 = amplitude!("S0", Ylm::new(Wave::S0));
-    let d2 = amplitude!("D2", Ylm::new(Wave::D2));
-    let s0_amp = scalar!("S0 amp");
-    let d2_amp = cscalar!("D2 amp");
-    // Register Amplitudes:
-    m.register("", "S0", &s0);
-    m.register("", "S0", &s0_amp);
-    m.register("", "D2", &d2);
-    m.register("", "D2", &d2_amp);
-    // You can check the names of the free parameters and how many there are:
-    dbg!(m.parameters());
-    // prints:
-    // m.parameters() = [
-    // ("", "S0", "S0 amp", "value"),
-    // ("", "D2", "D2 amp", "real"),
-    // ("", "D2", "D2 amp", "imag"),
-    // ]
-    // Compute the negative log-likelihood:
-    let nll = dbg!(m.compute(&[1.0, 2.0, 3.0]));
-    std::hint::black_box(nll);
-}
-```
-Amplitudes are registered into a named `sum` and `group`. The typical calculation for any event $e$ and list of parameters $\overrightarrow{p}$ will then be:
+Amplitudes are registered into a named `sum` and `group`. Similar to `AmpTools`, the typical calculation for any event $e$ and list of parameters $\overrightarrow{p}$ will then be:
 ```math
 I(\overrightarrow{p}, e) = \sum_{\text{groups} \in \text{sums}}\left|\sum_{\text{amplitudes} \in \text{groups}} \prod_{\text{amp} \in \text{amplitudes}} \text{amp}(\overrightarrow{p}, e)\right|^2
 ```
 
-This is the behavior of a `Manager` struct, but more complex `Manage`-implementing structs like `ExtendedLogLikelihood` can be used to run analyses over more than one dataset at a time (data and Monte Carlo in this case) and compute other values like a negative log-likelihood.
-
-## Implementing an Amplitude
-
-While typical usage might be to use premade amplitudes in various combinations, it is important to know how to design an amplitude which will work seamlessly with this crate. Let's write down the Rustitude version of the [OmegaDalitz](https://github.com/JeffersonLab/halld_sim/blob/6544f01ac1514b0b9a53ad241cf2e8a63e1d3dfa/src/libraries/AMPTOOLS_AMPS/OmegaDalitz.cc) amplitude:
-
-```rust
-use rayon::prelude::*;
-use rustitude::prelude::*;
-
-#[derive(Default)]
-struct OmegaDalitz {
-    dalitz_z: Vec<f64>,
-    dalitz_sin3theta: Vec<f64>,
-    lambda: Vec<f64>,
-}
-
-impl Node for OmegaDalitz {
-    fn precalculate(&mut self, dataset: &Dataset) {
-        (self.dalitz_z, (self.dalitz_sin3theta, self.lambda)) = dataset
-            .par_iter()
-            .map(|event| {
-                let pi0 = event.daughter_p4s[0];
-                let pip = event.daughter_p4s[1];
-                let pim = event.daughter_p4s[2];
-                let omega = pi0 + pip + pim;
-
-                let dalitz_s = (pip + pim).m2();
-                let dalitz_t = (pip + pi0).m2();
-                let dalitz_u = (pim + pi0).m2();
-                
-                let m3pi = (2.0 * pip.m()) + pi0.m();
-                let dalitz_d = 2.0 * omega.m() * (omega.m() - m3pi);
-                let dalitz_sc = (1.0 / 3.0) * (omega.m2() + pip.m2() + pim.m2() + pi0.m2());
-                let dalitz_x = f64::sqrt(3.0) * (dalitz_t - dalitz_u) / dalitz_d;
-                let dalitz_y = 3.0 * (dalitz_sc - dalitz_s) / dalitz_d;
-                
-                let dalitz_z = dalitz_x * dalitz_x + dalitz_y * dalitz_y;
-                let dalitz_sin3theta = f64::sin(3.0 * f64::asin(dalitz_y / f64::sqrt(dalitz_z)));
-                
-                let pip_omega = pip.boost_along(&omega);
-                let pim_omega = pim.boost_along(&omega);
-                let pi_cross = pip_omega.momentum().cross(&pim_omega.momentum());
-                
-                let lambda = (4.0 / 3.0) * f64::abs(pi_cross.dot(&pi_cross))
-                    / ((1.0 / 9.0) * (omega.m2() - (2.0 * pip.m() + pi0.m()).powi(2)).powi(2));
-                    
-                (dalitz_z, (dalitz_sin3theta, lambda))
-            })
-            .unzip();
-    }
-
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Complex64 {
-        let dalitz_z = self.dalitz_z[event.index];
-        let dalitz_sin3theta = self.dalitz_sin3theta[event.index];
-        let lambda = self.lambda[event.index];
-        let alpha = parameters[0];
-        let beta = parameters[1];
-        let gamma = parameters[2];
-        let delta = parameters[3];
-        f64::sqrt(f64::abs(
-            lambda
-                * (1.0
-                    + 2.0 * alpha * dalitz_z
-                    + 2.0 * beta * dalitz_z.powf(3.0 / 2.0) * dalitz_sin3theta
-                    + 2.0 * gamma * dalitz_z.powi(2)
-                    + 2.0 * delta * dalitz_z.powf(5.0 / 2.0) * dalitz_sin3theta),
-        ))
-        .into()
-    }
-
-    fn parameters(&self) -> Option<Vec<String>> {
-        Some(vec![
-            "alpha".to_string(),
-            "beta".to_string(),
-            "gamma".to_string(),
-            "delta".to_string(),
-        ])
-    }
-}
-
-fn main() {
-    let data = Dataset::from_parquet("data.parquet", false);
-    let mut m = Manager::new(&data);
-    let dalitz = amplitude!("Omega Dalitz", OmegaDalitz::default())
-    m.register("", "", &dalitz);
-    let res: Vec<f64> = m.compute(&[1.1, 2.2, 3.3, 4.4]);
-    println!("First event result: {}", res[0]);
-}
+# Installation
+Adding `rustitude` to an existing Rust project is as simple as
+```shell
+cargo add rustitude
 ```
+
+The Python installation is equally straightforward:
+```shell
+pip install rustitude
+```
+
+# Usage
+See the [`rustitude-core`](https://github.com/denehoffman/rustitude-core) crate for a more in-depth tutorial on writing custom amplitudes in Rust. This package is mostly focused on the Python side of things. Here is the setup for an example analysis:
+```python
+import rustitude as rt
+from rustitude import gluex
+import numpy as np
+
+# Load data files
+# This uses uproot under the hood
+ds = rt.open('data.root')
+ds_mc = rt.open('mc.root')
+
+# Create a new "manager" to handle the interface between data and amplitudes
+m = rt.ExtendedLogLikelihood(ds, ds_mc)
+
+# Register some amplitudes
+# We provide a sum name, group name, and a named amplitude
+# This function also runs the precalculation method over the datasets
+m.register('pos re', 'S', gluex.resonances.KMatrixF0('f0', channel=2))
+m.register('pos re', 'S', gluex.resonances.KMatrixA0('a0', channel=1))
+m.register('pos re', 'S', gluex.harmonics.Zlm('z00', 0, 0, reflectivity='+', part='real'))
+m.register('pos re', 'D', gluex.resonances.KMatrixF2('f2', channel=2))
+m.register('pos re', 'D', gluex.resonances.KMatrixA2('a2', channel=1))
+m.register('pos re', 'D', gluex.harmonics.Zlm('z22', 0, 0, reflectivity='+', part='real'))
+
+m.register('pos im', 'S', gluex.resonances.KMatrixF0('f0', channel=2))
+m.register('pos im', 'S', gluex.resonances.KMatrixA0('a0', channel=1))
+m.register('pos im', 'S', gluex.harmonics.Zlm('z00', 0, 0, reflectivity='+', part='imag'))
+m.register('pos im', 'D', gluex.resonances.KMatrixF2('f2', channel=2))
+m.register('pos im', 'D', gluex.resonances.KMatrixA2('a2', channel=1))
+m.register('pos im', 'D', gluex.harmonics.Zlm('z22', 0, 0, reflectivity='+', part='imag'))
+
+# We can constrain all the free parameters of one amplitude to be equal to those of another,
+# provided they have the same free parameters. To constrain an individual amplitude, we can use
+# m.constrain(('pos re', 'S', 'f0', 'f0_500 re'), ('pos re', 'S', 'f0', 'f0_500 im')) for example,
+# which would make the real and imaginary part of equal to each other in the calculation.
+# This step reduces the number of free parameters in the calculation.
+m.constrain_amplitude(('pos re', 'S', 'f0'), ('pos im', 'S', 'f0'))
+m.constrain_amplitude(('pos re', 'S', 'a0'), ('pos im', 'S', 'a0'))
+m.constrain_amplitude(('pos re', 'D', 'f2'), ('pos im', 'D', 'f2'))
+m.constrain_amplitude(('pos re', 'D', 'a2'), ('pos im', 'D', 'a2'))
+
+# Fix some parameters to a given value (zero in this case)
+m.fix(('pos re', 'S', 'f0', 'f0_500 re'), 0.0)
+m.fix(('pos re', 'S', 'f0', 'f0_500 im'), 0.0)
+m.fix(('pos re', 'S', 'f0', 'f0_980 im'), 0.0)
+
+m.register('neg re', 'S', gluex.resonances.KMatrixF0('f0', channel=2))
+m.register('neg re', 'S', gluex.resonances.KMatrixA0('a0', channel=1))
+m.register('neg re', 'S', gluex.harmonics.Zlm('z00', 0, 0, reflectivity='-', part='real'))
+
+m.register('neg im', 'S', gluex.resonances.KMatrixF0('f0', channel=2))
+m.register('neg im', 'S', gluex.resonances.KMatrixA0('a0', channel=1))
+m.register('neg im', 'S', gluex.harmonics.Zlm('z00', 0, 0, reflectivity='-', part='imag'))
+
+m.constrain_amplitude(('neg re', 'S', 'f0'), ('neg im', 'S', 'f0'))
+m.constrain_amplitude(('neg re', 'S', 'a0'), ('neg im', 'S', 'a0'))
+
+m.fix(('neg re', 'S', 'f0', 'f0_500 re'), 0.0)
+m.fix(('neg re', 'S', 'f0', 'f0_500 im'), 0.0)
+m.fix(('neg re', 'S', 'f0', 'f0_980 im'), 0.0)
+
+# Calculate the negative log-likelihood given some random input parameters:
+rng = np.random.default_rng()
+nll = m(rng.random(len(m.parameters())) * 100.0)
+```
+
+See the [`rustitude-gluex`](https://github.com/denehoffman/rustitude-gluex) package for some of the currently implemented amplitudes (derived from GlueX's [halld_sim](https://github.com/JeffersonLab/halld_sim) repo). There are also some helper methods `scalar`, `cscalar`, and `pcscalar` to create amplitudes which represent a single free parameter, a single complex free parameter, and a single complex free parameter in polar coordinates respectively.
 
 # TODOs
 In no particular order, here is a list of what (probably) needs to be done before I will stop making any breaking changes:
-- [ ] Create convenience methods for binned fits
-- [x] Formalize parameters into their own struct for pretty-printing and ease of use
-- [x] Create alternate methods of including polarization
-- [ ] Read raw ROOT files
-- [ ] Add plotting methods
-- [ ] A way to check if the number of parameters matches the input at compile time would be nice, not sure if it's possible though
-- [ ] If the parameters are formalized, I could include upper and lower bounds somehow as well as preferred initial values or randomization
-- [ ] Lots of documentation
-- [ ] Lots of tests
+- Pure Rust parsing of ROOT files without the `uproot` backend (I have some moderate success with `oxyroot`, but there are still a few issues reading larger files)
+- Add plotting methods
+- A way to check if the number of parameters matches the input at compile time would be nice, not sure if it's possible though
+- Give managers a way to apply amplitudes to new datasets, like using the result from a fit to weight some generated Monte-Carlo for plotting the result. This is possible to do through Python, but a convenience method is probably needed
+- Lots of documentation
+- Lots of tests
