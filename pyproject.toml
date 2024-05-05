@@ -3,6 +3,7 @@ requires = ["maturin>=1.0,<2.0"]
 build-backend = "maturin"
 
 [tool.maturin]
+module-name = "rustitude._rustitude"
 features = ["pyo3/extension-module"]
 
 [project]
@@ -20,7 +21,7 @@ classifiers = [
   "Programming Language :: Python",
 ]
 
-dependencies = []
+dependencies = ["uproot", "numpy"]
 
 [project.urls]
 homepage = "https://github.com/denehoffman/rustitude"
