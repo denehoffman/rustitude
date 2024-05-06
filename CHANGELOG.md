@@ -5,7 +5,68 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 0.3.3 (2024-05-03)
+## 0.3.4 (2024-05-06)
+
+### Chore
+
+ - <csr-id-475682fc30d7dc6a817030dd754cc4fb7dd295cc/> bump python library version
+
+### Documentation
+
+ - <csr-id-6d613a1c49ce065ffa4a50df09380f41359218be/> Update README.md
+ - <csr-id-48a73623f151336f198009097c028d000d3e43c5/> Update README.md
+ - <csr-id-2d548c4865b90043005b2aed7977612a28dad409/> fixed some links
+ - <csr-id-3dc627598be4f79ffc230f8bff813423d57491f2/> Update README.md
+
+### New Features
+
+ - <csr-id-6fc5c77477602403f3b892b240064de9f717d406/> add type checking and re-export rustitude-core and rustitude-gluex as their own submodules
+
+### Bug Fixes
+
+ - <csr-id-9735d57d039946cc7b5de57a9965c4fd01c2964f/> correct spelling
+
+### Other
+
+ - <csr-id-f64c86d2e21c17fe6bc5638240293a774185159a/> update Cargo.lock
+ - <csr-id-4a88e2b13fb01de2812f91ef4d55eea6b37fe7b2/> re-enable tag check
+ - <csr-id-1747d5dc4a63bf47f2f5cbc479f879459e900c4c/> temporarily disable tag check so we can push to pypi through an action
+ - <csr-id-42f29669736bb72ed4d85f4669df1a48288a2db8/> re-enable on-push and on-PR workflow conditions
+   A release only happens with a new tag
+ - <csr-id-d94179156007fd86b69b8efbfd2f1799d0bb71b8/> update pyproject.toml version
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 13 commits contributed to the release over the course of 3 calendar days.
+ - 3 days passed between releases.
+ - 12 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge branch 'main' of https://github.com/denehoffman/rustitude ([`7a3806c`](https://github.com/denehoffman/rustitude/commit/7a3806caf8741dc55283deb803653d4b0f892a61))
+    - Bump python library version ([`475682f`](https://github.com/denehoffman/rustitude/commit/475682fc30d7dc6a817030dd754cc4fb7dd295cc))
+    - Update Cargo.lock ([`f64c86d`](https://github.com/denehoffman/rustitude/commit/f64c86d2e21c17fe6bc5638240293a774185159a))
+    - Update README.md ([`6d613a1`](https://github.com/denehoffman/rustitude/commit/6d613a1c49ce065ffa4a50df09380f41359218be))
+    - Correct spelling ([`9735d57`](https://github.com/denehoffman/rustitude/commit/9735d57d039946cc7b5de57a9965c4fd01c2964f))
+    - Update README.md ([`48a7362`](https://github.com/denehoffman/rustitude/commit/48a73623f151336f198009097c028d000d3e43c5))
+    - Fixed some links ([`2d548c4`](https://github.com/denehoffman/rustitude/commit/2d548c4865b90043005b2aed7977612a28dad409))
+    - Add type checking and re-export rustitude-core and rustitude-gluex as their own submodules ([`6fc5c77`](https://github.com/denehoffman/rustitude/commit/6fc5c77477602403f3b892b240064de9f717d406))
+    - Update README.md ([`3dc6275`](https://github.com/denehoffman/rustitude/commit/3dc627598be4f79ffc230f8bff813423d57491f2))
+    - Re-enable tag check ([`4a88e2b`](https://github.com/denehoffman/rustitude/commit/4a88e2b13fb01de2812f91ef4d55eea6b37fe7b2))
+    - Temporarily disable tag check so we can push to pypi through an action ([`1747d5d`](https://github.com/denehoffman/rustitude/commit/1747d5dc4a63bf47f2f5cbc479f879459e900c4c))
+    - Re-enable on-push and on-PR workflow conditions ([`42f2966`](https://github.com/denehoffman/rustitude/commit/42f29669736bb72ed4d85f4669df1a48288a2db8))
+    - Update pyproject.toml version ([`d941791`](https://github.com/denehoffman/rustitude/commit/d94179156007fd86b69b8efbfd2f1799d0bb71b8))
+</details>
+
+## 0.3.3-pypi (2024-05-03)
 
 ### Chore
 
@@ -22,7 +83,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release.
+ - 5 commits contributed to the release.
  - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -33,11 +94,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release rustitude v0.3.3 ([`b5748e4`](https://github.com/denehoffman/rustitude/commit/b5748e46a5bb8c19e74b71b10de3d6ba48edbf87))
     - Remove unused library in rustitude-gluex which prevented cross-compilation ([`158ddc2`](https://github.com/denehoffman/rustitude/commit/158ddc248dc8463e08eb14b7f633952fc28abcd6))
     - Update maturin.yml ([`f837054`](https://github.com/denehoffman/rustitude/commit/f8370544ef666930bfd5f3a1b555e34e53525b6f))
     - Add maturin github actions ([`db8b1a3`](https://github.com/denehoffman/rustitude/commit/db8b1a32563700203f896c0d357ed96d1144d202))
     - Update pyproject.toml info ([`e0c32f7`](https://github.com/denehoffman/rustitude/commit/e0c32f773b601e2703a0803849a1a2db130e2ffc))
 </details>
+
+## 0.3.3 (2024-05-03)
+
+<csr-id-e0c32f773b601e2703a0803849a1a2db130e2ffc/>
+<csr-id-158ddc248dc8463e08eb14b7f633952fc28abcd6/>
+<csr-id-f8370544ef666930bfd5f3a1b555e34e53525b6f/>
+<csr-id-db8b1a32563700203f896c0d357ed96d1144d202/>
+
+### Chore
+
+ - <csr-id-e0c32f773b601e2703a0803849a1a2db130e2ffc/> update pyproject.toml info
+
+### Other
+
+ - <csr-id-158ddc248dc8463e08eb14b7f633952fc28abcd6/> remove unused library in rustitude-gluex which prevented cross-compilation
+ - <csr-id-f8370544ef666930bfd5f3a1b555e34e53525b6f/> Update maturin.yml
+   don't publish on every push, need to set up more for that
+ - <csr-id-db8b1a32563700203f896c0d357ed96d1144d202/> add maturin github actions
 
 ## 0.3.2 (2024-05-02)
 
