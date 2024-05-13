@@ -7,7 +7,7 @@ pub mod gluex {
     pub use rustitude_gluex::*;
 }
 
-fn add_submodule<F>(parent: &Bound<'_, PyModule>, name: &str, mod_init: F) -> PyResult<()>
+pub fn add_submodule<F>(parent: &Bound<'_, PyModule>, name: &str, mod_init: F) -> PyResult<()>
 where
     F: Fn(&Bound<'_, PyModule>) -> PyResult<()>,
 {
