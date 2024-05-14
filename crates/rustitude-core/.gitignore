@@ -1,0 +1,8 @@
+/target
+*.root
+*.parquet
+perf*
+*.svg
+ca*.out.*
+.cargo
+rustc-ice-*
