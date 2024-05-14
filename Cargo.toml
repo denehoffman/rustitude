@@ -1,3 +1,31 @@
 [workspace]
-members = ["crates/rustitude-core", "crates/rustitude", "crates/rustitude-gluex"]
+members = ["crates/rustitude-core", "crates/rustitude-gluex"]
 resolver = "2"
+
+[package]
+name = "rustitude"
+version = "0.3.4"
+edition = "2021"
+authors = ["Nathaniel Dene Hoffman <dene@cmu.edu>"]
+description = "A library to create and operate models for particle physics amplitude analyses"
+repository = "https://github.com/denehoffman/rustitude/"
+homepage = "https://github.com/denehoffman/rustitude/"
+license = "BSD-3-Clause"
+readme = "README.md"
+
+[lib]
+name = "rustitude"
+crate-type = ["cdylib"]
+
+[dependencies]
+rayon = "1.10.0"
+rustitude-core = { path = "crates/rustitude-core" }
+rustitude-gluex = { path = "crates/rustitude-gluex", optional = true }
+
+[dependencies.pyo3]
+version = "0.21.2"
+features = ["abi3-py37"]
+
+[features]
+default = ["gluex"]
+gluex = ["dep:rustitude-gluex"]
