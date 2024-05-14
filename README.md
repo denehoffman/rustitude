@@ -22,6 +22,7 @@
 </p>
 
 ### Table of Contents:
+
 - [Introduction](#Introduction)
 - [Theory](#Theory)
 - [Installation](#Installation)
@@ -29,6 +30,7 @@
 - [TODOs](#TODOs)
 
 # Introduction
+
 This project began with a desire to make a fast but easy to use interface for fitting amplitudes to particle physics data. That being said, there are performant methods such as [`AmpTools`](https://github.com/mashephe/AmpTools), which is written in C++, but in my personal experience, it can be a bit tricky to use and extend, and it generally requires a lot of boilerplate code to generate new amplitudes or plotting scripts. On the other hand, there are also libraries like [`PyPWA`](https://github.com/JeffersonLab/PyPWA/) (written in Python) which seem like they could be easy to use, but often fail in this aspect due to Python's limiting syntax, speed issues, and a general lack of documentation and ongoing development. There have been attempts to bridge the gap between AmpTools and Python, most recently (and successfully) [`PyAmpTools`](https://github.com/lan13005/PyAmpTools). The difficulty with this method is that it relies on PyROOT, which also means you need ROOT installed (and built with your version of Python). For now, I'll spare you the anti-ROOT rant and just say that ROOT should be an opt-in, not a requirement. So where does that leave `rustitude`?
 
 As the name suggests, `rustitude` was written in Rust, so let's get the obvious downside out of the way: not many particle physicists know how to write Rust code. Hopefully, this will change over the next decade (and there has already been some [support](https://www.whitehouse.gov/oncd/briefing-room/2024/02/26/memory-safety-statements-of-support/) from the US government, of all places). While Rust carries the disadvantage of relative obscurity compared to C++, it also has many benefits. No `null` means no null references (Tony Hoare's ["billion dollar mistake"](https://web.archive.org/web/20090628071208/http://qconlondon.com/london-2009/speaker/Tony+Hoare)). Pointers (called references in Rust) are always valid, a guarantee made by a very helpful and only occasionally frustrating borrow checker. Rust "crates" are set up in a way which encourages documentation (see [`rustitude-core`'s documentation](https://docs.rs/rustitude-core/)), and the basic syntax is fairly easy to learn for people who have been using optional type checking in Python. Perhaps one of the biggest benefits of Rust is how easy it is to employ [parallelization](https://crates.io/crates/rayon), but the two reasons I like it most are that it's incredibly easy to write Python bindings (that's what this library is after all) and it has a package manager. This second point is important -- unlike C/C++, where a developer is swamped with some menagerie `Makefile`, `CMakeLists.txt`, or some `scons` monstrosity which may only work on "X" system and only if you install and use `make`, `cmake`, `g++`, or whatever (oh yeah, and you made sure all your external dependencies are linked correctly, right? Right?), Rust supports adding a package by simply adding a line to `Cargo.toml` (or using the `cargo add` command). In many ways, package management in Rust is actually simpler than Python, since there's only one prefered method of creating and managing projects, formatting, linting, and compiling.
@@ -43,23 +45,29 @@ Now I've covered why I don't like some of the existing solutions, and why I chos
 # Theory
 
 Amplitudes are registered into a named `sum` and `group`. Similar to `AmpTools`, the typical calculation for any event $e$ and list of parameters $\overrightarrow{p}$ will then be:
+
 ```math
 I(\overrightarrow{p}, e) = \sum_{\text{groups} \in \text{sums}}\left|\sum_{\text{amplitudes} \in \text{groups}} \prod_{\text{amp} \in \text{amplitudes}} \text{amp}(\overrightarrow{p}, e)\right|^2
 ```
 
 # Installation
+
 Adding `rustitude` to an existing Rust project is as simple as
+
 ```shell
 cargo add rustitude
 ```
 
 The Python installation is equally straightforward:
+
 ```shell
 pip install rustitude
 ```
 
 # Usage
-See the [`rustitude-core`](https://github.com/denehoffman/rustitude-core) crate for a more in-depth tutorial on writing custom amplitudes in Rust. This package is mostly focused on the Python side of things. Here is the setup for an example analysis:
+
+See the [`rustitude-core`](https://github.com/denehoffman/tree/main/crates/rustitude-core) crate for a more in-depth tutorial on writing custom amplitudes in Rust. This package is mostly focused on the Python side of things. Here is the setup for an example analysis:
+
 ```python
 import rustitude as rt
 from rustitude import gluex
@@ -125,10 +133,12 @@ rng = np.random.default_rng()
 nll = m(rng.random(len(m.parameters())) * 100.0)
 ```
 
-See the [`rustitude-gluex`](https://github.com/denehoffman/rustitude-gluex) package for some of the currently implemented amplitudes (derived from GlueX's [halld_sim](https://github.com/JeffersonLab/halld_sim) repo). There are also some helper methods `scalar`, `cscalar`, and `pcscalar` to create amplitudes which represent a single free parameter, a single complex free parameter, and a single complex free parameter in polar coordinates respectively.
+See the [`rustitude-gluex`](https://github.com/denehoffman/rustitude/tree/main/crates/rustitude-gluex) package for some of the currently implemented amplitudes (derived from GlueX's [halld_sim](https://github.com/JeffersonLab/halld_sim) repo). There are also some helper methods `scalar`, `cscalar`, and `pcscalar` to create amplitudes which represent a single free parameter, a single complex free parameter, and a single complex free parameter in polar coordinates respectively.
 
 # TODOs
+
 In no particular order, here is a list of what (probably) needs to be done before I will stop making any breaking changes:
+
 - Pure Rust parsing of ROOT files without the `uproot` backend (I have some moderate success with `oxyroot`, but there are still a few issues reading larger files)
 - Add plotting methods
 - A way to check if the number of parameters matches the input at compile time would be nice, not sure if it's possible though

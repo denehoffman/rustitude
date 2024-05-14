@@ -1,7 +1,7 @@
 <p align="center">
   <img
     width="800"
-    src="https://raw.githubusercontent.com/denehoffman/rustitude-core/main/media/logo.png"
+    src="https://github.com/denehoffman/rustitude/blob/main/crates/rustitude-core/media/logo.png"
   />
 </p>
 <p align="center">
@@ -9,19 +9,20 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/denehoffman/rustitude-core/commits/main/" alt="Lastest Commits">
-    <img src="https://img.shields.io/github/last-commit/denehoffman/rustitude-core/main" /></a>
-  <a href="https://github.com/denehoffman/rustitude-core/actions" alt="Build Status">
-    <img src="https://img.shields.io/github/actions/workflow/status/denehoffman/rustitude-core/rust.yml" /></a>
+  <a href="https://github.com/denehoffman/rustitude/commits/main/" alt="Lastest Commits">
+    <img src="https://img.shields.io/github/last-commit/denehoffman/rustitude/main" /></a>
+  <a href="https://github.com/denehoffman/rustitude/actions" alt="Build Status">
+    <img src="https://img.shields.io/github/actions/workflow/status/denehoffman/rustitude/rust.yml" /></a>
   <a href="LICENSE" alt="License">
-    <img src="https://img.shields.io/github/license/denehoffman/rustitude-core" /></a>
+    <img src="https://img.shields.io/github/license/denehoffman/rustitude" /></a>
   <a href="https://crates.io/crates/rustitude-core" alt="rustitude-core on crates.io">
-    <img src="https://img.shields.io/crates/v/rustitude-core" /></a>
+    <img src="https://img.shields.io/crates/v/rustitude" /></a>
   <a href="https://docs.rs/rustitude-core/" alt="rustitude-core documentation on docs.rs">
     <img alt="docs.rs" src="https://img.shields.io/docsrs/rustitude-core"></a>
 </p>
 
 ### Table of Contents
+
 - [Overview](#Overview)
 - [Installation](#Installation)
 - [Usage](#Usage)
@@ -30,7 +31,9 @@
 - [TODOs](#TODOs)
 
 # Overview
-This crate contains all of the core mechanics 
+
+This crate contains all of the core mechanics
+
 - `rustitude` will automatically parallelize amplitudes over the events in a dataset. There's no reason for a developer to ever write parallelized code themselves.
 - Implementing [`Node`](https://docs.rs/rustitude-core/latest/rustitude_core/amplitude/trait.Node.html) on a struct is all that is needed to use it as an amplitude. This means developers need only write two to three total methods to describe the entire functionality of their amplitude, and one of these just gives the names and order of the amplitude's input parameters.
 - A major goal of `rustitude` was to increase processing speed by sacrificing memory. This is done by precalculating parts of amplitudes which don't change when the free parameter inputs change. The simplest example of this is the `Ylm` amplitude (spherical harmonic), which can be entirely precalculated given the value of `l` and `m`. To calculate this amplitude at evaluation time, `rustitude` just needs to look up a value in an array!
@@ -38,6 +41,7 @@ This crate contains all of the core mechanics
 # Theory
 
 Amplitudes are registered into a named `sum` and `group`. Similar to [`AmpTools`](https://github.com/mashephe/AmpTools), the typical calculation for any event $e$ and list of parameters $\overrightarrow{p}$ will then be:
+
 ```math
 I(\overrightarrow{p}, e) = \sum_{\text{groups} \in \text{sums}}\left|\sum_{\text{amplitudes} \in \text{groups}} \prod_{\text{amp} \in \text{amplitudes}} \text{amp}(\overrightarrow{p}, e)\right|^2
 ```
@@ -45,10 +49,13 @@ I(\overrightarrow{p}, e) = \sum_{\text{groups} \in \text{sums}}\left|\sum_{\text
 # Installation
 
 Cargo provides the usual command for including this crate in a project:
+
 ```shell
 cargo add rustitude-core
 ```
-However, this project is best-used with some pre-made amplitudes (see [`rustitude-gluex`](https://github.com/denehoffman/rustitude-gluex/), and these come bundled with the [`rustitude`](https://github.com/denehoffman/rustitude/) meta-crate, which also re-exports this crate's prelude. This can be installed via the same command:
+
+However, this project is best-used with some pre-made amplitudes (see [`rustitude-gluex`](https://github.com/denehoffman/rustitude/tree/main/crates/rustitude-gluex/), and these come bundled with the [`rustitude`](https://github.com/denehoffman/rustitude/) meta-crate, which also re-exports this crate's prelude. This can be installed via the same command:
+
 ```shell
 cargo add rustitude
 ```
@@ -141,11 +148,12 @@ Next, we implement the `Node` trait for the `struct`. Traits in Rust are kind of
 
 The calculate step has the signature `fn calculate(&self, parameters: &[f64], event: &Event) -> Complex64`. This means we need to take a list of parameters and a single event and turn them into a complex value. The `Event` struct contains an `index` field which can be used to access the precalculated storage arrays made in the previous step.
 
-Finally, the `parameters` function just returns a list of the parameter names in the order they are expected to be input into `calculate`. In the event that an amplitude doesn't have any free parameters (like [my implementation of the `Ylm` and `Zlm` amplitudes](https://github.com/denehoffman/rustitude-gluex/blob/main/src/harmonics.rs)), we can just return `None` (the `Some` is required because this function returns an `Option`).
+Finally, the `parameters` function just returns a list of the parameter names in the order they are expected to be input into `calculate`. In the event that an amplitude doesn't have any free parameters (like [my implementation of the `Ylm` and `Zlm` amplitudes](https://github.com/denehoffman/rustitude/blob/main/crates/rustitude-gluex/src/harmonics.rs)), we can just return `None` (the `Some` is required because this function returns an `Option`).
 
 And that's it! However, it is important to be aware of the steps which need to be taken to allow this amplitude to be used through the Python interface.
 
 ## Python Bindings
+
 To make Python bindings, `pyo3` needs to be included as a dependency:
 
 ```rust
@@ -163,11 +171,13 @@ pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     Ok(())
 }
 ```
+
 Rather than bind the `struct` directly, we prefer to bind a function which returns an `Amplitude`, a wrapper struct that implements `#[pyclass]` and can be used in the Python interface. The `pyo3_module` function will then need to be added to the `rustitude` crate's [`lib.rs`](https://github.com/denehoffman/rustitude/blob/main/src/lib.rs) file. This step is a bit problematic, since it means new amplitudes cannot be added without modifying `rustitude` itself. For this reason, developers may want to work with their own fork of the repository rather than using the one installed by `cargo` if they wish to use Python. This is a limitation of `pyo3`, which doesn't recognize class bindings across crates.
 
-
 # TODOs
+
 In no particular order, here is a list of what (probably) needs to be done before I will stop making any breaking changes:
+
 - Pure Rust parsing of ROOT files without the `uproot` backend (I have some moderate success with `oxyroot`, but there are still a few issues reading larger files)
 - Add plotting methods
 - A way to check if the number of parameters matches the input at compile time would be nice, not sure if it's possible though
