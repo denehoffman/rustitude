@@ -28,3 +28,11 @@ homepage = "https://github.com/denehoffman/rustitude"
 repository = "https://github.com/denehoffman/rustitude"
 changelog = "https://github.com/denehoffman/rustitude/blob/main/CHANGELOG.md"
 # TODO: documentation = "readthedocs.org"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.format]
+quote-style = "single"
+docstring-code-format = true
+preview = true
