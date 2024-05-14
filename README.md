@@ -73,67 +73,59 @@ import rustitude as rt
 from rustitude import gluex
 import numpy as np
 
-# Load data files
-# This uses uproot under the hood
+# Start by creating some amplitudes:
+f0p = gluex.resonances.KMatrixF0('f0+', channel=2)
+f0n = gluex.resonances.KMatrixF0('f0-', channel=2)
+f2 = gluex.resonances.KMatrixF2('f2', channel=2)
+a0p = gluex.resonances.KMatrixA0('a0+', channel=1)
+a0n = gluex.resonances.KMatrixA0('a0-', channel=1)
+a2 = gluex.resonances.KMatrixA2('a2', channel=1)
+s0p = gluex.harmonics.Zlm('Z00+', 0, 0, reflectivity='+')
+s0n = gluex.harmonics.Zlm('Z00-', 0, 0, reflectivity='-')
+d2p = gluex.harmonics.Zlm('Z22+', 2, 2, reflectivity='+')
+
+# Next, let's put them together into a model
+# The API supports addition, and multiplication and has additional methods for the absolute-square (`norm_sqr`), real part (`real`) and imaginary part (`imag`).
+pos_re_sum = (f0p + a0p) * s0p.real() + (f2 + a2) * d2p.real()
+pos_im_sum = (f0p + a0p) * s0p.imag() + (f2 + a2) * d2p.imag()
+neg_re_sum = (f0n + a0n) * s0n.real()
+neg_im_sum = (f0n + a0n) * s0n.imag()
+
+mod = rt.Model(pos_re_sum.norm_sqr() + pos_im_sum.norm_sqr() + neg_re_sum.norm_sqr() + neg_im_sum.norm_sqr())
+
+# There is no need to constrain amplitudes, since each named amplitude is only ever evaluated once and a cached value gets pulled if we run across an amplitude by the same name!
+# We should, however, fix some of the values to make the fit less ambiguous. For instance, suppose we are above the threshold for the f_0(500) which is included in the F0 K-Matrix:
+mod.fix("f0+", "f0_500 re", 0.0)
+mod.fix("f0+", "f0_500 im", 0.0)
+mod.fix("f0-", "f0_500 re", 0.0)
+mod.fix("f0-", "f0_500 im", 0.0)
+
+# As mentioned, we should also fix at least one complex phase per coherent sum:
+mod.fix("f0+", "f0_980 im", 0.0)
+mod.fix("f0-", "f0_980 im", 0.0)
+
+# All done! Now let's load our model into a Manager, which helps coordinate the model with datasets.
+# First, load up some datasets. rustitude provides an open operation that uses uproot under the hood:
 ds = rt.open('data.root')
 ds_mc = rt.open('mc.root')
 
-# Create a new "manager" to handle the interface between data and amplitudes
-m = rt.ExtendedLogLikelihood(ds, ds_mc)
+m_data = rt.Manager(mod, ds)
+m_mc = rt.Manager(mod, ds_mc)
 
-# Register some amplitudes
-# We provide a sum name, group name, and a named amplitude
-# This function also runs the precalculation method over the datasets
-m.register('pos re', 'S', gluex.resonances.KMatrixF0('f0', channel=2))
-m.register('pos re', 'S', gluex.resonances.KMatrixA0('a0', channel=1))
-m.register('pos re', 'S', gluex.harmonics.Zlm('z00', 0, 0, reflectivity='+', part='real'))
-m.register('pos re', 'D', gluex.resonances.KMatrixF2('f2', channel=2))
-m.register('pos re', 'D', gluex.resonances.KMatrixA2('a2', channel=1))
-m.register('pos re', 'D', gluex.harmonics.Zlm('z22', 0, 0, reflectivity='+', part='real'))
+# We could stop here and evaluate just one dataset at a time:
 
-m.register('pos im', 'S', gluex.resonances.KMatrixF0('f0', channel=2))
-m.register('pos im', 'S', gluex.resonances.KMatrixA0('a0', channel=1))
-m.register('pos im', 'S', gluex.harmonics.Zlm('z00', 0, 0, reflectivity='+', part='imag'))
-m.register('pos im', 'D', gluex.resonances.KMatrixF2('f2', channel=2))
-m.register('pos im', 'D', gluex.resonances.KMatrixA2('a2', channel=1))
-m.register('pos im', 'D', gluex.harmonics.Zlm('z22', 0, 0, reflectivity='+', part='imag'))
+# res = m_data([1.0, 3.4, 2.8, -3.6, ... ])
+# -> [5.3, 0.2, ...], a list of intensities from the amplitude calculation
 
-# We can constrain all the free parameters of one amplitude to be equal to those of another,
-# provided they have the same free parameters. To constrain an individual amplitude, we can use
-# m.constrain(('pos re', 'S', 'f0', 'f0_500 re'), ('pos re', 'S', 'f0', 'f0_500 im')) for example,
-# which would make the real and imaginary part of equal to each other in the calculation.
-# This step reduces the number of free parameters in the calculation.
-m.constrain_amplitude(('pos re', 'S', 'f0'), ('pos im', 'S', 'f0'))
-m.constrain_amplitude(('pos re', 'S', 'a0'), ('pos im', 'S', 'a0'))
-m.constrain_amplitude(('pos re', 'D', 'f2'), ('pos im', 'D', 'f2'))
-m.constrain_amplitude(('pos re', 'D', 'a2'), ('pos im', 'D', 'a2'))
+# Or, what we probably want to do is find the negative log-likelihood for some choice of parameters:
 
-# Fix some parameters to a given value (zero in this case)
-m.fix(('pos re', 'S', 'f0', 'f0_500 re'), 0.0)
-m.fix(('pos re', 'S', 'f0', 'f0_500 im'), 0.0)
-m.fix(('pos re', 'S', 'f0', 'f0_980 im'), 0.0)
+nll = rt.ExtendedLogLikelihood(m_data, m_mc)
 
-m.register('neg re', 'S', gluex.resonances.KMatrixF0('f0', channel=2))
-m.register('neg re', 'S', gluex.resonances.KMatrixA0('a0', channel=1))
-m.register('neg re', 'S', gluex.harmonics.Zlm('z00', 0, 0, reflectivity='-', part='real'))
-
-m.register('neg im', 'S', gluex.resonances.KMatrixF0('f0', channel=2))
-m.register('neg im', 'S', gluex.resonances.KMatrixA0('a0', channel=1))
-m.register('neg im', 'S', gluex.harmonics.Zlm('z00', 0, 0, reflectivity='-', part='imag'))
-
-m.constrain_amplitude(('neg re', 'S', 'f0'), ('neg im', 'S', 'f0'))
-m.constrain_amplitude(('neg re', 'S', 'a0'), ('neg im', 'S', 'a0'))
-
-m.fix(('neg re', 'S', 'f0', 'f0_500 re'), 0.0)
-m.fix(('neg re', 'S', 'f0', 'f0_500 im'), 0.0)
-m.fix(('neg re', 'S', 'f0', 'f0_980 im'), 0.0)
-
-# Calculate the negative log-likelihood given some random input parameters:
-rng = np.random.default_rng()
-nll = m(rng.random(len(m.parameters())) * 100.0)
+res = nll([10.0] * mod.get_n_free())
+print(res) # prints some value for the NLL
 ```
 
-See the [`rustitude-gluex`](https://github.com/denehoffman/rustitude/tree/main/crates/rustitude-gluex) package for some of the currently implemented amplitudes (derived from GlueX's [halld_sim](https://github.com/JeffersonLab/halld_sim) repo). There are also some helper methods `scalar`, `cscalar`, and `pcscalar` to create amplitudes which represent a single free parameter, a single complex free parameter, and a single complex free parameter in polar coordinates respectively.
+See the [`rustitude-gluex`](https://github.com/denehoffman/rustitude/tree/main/crates/rustitude-gluex) package for some of the currently implemented amplitudes (derived from GlueX's [halld_sim](https://github.com/JeffersonLab/halld_sim) repo). There are also some helper methods `Scalar`, `CScalar`, and `PCScalar` to create amplitudes which represent a single free parameter, a single complex free parameter, and a single complex free parameter in polar coordinates respectively.
 
 # TODOs
 
