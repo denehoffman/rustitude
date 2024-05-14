@@ -4,11 +4,10 @@ version = "0.3.4"
 edition = "2021"
 authors = ["Nathaniel Dene Hoffman <dene@cmu.edu>"]
 description = "A library to create and operate models for particle physics amplitude analyses"
-repository = "https://github.com/denehoffman/rustitude-core/"
-homepage = "https://github.com/denehoffman/rustitude-core/"
+repository = "https://github.com/denehoffman/rustitude/"
+homepage = "https://github.com/denehoffman/rustitude/"
 license = "BSD-3-Clause"
 readme = "README.md"
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 rayon = { version = "1.8.0" }
