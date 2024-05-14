@@ -101,16 +101,13 @@ class Dataset:
     @staticmethod
     def from_root(path: str) -> Dataset: ...
 
-
 def open(
     file_name: str | Path, tree_name: str | None = None, *, pol_in_beam: bool = False
 ) -> Dataset: ...  # noqa: A001
 
-
 class Manager:
     def __init__(self, model: Model, dataset: Dataset) -> None: ...
     def __call__(self, parameters: list[float]) -> list[float]: ...
-
 
 class ExtendedLogLikelihood:
     def __init__(self, data_manager: Manager, mc_manager: Manager) -> None: ...
