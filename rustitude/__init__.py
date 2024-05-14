@@ -6,22 +6,26 @@ import numpy as np
 import uproot
 
 from ._rustitude import amplitude, dataset, four_momentum, gluex, manager
-from .amplitude import cscalar, pcscalar, scalar
-from .dataset import Dataset
-from .manager import ExtendedLogLikelihood, Manager, MultiManager
+from .amplitude import CScalar, PCScalar, Scalar, PiecewiseM, AmpOp, Parameter, Model
+from .dataset import Event, Dataset
+from .manager import ExtendedLogLikelihood, Manager
 
 __all__ = [
     'dataset',
     'manager',
     'amplitude',
     'four_momentum',
+    'Event',
     'Dataset',
     'Manager',
-    'MultiManager',
     'ExtendedLogLikelihood',
-    'scalar',
-    'cscalar',
-    'pcscalar',
+    'Scalar',
+    'CScalar',
+    'PCScalar',
+    'PiecewiseM',
+    'AmpOp',
+    'Parameter',
+    'Model',
     'gluex',
     'open',
 ]
@@ -32,7 +36,9 @@ def __dir__():
 
 
 # TODO: add a method to calculate EPS from a given polarization angle and amount
-def open(file_name: str | Path, tree_name: str | None = None, *, pol_in_beam: bool = False) -> Dataset:  # noqa: A001
+def open(
+    file_name: str | Path, tree_name: str | None = None, *, pol_in_beam: bool = False
+) -> Dataset:  # noqa: A001
     filepath = (file_name if isinstance(file_name, Path) else Path(file_name)).resolve()
     tfile = uproot.open(filepath)
     ttree = tfile[tree_name] if tree_name else tfile.get(tfile.keys()[0])
