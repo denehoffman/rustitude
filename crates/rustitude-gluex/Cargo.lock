@@ -1075,18 +1075,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "rustitude"
-version = "0.3.4"
-dependencies = [
- "pyo3",
- "rayon",
- "rustitude-core",
- "rustitude-gluex",
-]
-
-[[package]]
 name = "rustitude-core"
 version = "0.3.4"
+source = "git+https://github.com/denehoffman/rustitude.git#781ac29705e6ce1d624731c4f57cc151353faa8b"
 dependencies = [
  "approx",
  "indexmap",
@@ -1100,7 +1091,6 @@ dependencies = [
  "parquet",
  "pyo3",
  "rayon",
- "sphrs",
  "thiserror",
 ]
 
