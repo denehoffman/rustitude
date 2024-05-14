@@ -66,7 +66,7 @@ pip install rustitude
 
 # Usage
 
-See the [`rustitude-core`](https://github.com/denehoffman/tree/main/crates/rustitude-core) crate for a more in-depth tutorial on writing custom amplitudes in Rust. This package is mostly focused on the Python side of things. Here is the setup for an example analysis:
+See the [`rustitude-core`](https://github.com/denehoffman/rustitude/tree/main/crates/rustitude-core) crate for a more in-depth tutorial on writing custom amplitudes in Rust. This package is mostly focused on the Python side of things. Here is the setup for an example analysis:
 
 ```python
 import rustitude as rt
