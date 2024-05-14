@@ -50,7 +50,7 @@ impl ExtendedLogLikelihood {
             mc_manager,
         }
     }
-    #[pyo3(name = "__call__")]
+    #[pyo3(name = "__call__", signature = (parameters, *, num_threads = 1))]
     #[allow(clippy::suboptimal_flops)]
     pub fn evaluate(&self, parameters: Vec<f64>, num_threads: usize) -> f64 {
         create_pool(num_threads).unwrap().install(|| {

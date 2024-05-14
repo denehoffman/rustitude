@@ -168,3 +168,4 @@ debug/
 resources/
 *.svg
 notes
+demo.py
