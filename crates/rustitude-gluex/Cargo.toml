@@ -4,8 +4,8 @@ version = "0.1.5"
 edition = "2021"
 authors = ["Nathaniel Dene Hoffman <dene@cmu.edu>"]
 description = "GlueX Amplitudes for Rustitude"
-repository = "https://github.com/denehoffman/rustitude-gluex/"
-homepage = "https://github.com/denehoffman/rustitude-gluex/"
+repository = "https://github.com/denehoffman/rustitude/tree/main/crates/rustitude-gluex"
+homepage = "https://github.com/denehoffman/rustitude/tree/main/crates/rustitude-gluex"
 license = "BSD-3-Clause"
 readme = "README.md"
 
