@@ -20,7 +20,7 @@ crate-type = ["cdylib"]
 [dependencies]
 rayon = "1.10.0"
 rustitude-core = { version = "1.0.0", path = "crates/rustitude-core" }
-rustitude-gluex = { version = "0.2.0", path = "crates/rustitude-gluex", optional = true }
+rustitude-gluex = { version = "^0.2.0", path = "crates/rustitude-gluex", optional = true }
 
 [dependencies.pyo3]
 version = "0.21.2"
