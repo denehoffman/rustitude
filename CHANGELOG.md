@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.4.0 (2024-05-15)
 
+<csr-id-f39aab03b7160ba3817614170d67bfcfdb22642b/>
+
 ### Bug Fixes
 
  - <csr-id-b71f07c33445f310969e445e7b158bdeef726a8d/> make add_submodule public

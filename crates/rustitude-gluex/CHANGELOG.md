@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.2.0 (2024-05-15)
 
+<csr-id-9617a27322460b378fb022ef28561f31197fc86f/>
+
 ### Documentation
 
  - <csr-id-93dc0d6cfeb57f655c81f30c1e55b1c6b0460ccc/> update links for rustitude-gluex readme
@@ -16,12 +18,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  - <csr-id-9617a27322460b378fb022ef28561f31197fc86f/> merge rustitude-core to crates subdirectory
 
+### Bug Fixes
+
+ - <csr-id-2495107c77f483b84a926090cd868ccec8296052/> need to set some dependency versions...
+
 ### Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
- - 3 commits contributed to the release.
- - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 5 commits contributed to the release.
+ - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
 ### Commit Details
@@ -31,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Need to set some dependency versions... ([`2495107`](https://github.com/denehoffman/rustitude/commit/2495107c77f483b84a926090cd868ccec8296052))
+    - Release rustitude-core v1.0.0, rustitude-gluex v0.2.0, rustitude v0.4.0, safety bump 2 crates ([`23a8807`](https://github.com/denehoffman/rustitude/commit/23a880783702368ee873ce4839310f4b392c6862))
     - Update links for rustitude-gluex readme ([`93dc0d6`](https://github.com/denehoffman/rustitude/commit/93dc0d6cfeb57f655c81f30c1e55b1c6b0460ccc))
     - Update links in readmes ([`95f85ed`](https://github.com/denehoffman/rustitude/commit/95f85ed6b16400c882e7535c7fa113ead9876353))
     - Merge rustitude-core to crates subdirectory ([`9617a27`](https://github.com/denehoffman/rustitude/commit/9617a27322460b378fb022ef28561f31197fc86f))
