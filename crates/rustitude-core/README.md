@@ -76,7 +76,7 @@ pub struct OmegaDalitz {
 }
 
 impl Node for OmegaDalitz {
-    fn precalculate(&mut self, dataset: &Dataset) {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
         (self.dalitz_z, (self.dalitz_sin3theta, self.lambda)) = dataset
             .events
             .read()
@@ -110,9 +110,10 @@ impl Node for OmegaDalitz {
                 (dalitz_z, (dalitz_sin3theta, lambda))
             })
             .unzip();
+        Ok(())
     }
 
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Complex64 {
+    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
         let dalitz_z = self.dalitz_z[event.index];
         let dalitz_sin3theta = self.dalitz_sin3theta[event.index];
         let lambda = self.lambda[event.index];
@@ -120,7 +121,7 @@ impl Node for OmegaDalitz {
         let beta = parameters[1];
         let gamma = parameters[2];
         let delta = parameters[3];
-        f64::sqrt(f64::abs(
+        Ok(f64::sqrt(f64::abs(
             lambda
                 * (1.0
                     + 2.0 * alpha * dalitz_z
@@ -128,27 +129,27 @@ impl Node for OmegaDalitz {
                     + 2.0 * gamma * dalitz_z.powi(2)
                     + 2.0 * delta * dalitz_z.powf(5.0 / 2.0) * dalitz_sin3theta),
         ))
-        .into()
+        .into())
     }
 
-    fn parameters(&self) -> Option<Vec<String>> {
-        Some(vec![
+    fn parameters(&self) -> Vec<String> {
+        vec![
             "alpha".to_string(),
             "beta".to_string(),
             "gamma".to_string(),
             "delta".to_string(),
-        ])
+        ]
     }
 }
 ```
 
-Let's walk through this code. First, we need to define a `struct` which has all of the general information about the amplitude, and in this case some kind of `Vec` for storing precalculated data. We consider this precalculated data to correspond to a single dataset, and each dataset gets its own copy of the amplitude `struct`. Because this particular amplitude doesn't have any input parameters, we can `#[derive(Default)]` on it to make a default constructor, which allows the amplitude to be initialized with something like `let amp = OmegaDalitz::default();`. If we wanted a parameterized constructor, we have to define our own, and while Rust has no default name for constructors, `pub fn new(...) -> Self` is preferred.
+Let's walk through this code. First, we need to define a `struct` which has all of the general information about the amplitude, and in this case some kind of `Vec` for storing precalculated data. We consider this precalculated data to correspond to a single dataset, and each dataset gets its own copy of the amplitude `struct`. Because this particular amplitude doesn't have any input parameters, we can `#[derive(Default)]` on it to make a default constructor, which allows the amplitude to be initialized with something like `let amp = OmegaDalitz::default();`. If we wanted a parameterized constructor, we have to define our own, and while Rust has no default name for constructors, `pub fn new(...) -> rustitude_core::AmpOp` is preferred.
 
-Next, we implement the `Node` trait for the `struct`. Traits in Rust are kind of like abstract classes or interfaces in object-oriented languages, they provide some set of methods which a `struct` must implement. The first of these methods is `fn precalculate(&mut self, dataset: &Dataset)`. As the signature suggests, it takes a `Dataset` and mutates the `struct` in some way. The intended usage of this function is to precalculate some terms in the amplitude's mathematical expression, things which don't change when you update the free parameter inputs to the amplitude. In this case, the four input parameters, $`\alpha`$, $`\beta`$, $`\gamma`$, and $`\delta`$, are independent from `dalitz_z`, `dalitz_sin3theta`, and `lambda`, so we can safely calculate those ahead of time and just pull from their respective `Vec`s when needed later. I won't go too far into Rust's syntax here, but typical precalculation functions will start by iterating over the dataset's events in parallel (the line `use rayon::prelude::*;` is needed to use `par_iter` here) and collecting or unzipping that iterator into a `Vec` or group of `Vec`s.
+Next, we implement the `Node` trait for the `struct`. Traits in Rust are kind of like abstract classes or interfaces in object-oriented languages, they provide some set of methods which a `struct` must implement. The first of these methods is `fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError>`. As the signature suggests, it takes a `Dataset` and mutates the `struct` in some way. It should raise a `NodeError` if anything goes wrong in the evaluation. The intended usage of this function is to precalculate some terms in the amplitude's mathematical expression, things which don't change when you update the free parameter inputs to the amplitude. In this case, the four input parameters, $`\alpha`$, $`\beta`$, $`\gamma`$, and $`\delta`$, are independent from `dalitz_z`, `dalitz_sin3theta`, and `lambda`, so we can safely calculate those ahead of time and just pull from their respective `Vec`s when needed later. I won't go too far into Rust's syntax here, but typical precalculation functions will start by iterating over the dataset's events in parallel (the line `use rayon::prelude::*;` is needed to use `par_iter` here) and collecting or unzipping that iterator into a `Vec` or group of `Vec`s.
 
-The calculate step has the signature `fn calculate(&self, parameters: &[f64], event: &Event) -> Complex64`. This means we need to take a list of parameters and a single event and turn them into a complex value. The `Event` struct contains an `index` field which can be used to access the precalculated storage arrays made in the previous step.
+The calculate step has the signature `fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError>`. This means we need to take a list of parameters and a single event and turn them into a complex value. The `Event` struct contains an `index` field which can be used to access the precalculated storage arrays made in the previous step.
 
-Finally, the `parameters` function just returns a list of the parameter names in the order they are expected to be input into `calculate`. In the event that an amplitude doesn't have any free parameters (like [my implementation of the `Ylm` and `Zlm` amplitudes](https://github.com/denehoffman/rustitude/blob/main/crates/rustitude-gluex/src/harmonics.rs)), we can just return `None` (the `Some` is required because this function returns an `Option`).
+Finally, the `parameters` function just returns a list of the parameter names in the order they are expected to be input into `calculate`. In the event that an amplitude doesn't have any free parameters (like [my implementation of the `Ylm` and `Zlm` amplitudes](https://github.com/denehoffman/rustitude/blob/main/crates/rustitude-gluex/src/harmonics.rs)), we can omit this function entirely, as the default implementation returns `vec![]`.
 
 And that's it! However, it is important to be aware of the steps which need to be taken to allow this amplitude to be used through the Python interface.
 
@@ -162,8 +163,8 @@ use pyo3::prelude::*;
 // OmegaDalitz code here
 
 #[pyfunction(name = "OmegaDalitz")]
-fn omega_dalitz(name: &str) -> Amplitude {
-    Amplitude::new(name, Box::<OmegaDalitz>::default())
+fn omega_dalitz(name: &str) -> PyAmpOp {
+    Amplitude::new(name, Box::<OmegaDalitz>::default()).into()
 }
 
 pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -172,7 +173,7 @@ pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
 }
 ```
 
-Rather than bind the `struct` directly, we prefer to bind a function which returns an `Amplitude`, a wrapper struct that implements `#[pyclass]` and can be used in the Python interface. The `pyo3_module` function will then need to be added to the `rustitude` crate's [`lib.rs`](https://github.com/denehoffman/rustitude/blob/main/src/lib.rs) file. This step is a bit problematic, since it means new amplitudes cannot be added without modifying `rustitude` itself. For this reason, developers may want to work with their own fork of the repository rather than using the one installed by `cargo` if they wish to use Python. This is a limitation of `pyo3`, which doesn't recognize class bindings across crates.
+Rather than bind the `struct` directly, we prefer to bind a function which returns a `PyAmpOp`, a wrapper struct that implements `#[pyclass]` and can be used in the Python interface. The `pyo3_module` function will then need to be added to the `rustitude` crate's [`lib.rs`](https://github.com/denehoffman/rustitude/blob/main/src/lib.rs) file. This step is a bit problematic, since it means new amplitudes cannot be added without modifying `rustitude` itself. For this reason, developers may want to work with their own fork of the repository rather than using the one installed by `cargo` if they wish to use Python. This is a limitation of `pyo3`, which doesn't recognize class bindings across crates.
 
 # TODOs
 
@@ -181,7 +182,6 @@ In no particular order, here is a list of what (probably) needs to be done befor
 - Pure Rust parsing of ROOT files without the `uproot` backend (I have some moderate success with `oxyroot`, but there are still a few issues reading larger files)
 - Add plotting methods
 - A way to check if the number of parameters matches the input at compile time would be nice, not sure if it's possible though
-- Give managers a way to apply amplitudes to new datasets, like using the result from a fit to weight some generated Monte-Carlo for plotting the result. This is possible to do through Python, but a convenience method is probably needed
 - Amplitude serialization (I want to be able to send and share an amplitude configuration just like an `AmpTools` config file, but with the amplitude itself included)
 - Lots of documentation
 - Lots of tests
