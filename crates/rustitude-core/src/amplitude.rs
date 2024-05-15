@@ -3,6 +3,7 @@ use num::complex::Complex64;
 use parking_lot::RwLock;
 use pyo3::prelude::*;
 use rayon::prelude::*;
+use serde::{Deserialize, Serialize};
 use std::{
     collections::HashSet,
     fmt::{Debug, Display},
@@ -10,11 +11,12 @@ use std::{
     sync::Arc,
 };
 use thiserror::Error;
+use typetag::serde;
 
 use crate::dataset::{Dataset, Event};
 
 #[pyclass]
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Parameter {
     #[pyo3(get)]
     pub amplitude: String,
@@ -210,6 +212,7 @@ pub enum NodeError {
 ///     }
 /// }
 /// ```
+#[serde(tag = "type")]
 pub trait Node: Sync + Send {
     /// A method that is run once and stores some precalculated values given a [`Dataset`] input.
     ///
@@ -276,7 +279,7 @@ impl PyAmpOp {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum AmpOp {
     Amplitude(Amplitude),
     Sum(Vec<AmpOp>),
@@ -558,7 +561,7 @@ impl Mul for &AmpOp {
 ///
 /// This is mostly used interally as an intermediate step to an [`AmpOp`].
 #[pyclass]
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Amplitude {
     /// A name which uniquely identifies an [`Amplitude`] within a sum and group.
     #[pyo3(get)]
@@ -624,6 +627,7 @@ impl Amplitude {
         self.precalculate(dataset)
     }
 }
+#[typetag::serde]
 impl Node for Amplitude {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
         self.node.write().precalculate(dataset)
@@ -927,7 +931,9 @@ impl Model {
 /// # Parameters:
 ///
 /// - `value`: The value of the scalar.
+#[derive(Serialize, Deserialize)]
 pub struct Scalar;
+#[typetag::serde]
 impl Node for Scalar {
     fn parameters(&self) -> Vec<String> {
         vec!["value".to_string()]
@@ -975,7 +981,9 @@ pub fn scalar(name: &str) -> AmpOp {
 ///
 /// - `real`: The real part of the complex scalar.
 /// - `imag`: The imaginary part of the complex scalar.
+#[derive(Serialize, Deserialize)]
 pub struct ComplexScalar;
+#[typetag::serde]
 impl Node for ComplexScalar {
     fn calculate(&self, parameters: &[f64], _event: &Event) -> Result<Complex64, NodeError> {
         Ok(Complex64::new(parameters[0], parameters[1]))
@@ -1025,7 +1033,9 @@ pub fn cscalar(name: &str) -> AmpOp {
 ///
 /// - `mag`: The magnitude of the complex scalar.
 /// - `phi`: The phase of the complex scalar.
+#[derive(Serialize, Deserialize)]
 pub struct PolarComplexScalar;
+#[typetag::serde]
 impl Node for PolarComplexScalar {
     fn calculate(&self, parameters: &[f64], _event: &Event) -> Result<Complex64, NodeError> {
         Ok(parameters[0] * Complex64::cis(parameters[1]))
@@ -1066,20 +1076,15 @@ pub fn pcscalar(name: &str) -> AmpOp {
     Amplitude::new(name, Box::new(PolarComplexScalar))
 }
 
-pub struct Piecewise<F>
-where
-    F: Fn(&Event) -> f64 + Send + Sync + Copy,
-{
+#[derive(Serialize, Deserialize)]
+pub struct PiecewiseM {
     edges: Vec<(f64, f64)>,
-    variable: F,
-    calculated_variable: Vec<f64>,
+    #[serde(skip)]
+    calculated_bin: Vec<Option<usize>>,
 }
 
-impl<F> Piecewise<F>
-where
-    F: Fn(&Event) -> f64 + Send + Sync + Copy,
-{
-    pub fn new(bins: usize, range: (f64, f64), variable: F) -> Self {
+impl PiecewiseM {
+    pub fn new(bins: usize, range: (f64, f64)) -> Self {
         let diff = (range.1 - range.0) / (bins as f64);
         let edges = (0..bins)
             .map(|i| {
@@ -1091,29 +1096,28 @@ where
             .collect();
         Self {
             edges,
-            variable,
-            calculated_variable: Vec::default(),
+            calculated_bin: Vec::default(),
         }
     }
 }
 
-impl<F> Node for Piecewise<F>
-where
-    F: Fn(&Event) -> f64 + Send + Sync + Copy,
-{
+#[typetag::serde]
+impl Node for PiecewiseM {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
-        self.calculated_variable = dataset
+        self.calculated_bin = dataset
             .events
             .read()
             .par_iter()
-            .map(self.variable)
+            .map(|e: &Event| {
+                let m = (e.daughter_p4s[0] + e.daughter_p4s[1]).m();
+                self.edges.iter().position(|&(l, r)| m >= l && m <= r)
+            })
             .collect();
         Ok(())
     }
 
     fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
-        let val = self.calculated_variable[event.index];
-        let opt_i_bin = self.edges.iter().position(|&(l, r)| val >= l && val <= r);
+        let opt_i_bin = self.calculated_bin[event.index];
         opt_i_bin.map_or_else(
             || Ok(Complex64::default()),
             |i_bin| {
@@ -1133,13 +1137,8 @@ where
 }
 
 pub fn piecewise_m(name: &str, bins: usize, range: (f64, f64)) -> AmpOp {
-    //! Creates a named [`Piecewise`] amplitude with the resonance mass as the binning variable.
-    Amplitude::new(
-        name,
-        Box::new(Piecewise::new(bins, range, |e: &Event| {
-            (e.daughter_p4s[0] + e.daughter_p4s[1]).m()
-        })),
-    )
+    //! Creates a named [`PiecewiseM`] amplitude with the resonance mass as the binning variable.
+    Amplitude::new(name, Box::new(PiecewiseM::new(bins, range)))
 }
 
 #[pyfunction(name = "PiecewiseM")]

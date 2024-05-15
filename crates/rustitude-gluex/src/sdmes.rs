@@ -1,13 +1,16 @@
 use pyo3::prelude::*;
 use rayon::prelude::*;
 use rustitude_core::prelude::*;
+use serde::{Deserialize, Serialize};
 use sphrs::SHCoordinates;
 use std::f64::consts::PI;
 
 use crate::utils::Frame;
 
+#[derive(Serialize, Deserialize)]
 pub struct TwoPiSDME {
     frame: Frame,
+    #[serde(skip)]
     data: Vec<(f64, f64, f64, f64, f64, f64)>,
 }
 
@@ -20,6 +23,7 @@ impl TwoPiSDME {
     }
 }
 
+#[typetag::serde]
 impl Node for TwoPiSDME {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
         self.data = dataset
@@ -98,8 +102,10 @@ impl Node for TwoPiSDME {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct ThreePiSDME {
     frame: Frame,
+    #[serde(skip)]
     data: Vec<(f64, f64, f64, f64, f64, f64)>,
 }
 
@@ -112,6 +118,7 @@ impl ThreePiSDME {
     }
 }
 
+#[typetag::serde]
 impl Node for ThreePiSDME {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
         self.data = dataset

@@ -1,21 +1,27 @@
 use crate::utils::blatt_weisskopf;
 use crate::utils::breakup_momentum;
 use pyo3::prelude::*;
+use serde::{Deserialize, Serialize};
 use std::f64::consts::PI;
 
 use nalgebra::{SMatrix, SVector};
 use rayon::prelude::*;
 use rustitude_core::prelude::*;
 
-#[derive(Default)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct BreitWigner {
     p1_indices: Vec<usize>,
     p2_indices: Vec<usize>,
     l: usize,
+    #[serde(skip)]
     m: Vec<f64>,
+    #[serde(skip)]
     m1: Vec<f64>,
+    #[serde(skip)]
     m2: Vec<f64>,
+    #[serde(skip)]
     q: Vec<f64>,
+    #[serde(skip)]
     f: Vec<f64>,
 }
 impl BreitWigner {
@@ -28,6 +34,7 @@ impl BreitWigner {
         }
     }
 }
+#[typetag::serde]
 impl Node for BreitWigner {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
         (self.m, (self.m1, (self.m2, (self.q, self.f)))) = dataset
@@ -75,7 +82,7 @@ impl Node for BreitWigner {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct AdlerZero {
     pub s_0: f64,
     pub s_norm: f64,
@@ -88,6 +95,23 @@ struct KMatrixConstants<const C: usize, const R: usize> {
     mrs: [f64; R],
     adler_zero: Option<AdlerZero>,
     l: usize,
+}
+
+impl<const C: usize, const R: usize> Serialize for KMatrixConstants<C, R> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        todo!()
+    }
+}
+impl<'de, const C: usize, const R: usize> Deserialize<'de> for KMatrixConstants<C, R> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        todo!()
+    }
 }
 
 impl<const C: usize, const R: usize> KMatrixConstants<C, R> {
@@ -166,10 +190,12 @@ impl<const C: usize, const R: usize> KMatrixConstants<C, R> {
         ikc_inv_vec.dot(&Self::p_vector(betas, pvector_constants_mat))
     }
 }
+
+#[derive(Serialize, Deserialize)]
 pub struct KMatrixF0(
     usize,
     KMatrixConstants<5, 5>,
-    Vec<(SVector<Complex64, 5>, SMatrix<Complex64, 5, 5>)>,
+    #[serde(skip)] Vec<(SVector<Complex64, 5>, SMatrix<Complex64, 5, 5>)>,
 );
 #[rustfmt::skip]
 impl KMatrixF0 {
@@ -203,6 +229,7 @@ impl KMatrixF0 {
     }
 }
 
+#[typetag::serde]
 impl Node for KMatrixF0 {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
         self.2 = dataset
@@ -251,10 +278,12 @@ impl Node for KMatrixF0 {
         ]
     }
 }
+
+#[derive(Serialize, Deserialize)]
 pub struct KMatrixF2(
     usize,
     KMatrixConstants<4, 4>,
-    Vec<(SVector<Complex64, 4>, SMatrix<Complex64, 4, 4>)>,
+    #[serde(skip)] Vec<(SVector<Complex64, 4>, SMatrix<Complex64, 4, 4>)>,
 );
 #[rustfmt::skip]
 impl KMatrixF2 {
@@ -283,6 +312,7 @@ impl KMatrixF2 {
     }
 }
 
+#[typetag::serde]
 impl Node for KMatrixF2 {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
         self.2 = dataset
@@ -329,10 +359,11 @@ impl Node for KMatrixF2 {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct KMatrixA0(
     usize,
     KMatrixConstants<2, 2>,
-    Vec<(SVector<Complex64, 2>, SMatrix<Complex64, 2, 2>)>,
+    #[serde(skip)] Vec<(SVector<Complex64, 2>, SMatrix<Complex64, 2, 2>)>,
 );
 #[rustfmt::skip]
 impl KMatrixA0 {
@@ -357,6 +388,7 @@ impl KMatrixA0 {
     }
 }
 
+#[typetag::serde]
 impl Node for KMatrixA0 {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
         self.2 = dataset
@@ -397,10 +429,11 @@ impl Node for KMatrixA0 {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct KMatrixA2(
     usize,
     KMatrixConstants<3, 2>,
-    Vec<(SVector<Complex64, 3>, SMatrix<Complex64, 3, 2>)>,
+    #[serde(skip)] Vec<(SVector<Complex64, 3>, SMatrix<Complex64, 3, 2>)>,
 );
 #[rustfmt::skip]
 impl KMatrixA2 {
@@ -427,6 +460,7 @@ impl KMatrixA2 {
     }
 }
 
+#[typetag::serde]
 impl Node for KMatrixA2 {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
         self.2 = dataset
@@ -467,10 +501,11 @@ impl Node for KMatrixA2 {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct KMatrixRho(
     usize,
     KMatrixConstants<3, 2>,
-    Vec<(SVector<Complex64, 3>, SMatrix<Complex64, 3, 2>)>,
+    #[serde(skip)] Vec<(SVector<Complex64, 3>, SMatrix<Complex64, 3, 2>)>,
 );
 #[rustfmt::skip]
 impl KMatrixRho {
@@ -497,6 +532,7 @@ impl KMatrixRho {
     }
 }
 
+#[typetag::serde]
 impl Node for KMatrixRho {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
         self.2 = dataset
@@ -537,10 +573,11 @@ impl Node for KMatrixRho {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct KMatrixPi1(
     usize,
     KMatrixConstants<2, 1>,
-    Vec<(SVector<Complex64, 2>, SMatrix<Complex64, 2, 1>)>,
+    #[serde(skip)] Vec<(SVector<Complex64, 2>, SMatrix<Complex64, 2, 1>)>,
 );
 #[rustfmt::skip]
 impl KMatrixPi1 {
@@ -565,6 +602,7 @@ impl KMatrixPi1 {
     }
 }
 
+#[typetag::serde]
 impl Node for KMatrixPi1 {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
         self.2 = dataset

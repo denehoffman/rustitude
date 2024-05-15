@@ -1,14 +1,16 @@
 use pyo3::prelude::*;
 use rayon::prelude::*;
 use rustitude_core::prelude::*;
+use serde::{Deserialize, Serialize};
 
-#[derive(Default)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct OmegaDalitz {
     dalitz_z: Vec<f64>,
     dalitz_sin3theta: Vec<f64>,
     lambda: Vec<f64>,
 }
 
+#[typetag::serde]
 impl Node for OmegaDalitz {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
         (self.dalitz_z, (self.dalitz_sin3theta, self.lambda)) = dataset

@@ -4,13 +4,16 @@ use num_complex::ComplexFloat;
 use pyo3::prelude::*;
 use rayon::prelude::*;
 use rustitude_core::prelude::*;
+use serde::{Deserialize, Serialize};
 use sphrs::{ComplexSH, SHEval};
 
 use crate::utils::{Frame, Reflectivity, Wave};
 
+#[derive(Serialize, Deserialize)]
 pub struct Ylm {
     wave: Wave,
     frame: Frame,
+    #[serde(skip)]
     data: Vec<Complex64>,
 }
 impl Ylm {
@@ -22,6 +25,7 @@ impl Ylm {
         }
     }
 }
+#[typetag::serde]
 impl Node for Ylm {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
         self.data = dataset
@@ -43,10 +47,12 @@ impl Node for Ylm {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Zlm {
     wave: Wave,
     reflectivity: Reflectivity,
     frame: Frame,
+    #[serde(skip)]
     data: Vec<Complex64>,
 }
 impl Zlm {
@@ -59,6 +65,7 @@ impl Zlm {
         }
     }
 }
+#[typetag::serde]
 impl Node for Zlm {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
         self.data = dataset
@@ -94,9 +101,11 @@ impl Node for Zlm {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct OnePS {
     reflectivity: Reflectivity,
     frame: Frame,
+    #[serde(skip)]
     data: Vec<Complex64>,
 }
 impl OnePS {
@@ -108,6 +117,7 @@ impl OnePS {
         }
     }
 }
+#[typetag::serde]
 impl Node for OnePS {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
         self.data = dataset
@@ -142,10 +152,12 @@ impl Node for OnePS {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct TwoPS {
     wave: Wave,
     reflectivity: Reflectivity,
     frame: Frame,
+    #[serde(skip)]
     data: Vec<Complex64>,
 }
 impl TwoPS {
@@ -158,6 +170,7 @@ impl TwoPS {
         }
     }
 }
+#[typetag::serde]
 impl Node for TwoPS {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
         self.data = dataset

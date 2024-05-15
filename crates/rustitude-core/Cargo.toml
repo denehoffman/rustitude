@@ -18,11 +18,13 @@ num-complex = "0.4.4"
 num-traits = "0.2.17"
 parquet = "51.0.0"
 indexmap = "2.2.6"
-parking_lot = "0.12.1"
+parking_lot = { version = "0.12.1", features = ["serde"] }
 oxyroot = "0.1.18"
 itertools = "0.12.1"
 pyo3 = "0.21.2"
 thiserror = "1.0.60"
+serde = { version = "1.0.202", features = ["derive", "alloc", "rc"] }
+typetag = "0.2.16"
 
 [dev-dependencies]
 sphrs = "0.2.2"

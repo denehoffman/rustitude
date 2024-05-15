@@ -3,6 +3,7 @@ use std::{fmt::Display, str::FromStr};
 use factorial::Factorial;
 use nalgebra::Vector3;
 use rustitude_core::prelude::*;
+use serde::{Deserialize, Serialize};
 use sphrs::Coordinates;
 
 pub fn breakup_momentum(m0: f64, m1: f64, m2: f64) -> f64 {
@@ -67,7 +68,7 @@ pub fn wigner_d_matrix(
         * Complex64::cis(-(n as f64) * gamma)
 }
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, Serialize, Deserialize)]
 #[rustfmt::skip]
 pub enum Wave {
     #[default]
@@ -145,6 +146,7 @@ impl Display for Wave {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub enum Frame {
     Helicity,
     GottfriedJackson,
@@ -217,7 +219,7 @@ impl Frame {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Serialize, Deserialize)]
 pub enum Reflectivity {
     Positive = 1,
     Negative = -1,

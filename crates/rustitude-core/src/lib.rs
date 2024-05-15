@@ -7,7 +7,7 @@ pub mod manager;
 pub mod prelude {
     pub use crate::amplitude;
     pub use crate::amplitude::{
-        cscalar, pcscalar, scalar, AmpOp, Amplitude, Model, Node, NodeError, Parameter, Piecewise,
+        cscalar, pcscalar, scalar, AmpOp, Amplitude, Model, Node, NodeError, Parameter, PiecewiseM,
         PyAmpOp,
     };
     pub use crate::dataset::{Dataset, Event};
