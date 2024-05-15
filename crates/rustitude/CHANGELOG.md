@@ -7,16 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.4.2 (2024-05-15)
 
+<csr-id-9089c84e481124ff764b24f42507ab14913fef07/>
+
 ### Refactor
 
  - <csr-id-9089c84e481124ff764b24f42507ab14913fef07/> major move required to have rustitude function properly as a Rust crate. I set this up very wrong the first time
+
+### Bug Fixes
+
+ - <csr-id-174a6f540fa8f2b0292a9657e87acbe65edcaf71/> readmes and licenses suck
 
 ### Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
- - 1 commit contributed to the release.
- - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 3 commits contributed to the release.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
 ### Commit Details
@@ -26,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Readmes and licenses suck ([`174a6f5`](https://github.com/denehoffman/rustitude/commit/174a6f540fa8f2b0292a9657e87acbe65edcaf71))
+    - Release rustitude-gluex v0.2.1, rustitude v0.4.2 ([`3a45077`](https://github.com/denehoffman/rustitude/commit/3a45077dcd7413ac50e5ec45dc98826b11d789fb))
     - Major move required to have rustitude function properly as a Rust crate. I set this up very wrong the first time ([`9089c84`](https://github.com/denehoffman/rustitude/commit/9089c84e481124ff764b24f42507ab14913fef07))
 </details>
 
