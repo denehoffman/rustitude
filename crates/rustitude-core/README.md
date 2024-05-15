@@ -38,14 +38,6 @@ This crate contains all of the core mechanics
 - Implementing [`Node`](https://docs.rs/rustitude-core/latest/rustitude_core/amplitude/trait.Node.html) on a struct is all that is needed to use it as an amplitude. This means developers need only write two to three total methods to describe the entire functionality of their amplitude, and one of these just gives the names and order of the amplitude's input parameters.
 - A major goal of `rustitude` was to increase processing speed by sacrificing memory. This is done by precalculating parts of amplitudes which don't change when the free parameter inputs change. The simplest example of this is the `Ylm` amplitude (spherical harmonic), which can be entirely precalculated given the value of `l` and `m`. To calculate this amplitude at evaluation time, `rustitude` just needs to look up a value in an array!
 
-# Theory
-
-Amplitudes are registered into a named `sum` and `group`. Similar to [`AmpTools`](https://github.com/mashephe/AmpTools), the typical calculation for any event $e$ and list of parameters $\overrightarrow{p}$ will then be:
-
-```math
-I(\overrightarrow{p}, e) = \sum_{\text{groups} \in \text{sums}}\left|\sum_{\text{amplitudes} \in \text{groups}} \prod_{\text{amp} \in \text{amplitudes}} \text{amp}(\overrightarrow{p}, e)\right|^2
-```
-
 # Installation
 
 Cargo provides the usual command for including this crate in a project:
