@@ -1,0 +1,38 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[tool.maturin]
+module-name = "rustitude._rustitude"
+features = ["pyo3/extension-module"]
+
+[project]
+name = "rustitude"
+version = "0.4.0"
+description = "Python bindings for the Rustitude library"
+readme = "README.md"
+requires-python = ">=3.7"
+license = { file = "LICENSE" }
+keywords = ["physics", "math", "rust"]
+authors = [{ email = "dene@cmu.edu" }, { name = "Nathaniel Dene Hoffman" }]
+maintainers = [{ name = "Nathaniel Dene Hoffman", email = "dene@cmu.edu" }]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+]
+
+dependencies = ["uproot", "numpy"]
+
+[project.urls]
+homepage = "https://github.com/denehoffman/rustitude"
+repository = "https://github.com/denehoffman/rustitude"
+changelog = "https://github.com/denehoffman/rustitude/blob/main/CHANGELOG.md"
+# TODO: documentation = "readthedocs.org"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.format]
+quote-style = "single"
+docstring-code-format = true
+preview = true

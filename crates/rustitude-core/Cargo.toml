@@ -1,31 +1,30 @@
 [package]
 name = "rustitude-core"
 version = "1.0.0"
-edition = "2021"
-authors = ["Nathaniel Dene Hoffman <dene@cmu.edu>"]
-description = "A library to create and operate models for particle physics amplitude analyses"
-repository = "https://github.com/denehoffman/rustitude/"
-homepage = "https://github.com/denehoffman/rustitude/"
-license = "BSD-3-Clause"
-readme = "README.md"
+edition = { workspace = true }
+authors = { workspace = true }
+description = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+license-file = { workspace = true }
 
 [dependencies]
-rayon = { version = "1.8.0" }
-approx = { version = "0.5.1", features = ["num-complex"] }
-nalgebra = "0.32.3"
-num = "0.4.1"
-num-complex = "0.4.4"
-num-traits = "0.2.17"
-parquet = "51.0.0"
-indexmap = "2.2.6"
-parking_lot = "0.12.1"
-oxyroot = "0.1.18"
-itertools = "0.12.1"
-pyo3 = "0.21.2"
-thiserror = "1.0.60"
+rayon = { workspace = true }
+approx = { workspace = true }
+nalgebra = { workspace = true }
+num = { workspace = true }
+num-complex = { workspace = true }
+num-traits = { workspace = true }
+parquet = { workspace = true }
+indexmap = { workspace = true }
+parking_lot = { workspace = true }
+oxyroot = { workspace = true }
+itertools = { workspace = true }
+pyo3 = { workspace = true }
+thiserror = { workspace = true }
 
 [dev-dependencies]
-sphrs = "0.2.2"
+sphrs = { workspace = true }
 
 [features]
 simd = []

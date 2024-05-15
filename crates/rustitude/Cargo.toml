@@ -1,26 +1,19 @@
 [package]
 name = "rustitude"
-version = "0.4.1"
+version = { workspace = true }
 edition = { workspace = true }
 authors = { workspace = true }
 description = { workspace = true }
 repository = { workspace = true }
 homepage = { workspace = true }
-license = { workspace = true }
-readme = "../../README.md"
-
-[lib]
-name = "rustitude"
-crate-type = ["cdylib"]
+license-file = { workspace = true }
 
 [dependencies]
-rayon = "1.10.0"
-rustitude-core = { version = "1.0.0", path = "../rustitude-core" }
-rustitude-gluex = { version = "^0.2.0", path = "../rustitude-gluex", optional = true }
+rustitude-core = { workspace = true }
+rustitude-gluex = { workspace = true, optional = true }
 
-[dependencies.pyo3]
-version = "0.21.2"
-features = ["abi3-py37"]
+[dev-dependencies]
+criterion = { workspace = true }
 
 [features]
 default = ["gluex"]
