@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.1 (2024-05-15)
+
+### Bug Fixes
+
+ - <csr-id-740a0186ae22bdab87f514a5e035f3917a531c86/> add package info into workspace
+
+### Other
+
+ - <csr-id-9617a27322460b378fb022ef28561f31197fc86f/> merge rustitude-core to crates subdirectory
+ - <csr-id-64ec5097cc99eb9bb6d73376e6d3b2788f637d9d/> more Cargo.lock and readme updates
+ - <csr-id-78b96b94097670af64886abb84ed263048e91e62/> update Cargo.tomls
+ - <csr-id-8f2f28c972c20c0b8cef2869ab08fc4abaec5cf7/> move rustitude to crates subdirectory
+
+### Refactor
+
+ - <csr-id-097311224630f5a4d98381a11d2917ca6378ad46/> move rustitude into the crates directory and add to workspace
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 6 commits contributed to the release over the course of 1 calendar day.
+ - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Add package info into workspace ([`740a018`](https://github.com/denehoffman/rustitude/commit/740a0186ae22bdab87f514a5e035f3917a531c86))
+    - Move rustitude into the crates directory and add to workspace ([`0973112`](https://github.com/denehoffman/rustitude/commit/097311224630f5a4d98381a11d2917ca6378ad46))
+    - Merge rustitude-core to crates subdirectory ([`9617a27`](https://github.com/denehoffman/rustitude/commit/9617a27322460b378fb022ef28561f31197fc86f))
+    - More Cargo.lock and readme updates ([`64ec509`](https://github.com/denehoffman/rustitude/commit/64ec5097cc99eb9bb6d73376e6d3b2788f637d9d))
+    - Update Cargo.tomls ([`78b96b9`](https://github.com/denehoffman/rustitude/commit/78b96b94097670af64886abb84ed263048e91e62))
+    - Move rustitude to crates subdirectory ([`8f2f28c`](https://github.com/denehoffman/rustitude/commit/8f2f28c972c20c0b8cef2869ab08fc4abaec5cf7))
+</details>
+
 ## 0.4.0 (2024-05-15)
 
 <csr-id-f39aab03b7160ba3817614170d67bfcfdb22642b/>
@@ -16,26 +56,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 
  - <csr-id-f39aab03b7160ba3817614170d67bfcfdb22642b/> reorganize crate structure
-
-### Commit Statistics
-
-<csr-read-only-do-not-edit/>
-
- - 2 commits contributed to the release over the course of 1 calendar day.
- - 8 days passed between releases.
- - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
- - 0 issues like '(#ID)' were seen in commit messages
-
-### Commit Details
-
-<csr-read-only-do-not-edit/>
-
-<details><summary>view details</summary>
-
- * **Uncategorized**
-    - Reorganize crate structure ([`f39aab0`](https://github.com/denehoffman/rustitude/commit/f39aab03b7160ba3817614170d67bfcfdb22642b))
-    - Make add_submodule public ([`b71f07c`](https://github.com/denehoffman/rustitude/commit/b71f07c33445f310969e445e7b158bdeef726a8d))
-</details>
 
 ## 0.3.4 (2024-05-06)
 
@@ -73,25 +93,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - <csr-id-42f29669736bb72ed4d85f4669df1a48288a2db8/> re-enable on-push and on-PR workflow conditions
    A release only happens with a new tag
  - <csr-id-d94179156007fd86b69b8efbfd2f1799d0bb71b8/> update pyproject.toml version
-
-### Commit Statistics
-
-<csr-read-only-do-not-edit/>
-
- - 1 commit contributed to the release over the course of 1 calendar day.
- - 3 days passed between releases.
- - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
- - 0 issues like '(#ID)' were seen in commit messages
-
-### Commit Details
-
-<csr-read-only-do-not-edit/>
-
-<details><summary>view details</summary>
-
- * **Uncategorized**
-    - Add type checking and re-export rustitude-core and rustitude-gluex as their own submodules ([`6fc5c77`](https://github.com/denehoffman/rustitude/commit/6fc5c77477602403f3b892b240064de9f717d406))
-</details>
 
 ## 0.3.3 (2024-05-03)
 
@@ -161,25 +162,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - <csr-id-aaa07cd742e03461449269e8261e7f326600b2a0/> add local notes
  - <csr-id-e2cb6e54946744299506a39a5d3559ee099378fb/> Create LICENSE
  - <csr-id-310f89c2a2da584beabad3e208484be186e8f7fd/> update .gitignore
-
-### Commit Statistics
-
-<csr-read-only-do-not-edit/>
-
- - 2 commits contributed to the release over the course of 1 calendar day.
- - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
- - 0 issues like '(#ID)' were seen in commit messages
-
-### Commit Details
-
-<csr-read-only-do-not-edit/>
-
-<details><summary>view details</summary>
-
- * **Uncategorized**
-    - Opt for implementing all pyo3 bindings in their own submodules - this package will be very lightweight! ([`3126b7a`](https://github.com/denehoffman/rustitude/commit/3126b7a26b835ee24d112883ca540c172d97dd82))
-    - Initial commit to rustitude meta-crate ([`157c864`](https://github.com/denehoffman/rustitude/commit/157c8648dbcc1a6111d8c262a31139990ab09f3b))
-</details>
 
 ## 0.3.1 (2024-04-10)
 
