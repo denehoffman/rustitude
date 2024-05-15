@@ -599,35 +599,31 @@ impl Node for KMatrixPi1 {
 
 #[pyfunction(name = "BreitWigner")]
 fn breit_wigner(name: &str, p1_indices: Vec<usize>, p2_indices: Vec<usize>, l: usize) -> PyAmpOp {
-    Amplitude::new(
-        name,
-        Box::new(BreitWigner::new(&p1_indices, &p2_indices, l)),
-    )
-    .into()
+    Amplitude::new(name, BreitWigner::new(&p1_indices, &p2_indices, l)).into()
 }
 #[pyfunction(name = "KMatrixA0")]
 fn kmatrix_a0(name: &str, channel: usize) -> PyAmpOp {
-    Amplitude::new(name, Box::new(KMatrixA0::new(channel))).into()
+    Amplitude::new(name, KMatrixA0::new(channel)).into()
 }
 #[pyfunction(name = "KMatrixA2")]
 fn kmatrix_a2(name: &str, channel: usize) -> PyAmpOp {
-    Amplitude::new(name, Box::new(KMatrixA2::new(channel))).into()
+    Amplitude::new(name, KMatrixA2::new(channel)).into()
 }
 #[pyfunction(name = "KMatrixF0")]
 fn kmatrix_f0(name: &str, channel: usize) -> PyAmpOp {
-    Amplitude::new(name, Box::new(KMatrixF0::new(channel))).into()
+    Amplitude::new(name, KMatrixF0::new(channel)).into()
 }
 #[pyfunction(name = "KMatrixF2")]
 fn kmatrix_f2(name: &str, channel: usize) -> PyAmpOp {
-    Amplitude::new(name, Box::new(KMatrixF2::new(channel))).into()
+    Amplitude::new(name, KMatrixF2::new(channel)).into()
 }
 #[pyfunction(name = "KMatrixPi1")]
 fn kmatrix_pi1(name: &str, channel: usize) -> PyAmpOp {
-    Amplitude::new(name, Box::new(KMatrixPi1::new(channel))).into()
+    Amplitude::new(name, KMatrixPi1::new(channel)).into()
 }
 #[pyfunction(name = "KMatrixRho")]
 fn kmatrix_rho(name: &str, channel: usize) -> PyAmpOp {
-    Amplitude::new(name, Box::new(KMatrixRho::new(channel))).into()
+    Amplitude::new(name, KMatrixRho::new(channel)).into()
 }
 
 pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {

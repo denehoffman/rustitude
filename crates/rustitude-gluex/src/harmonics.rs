@@ -202,10 +202,10 @@ impl Node for TwoPS {
 fn ylm(name: &str, l: usize, m: isize, frame: &str) -> PyAmpOp {
     Amplitude::new(
         name,
-        Box::new(Ylm::new(
+        Ylm::new(
             Wave::new(l, m),
             <Frame as std::str::FromStr>::from_str(frame).unwrap(),
-        )),
+        ),
     )
     .into()
 }
@@ -215,11 +215,11 @@ fn ylm(name: &str, l: usize, m: isize, frame: &str) -> PyAmpOp {
 fn zlm(name: &str, l: usize, m: isize, reflectivity: &str, frame: &str) -> PyAmpOp {
     Amplitude::new(
         name,
-        Box::new(Zlm::new(
+        Zlm::new(
             Wave::new(l, m),
             <Reflectivity as std::str::FromStr>::from_str(reflectivity).unwrap(),
             <Frame as std::str::FromStr>::from_str(frame).unwrap(),
-        )),
+        ),
     )
     .into()
 }
@@ -229,10 +229,10 @@ fn zlm(name: &str, l: usize, m: isize, reflectivity: &str, frame: &str) -> PyAmp
 fn one_ps(name: &str, reflectivity: &str, frame: &str) -> PyAmpOp {
     Amplitude::new(
         name,
-        Box::new(OnePS::new(
+        OnePS::new(
             <Reflectivity as std::str::FromStr>::from_str(reflectivity).unwrap(),
             <Frame as std::str::FromStr>::from_str(frame).unwrap(),
-        )),
+        ),
     )
     .into()
 }
@@ -242,11 +242,11 @@ fn one_ps(name: &str, reflectivity: &str, frame: &str) -> PyAmpOp {
 fn two_ps(name: &str, l: usize, m: isize, reflectivity: &str, frame: &str) -> PyAmpOp {
     Amplitude::new(
         name,
-        Box::new(TwoPS::new(
+        TwoPS::new(
             Wave::new(l, m),
             <Reflectivity as std::str::FromStr>::from_str(reflectivity).unwrap(),
             <Frame as std::str::FromStr>::from_str(frame).unwrap(),
-        )),
+        ),
     )
     .into()
 }

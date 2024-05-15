@@ -198,9 +198,7 @@ impl Node for ThreePiSDME {
 fn two_pi_sdme(name: &str, frame: &str) -> PyAmpOp {
     Amplitude::new(
         name,
-        Box::new(TwoPiSDME::new(
-            <Frame as std::str::FromStr>::from_str(frame).unwrap(),
-        )),
+        TwoPiSDME::new(<Frame as std::str::FromStr>::from_str(frame).unwrap()),
     )
     .into()
 }
@@ -209,9 +207,7 @@ fn two_pi_sdme(name: &str, frame: &str) -> PyAmpOp {
 fn three_pi_sdme(name: &str, frame: &str) -> PyAmpOp {
     Amplitude::new(
         name,
-        Box::new(ThreePiSDME::new(
-            <Frame as std::str::FromStr>::from_str(frame).unwrap(),
-        )),
+        ThreePiSDME::new(<Frame as std::str::FromStr>::from_str(frame).unwrap()),
     )
     .into()
 }

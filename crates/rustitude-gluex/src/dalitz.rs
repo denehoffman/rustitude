@@ -78,7 +78,7 @@ impl Node for OmegaDalitz {
 
 #[pyfunction(name = "OmegaDalitz")]
 fn omega_dalitz(name: &str) -> PyAmpOp {
-    Amplitude::new(name, Box::<OmegaDalitz>::default()).into()
+    Amplitude::new(name, OmegaDalitz::default()).into()
 }
 
 pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
