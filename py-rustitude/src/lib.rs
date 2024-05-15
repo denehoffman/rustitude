@@ -15,7 +15,6 @@ where
     Ok(())
 }
 
-#[cfg(feature = "gluex")]
 fn gluex(m: &Bound<'_, PyModule>) -> PyResult<()> {
     add_submodule(m, "gluex.sdmes", rustitude_gluex::sdmes::pyo3_module)?;
     add_submodule(
@@ -48,7 +47,6 @@ fn rustitude(m: &Bound<'_, PyModule>) -> PyResult<()> {
     )?;
     add_submodule(m, "rustitude.manager", rustitude_core::manager::pyo3_module)?;
 
-    #[cfg(feature = "gluex")]
     add_submodule(m, "rustitude.gluex", gluex)?;
     Ok(())
 }

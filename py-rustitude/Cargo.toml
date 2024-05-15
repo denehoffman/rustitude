@@ -12,6 +12,8 @@ crate-type = ["cdylib"]
 [dependencies]
 rayon = { workspace = true }
 rustitude = { workspace = true, default-features = true }
+rustitude-core = { workspace = true }
+rustitude-gluex = { workspace = true }
 
 [dependencies.pyo3]
 version = "0.21.2"

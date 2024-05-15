@@ -10,9 +10,9 @@ features = ["pyo3/extension-module"]
 name = "rustitude"
 version = "0.4.2"
 description = "Python bindings for the Rustitude library"
-readme = "../README.md"
+readme = "README.md"
 requires-python = ">=3.7"
-license = { file = "../LICENSE" }
+license = { file = "LICENSE" }
 keywords = ["physics", "math", "rust"]
 authors = [{ email = "dene@cmu.edu" }, { name = "Nathaniel Dene Hoffman" }]
 maintainers = [{ name = "Nathaniel Dene Hoffman", email = "dene@cmu.edu" }]

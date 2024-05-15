@@ -1108,6 +1108,8 @@ dependencies = [
  "pyo3",
  "rayon",
  "rustitude",
+ "rustitude-core",
+ "rustitude-gluex",
 ]
 
 [[package]]
