@@ -2,6 +2,8 @@
 name = "py-rustitude"
 version = "0.4.1"
 edition = "2021"
+readme = { workspace = true }
+license-file = { workspace = true }
 
 [lib]
 name = "rustitude"
