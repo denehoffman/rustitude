@@ -1076,7 +1076,7 @@ dependencies = [
 
 [[package]]
 name = "rustitude"
-version = "0.3.4"
+version = "0.4.0"
 dependencies = [
  "pyo3",
  "rayon",
@@ -1086,7 +1086,7 @@ dependencies = [
 
 [[package]]
 name = "rustitude-core"
-version = "0.3.4"
+version = "1.0.0"
 dependencies = [
  "approx",
  "indexmap",
@@ -1106,7 +1106,7 @@ dependencies = [
 
 [[package]]
 name = "rustitude-gluex"
-version = "0.1.5"
+version = "0.2.0"
 dependencies = [
  "factorial",
  "nalgebra",

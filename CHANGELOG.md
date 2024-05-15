@@ -5,7 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.0 (2024-05-15)
+
+### Bug Fixes
+
+ - <csr-id-b71f07c33445f310969e445e7b158bdeef726a8d/> make add_submodule public
+
+### Other
+
+ - <csr-id-f39aab03b7160ba3817614170d67bfcfdb22642b/> reorganize crate structure
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 2 commits contributed to the release over the course of 1 calendar day.
+ - 8 days passed between releases.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Reorganize crate structure ([`f39aab0`](https://github.com/denehoffman/rustitude/commit/f39aab03b7160ba3817614170d67bfcfdb22642b))
+    - Make add_submodule public ([`b71f07c`](https://github.com/denehoffman/rustitude/commit/b71f07c33445f310969e445e7b158bdeef726a8d))
+</details>
+
 ## 0.3.4 (2024-05-06)
+
+<csr-id-475682fc30d7dc6a817030dd754cc4fb7dd295cc/>
+<csr-id-f64c86d2e21c17fe6bc5638240293a774185159a/>
+<csr-id-4a88e2b13fb01de2812f91ef4d55eea6b37fe7b2/>
+<csr-id-1747d5dc4a63bf47f2f5cbc479f879459e900c4c/>
+<csr-id-42f29669736bb72ed4d85f4669df1a48288a2db8/>
+<csr-id-d94179156007fd86b69b8efbfd2f1799d0bb71b8/>
 
 ### Chore
 
@@ -39,9 +76,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 13 commits contributed to the release over the course of 3 calendar days.
+ - 1 commit contributed to the release over the course of 1 calendar day.
  - 3 days passed between releases.
- - 12 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
 ### Commit Details
@@ -51,22 +88,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
-    - Merge branch 'main' of https://github.com/denehoffman/rustitude ([`7a3806c`](https://github.com/denehoffman/rustitude/commit/7a3806caf8741dc55283deb803653d4b0f892a61))
-    - Bump python library version ([`475682f`](https://github.com/denehoffman/rustitude/commit/475682fc30d7dc6a817030dd754cc4fb7dd295cc))
-    - Update Cargo.lock ([`f64c86d`](https://github.com/denehoffman/rustitude/commit/f64c86d2e21c17fe6bc5638240293a774185159a))
-    - Update README.md ([`6d613a1`](https://github.com/denehoffman/rustitude/commit/6d613a1c49ce065ffa4a50df09380f41359218be))
-    - Correct spelling ([`9735d57`](https://github.com/denehoffman/rustitude/commit/9735d57d039946cc7b5de57a9965c4fd01c2964f))
-    - Update README.md ([`48a7362`](https://github.com/denehoffman/rustitude/commit/48a73623f151336f198009097c028d000d3e43c5))
-    - Fixed some links ([`2d548c4`](https://github.com/denehoffman/rustitude/commit/2d548c4865b90043005b2aed7977612a28dad409))
     - Add type checking and re-export rustitude-core and rustitude-gluex as their own submodules ([`6fc5c77`](https://github.com/denehoffman/rustitude/commit/6fc5c77477602403f3b892b240064de9f717d406))
-    - Update README.md ([`3dc6275`](https://github.com/denehoffman/rustitude/commit/3dc627598be4f79ffc230f8bff813423d57491f2))
-    - Re-enable tag check ([`4a88e2b`](https://github.com/denehoffman/rustitude/commit/4a88e2b13fb01de2812f91ef4d55eea6b37fe7b2))
-    - Temporarily disable tag check so we can push to pypi through an action ([`1747d5d`](https://github.com/denehoffman/rustitude/commit/1747d5dc4a63bf47f2f5cbc479f879459e900c4c))
-    - Re-enable on-push and on-PR workflow conditions ([`42f2966`](https://github.com/denehoffman/rustitude/commit/42f29669736bb72ed4d85f4669df1a48288a2db8))
-    - Update pyproject.toml version ([`d941791`](https://github.com/denehoffman/rustitude/commit/d94179156007fd86b69b8efbfd2f1799d0bb71b8))
 </details>
 
-## 0.3.3-pypi (2024-05-03)
+## 0.3.3 (2024-05-03)
+
+<csr-id-e0c32f773b601e2703a0803849a1a2db130e2ffc/>
+<csr-id-158ddc248dc8463e08eb14b7f633952fc28abcd6/>
+<csr-id-f8370544ef666930bfd5f3a1b555e34e53525b6f/>
+<csr-id-db8b1a32563700203f896c0d357ed96d1144d202/>
 
 ### Chore
 
@@ -79,29 +109,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    don't publish on every push, need to set up more for that
  - <csr-id-db8b1a32563700203f896c0d357ed96d1144d202/> add maturin github actions
 
-### Commit Statistics
-
-<csr-read-only-do-not-edit/>
-
- - 5 commits contributed to the release.
- - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
- - 0 issues like '(#ID)' were seen in commit messages
-
-### Commit Details
-
-<csr-read-only-do-not-edit/>
-
-<details><summary>view details</summary>
-
- * **Uncategorized**
-    - Release rustitude v0.3.3 ([`b5748e4`](https://github.com/denehoffman/rustitude/commit/b5748e46a5bb8c19e74b71b10de3d6ba48edbf87))
-    - Remove unused library in rustitude-gluex which prevented cross-compilation ([`158ddc2`](https://github.com/denehoffman/rustitude/commit/158ddc248dc8463e08eb14b7f633952fc28abcd6))
-    - Update maturin.yml ([`f837054`](https://github.com/denehoffman/rustitude/commit/f8370544ef666930bfd5f3a1b555e34e53525b6f))
-    - Add maturin github actions ([`db8b1a3`](https://github.com/denehoffman/rustitude/commit/db8b1a32563700203f896c0d357ed96d1144d202))
-    - Update pyproject.toml info ([`e0c32f7`](https://github.com/denehoffman/rustitude/commit/e0c32f773b601e2703a0803849a1a2db130e2ffc))
-</details>
-
-## 0.3.3 (2024-05-03)
+## 0.3.3-pypi (2024-05-03)
 
 <csr-id-e0c32f773b601e2703a0803849a1a2db130e2ffc/>
 <csr-id-158ddc248dc8463e08eb14b7f633952fc28abcd6/>
@@ -156,8 +164,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 10 commits contributed to the release over the course of 1 calendar day.
- - 8 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 2 commits contributed to the release over the course of 1 calendar day.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
 ### Commit Details
@@ -167,16 +175,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
-    - Release rustitude v0.3.2 ([`3e77a7e`](https://github.com/denehoffman/rustitude/commit/3e77a7e589335c6d901cd07232ed558c026007cb))
-    - Bump rustitude dependency versions ([`023cfea`](https://github.com/denehoffman/rustitude/commit/023cfea357b0d6e5c12f724df32d4ed30c9f24c7))
     - Opt for implementing all pyo3 bindings in their own submodules - this package will be very lightweight! ([`3126b7a`](https://github.com/denehoffman/rustitude/commit/3126b7a26b835ee24d112883ca540c172d97dd82))
-    - Merge branch 'main' of https://github.com/denehoffman/rustitude ([`ee950cd`](https://github.com/denehoffman/rustitude/commit/ee950cda479ebd9b3ee2c9d829aa16b359f39022))
-    - Add local notes ([`aaa07cd`](https://github.com/denehoffman/rustitude/commit/aaa07cd742e03461449269e8261e7f326600b2a0))
-    - Create LICENSE ([`e2cb6e5`](https://github.com/denehoffman/rustitude/commit/e2cb6e54946744299506a39a5d3559ee099378fb))
-    - Create rust.yml ([`7646b89`](https://github.com/denehoffman/rustitude/commit/7646b89c792c0f55b8898832abe6a743a052fc7a))
     - Initial commit to rustitude meta-crate ([`157c864`](https://github.com/denehoffman/rustitude/commit/157c8648dbcc1a6111d8c262a31139990ab09f3b))
-    - Update .gitignore ([`310f89c`](https://github.com/denehoffman/rustitude/commit/310f89c2a2da584beabad3e208484be186e8f7fd))
-    - Add README and CHANGELOG ([`8bd07de`](https://github.com/denehoffman/rustitude/commit/8bd07de2425e48f4489a59ce4c168eaa9df9cc42))
 </details>
 
 ## 0.3.1 (2024-04-10)
