@@ -92,7 +92,7 @@ impl Display for Parameter {
 #[macro_export]
 macro_rules! amplitude {
     ($name:expr, $node:expr) => {{
-        AmpOp::Amplitude(Amplitude::new($name, $node))
+        Amplitude::new($name, $node).into()
     }};
 }
 
@@ -602,16 +602,25 @@ impl Amplitude {
         format!("{:?}", self)
     }
 }
+impl From<Amplitude> for AmpOp {
+    fn from(amp: Amplitude) -> Self {
+        Self::Amplitude(amp)
+    }
+}
+impl From<Amplitude> for PyAmpOp {
+    fn from(amp: Amplitude) -> Self {
+        AmpOp::Amplitude(amp).into()
+    }
+}
 impl Amplitude {
-    #[allow(clippy::new_ret_no_self)]
-    pub fn new(name: &str, node: Box<dyn Node>) -> AmpOp {
-        AmpOp::Amplitude(Self {
+    pub fn new(name: &str, node: impl Node + 'static) -> Self {
+        Self {
             name: name.to_string(),
-            node: Arc::new(RwLock::new(node)),
+            node: Arc::new(RwLock::new(Box::new(node))),
             active: true,
             cache_position: 0,
             parameter_index_start: 0,
-        })
+        }
     }
     pub fn register(
         &mut self,
@@ -964,7 +973,7 @@ pub fn scalar(name: &str) -> AmpOp {
     //!     assert_eq!(amp.node.read().parameters(), vec!["value".to_string()]);
     //! }
     //! ```
-    Amplitude::new(name, Box::new(Scalar))
+    Amplitude::new(name, Scalar).into()
 }
 /// A [`Node`] for computing a single complex value from two input parameters.
 ///
@@ -1013,7 +1022,7 @@ pub fn cscalar(name: &str) -> AmpOp {
     //!     assert_eq!(amp.node.read().parameters(), vec!["real".to_string(), "imag".to_string()]);
     //! }
     //! ```
-    Amplitude::new(name, Box::new(ComplexScalar))
+    Amplitude::new(name, ComplexScalar).into()
 }
 
 /// A [`Node`] for computing a single complex value from two input parameters in polar form.
@@ -1063,7 +1072,7 @@ pub fn pcscalar(name: &str) -> AmpOp {
     //!     assert_eq!(amp.node.read().parameters(), vec!["mag".to_string(), "phi".to_string()]);
     //! }
     //! ```
-    Amplitude::new(name, Box::new(PolarComplexScalar))
+    Amplitude::new(name, PolarComplexScalar).into()
 }
 
 pub struct Piecewise<F>
@@ -1136,10 +1145,11 @@ pub fn piecewise_m(name: &str, bins: usize, range: (f64, f64)) -> AmpOp {
     //! Creates a named [`Piecewise`] amplitude with the resonance mass as the binning variable.
     Amplitude::new(
         name,
-        Box::new(Piecewise::new(bins, range, |e: &Event| {
+        Piecewise::new(bins, range, |e: &Event| {
             (e.daughter_p4s[0] + e.daughter_p4s[1]).m()
-        })),
+        }),
     )
+    .into()
 }
 
 #[pyfunction(name = "PiecewiseM")]
