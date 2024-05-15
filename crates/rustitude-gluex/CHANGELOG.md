@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.2.1 (2024-05-15)
+
+### Refactor
+
+ - <csr-id-9089c84e481124ff764b24f42507ab14913fef07/> major move required to have rustitude function properly as a Rust crate. I set this up very wrong the first time
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 1 commit contributed to the release.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Major move required to have rustitude function properly as a Rust crate. I set this up very wrong the first time ([`9089c84`](https://github.com/denehoffman/rustitude/commit/9089c84e481124ff764b24f42507ab14913fef07))
+</details>
+
 ## v0.2.0 (2024-05-15)
 
 <csr-id-9617a27322460b378fb022ef28561f31197fc86f/>
@@ -27,7 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 7 commits contributed to the release.
+ - 8 commits contributed to the release.
  - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -38,6 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release rustitude-gluex v0.2.0, rustitude v0.4.0 ([`bc38f3a`](https://github.com/denehoffman/rustitude/commit/bc38f3af06807d8e6e1c3ca3a38581461ef934b8))
     - Need to set some dependency versions...properly ([`ee48e40`](https://github.com/denehoffman/rustitude/commit/ee48e4039e40bbf2c5b23d230bbcd0213c41e888))
     - Release rustitude-gluex v0.2.0, rustitude v0.4.0 ([`1369408`](https://github.com/denehoffman/rustitude/commit/1369408a7352be0e5b5fb675b0127e8e69a10c59))
     - Need to set some dependency versions... ([`2495107`](https://github.com/denehoffman/rustitude/commit/2495107c77f483b84a926090cd868ccec8296052))

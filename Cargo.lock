@@ -1257,7 +1257,7 @@ dependencies = [
 
 [[package]]
 name = "rustitude"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "criterion",
  "rustitude-core",
@@ -1286,7 +1286,7 @@ dependencies = [
 
 [[package]]
 name = "rustitude-gluex"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "factorial",
  "nalgebra",

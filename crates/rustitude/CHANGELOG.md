@@ -5,7 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.2 (2024-05-15)
+
+### Refactor
+
+ - <csr-id-9089c84e481124ff764b24f42507ab14913fef07/> major move required to have rustitude function properly as a Rust crate. I set this up very wrong the first time
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 1 commit contributed to the release.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Major move required to have rustitude function properly as a Rust crate. I set this up very wrong the first time ([`9089c84`](https://github.com/denehoffman/rustitude/commit/9089c84e481124ff764b24f42507ab14913fef07))
+</details>
+
 ## 0.4.1 (2024-05-15)
+
+<csr-id-9617a27322460b378fb022ef28561f31197fc86f/>
+<csr-id-64ec5097cc99eb9bb6d73376e6d3b2788f637d9d/>
+<csr-id-78b96b94097670af64886abb84ed263048e91e62/>
+<csr-id-8f2f28c972c20c0b8cef2869ab08fc4abaec5cf7/>
+<csr-id-097311224630f5a4d98381a11d2917ca6378ad46/>
 
 ### Bug Fixes
 
@@ -26,7 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 6 commits contributed to the release over the course of 1 calendar day.
+ - 7 commits contributed to the release over the course of 1 calendar day.
  - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -37,6 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release rustitude v0.4.1 ([`9f6b0c5`](https://github.com/denehoffman/rustitude/commit/9f6b0c5570050312cc7f5ed1609d37e0f6f0aaca))
     - Add package info into workspace ([`740a018`](https://github.com/denehoffman/rustitude/commit/740a0186ae22bdab87f514a5e035f3917a531c86))
     - Move rustitude into the crates directory and add to workspace ([`0973112`](https://github.com/denehoffman/rustitude/commit/097311224630f5a4d98381a11d2917ca6378ad46))
     - Merge rustitude-core to crates subdirectory ([`9617a27`](https://github.com/denehoffman/rustitude/commit/9617a27322460b378fb022ef28561f31197fc86f))

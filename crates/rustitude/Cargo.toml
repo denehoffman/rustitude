@@ -1,6 +1,6 @@
 [package]
 name = "rustitude"
-version = { workspace = true }
+version = "0.4.2"
 edition = { workspace = true }
 authors = { workspace = true }
 description = { workspace = true }
