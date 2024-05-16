@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.3 (2024-05-16)
+
+### Refactor
+
+ - <csr-id-e4399efe07ea8e66d9769a067c55c72d9dc09c69/> this is no longer a python crate
+
+### Style
+
+ - <csr-id-0e94ec45850cb6129924b2be27793a17c51b03c2/> get rid of extra git-files and media
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 2 commits contributed to the release.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Get rid of extra git-files and media ([`0e94ec4`](https://github.com/denehoffman/rustitude/commit/0e94ec45850cb6129924b2be27793a17c51b03c2))
+    - This is no longer a python crate ([`e4399ef`](https://github.com/denehoffman/rustitude/commit/e4399efe07ea8e66d9769a067c55c72d9dc09c69))
+</details>
+
 ## 0.4.2 (2024-05-15)
 
 <csr-id-9089c84e481124ff764b24f42507ab14913fef07/>
@@ -21,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release.
+ - 5 commits contributed to the release.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -32,6 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release rustitude v0.4.2 ([`6fde79a`](https://github.com/denehoffman/rustitude/commit/6fde79a5b11d20069c36d47a272aee9bed9fd3a9))
     - Release rustitude v0.4.2 ([`f0d5b95`](https://github.com/denehoffman/rustitude/commit/f0d5b954f659e5410fc504b460e980a1fb270936))
     - Readmes and licenses suck ([`174a6f5`](https://github.com/denehoffman/rustitude/commit/174a6f540fa8f2b0292a9657e87acbe65edcaf71))
     - Release rustitude-gluex v0.2.1, rustitude v0.4.2 ([`3a45077`](https://github.com/denehoffman/rustitude/commit/3a45077dcd7413ac50e5ec45dc98826b11d789fb))
