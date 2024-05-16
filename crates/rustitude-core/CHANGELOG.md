@@ -5,7 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.0.1 (2024-05-16)
+
+### Documentation
+
+ - <csr-id-8824d4c02278fd01de0050be3c3b9c3781e39687/> update readme link
+ - <csr-id-27799fd50850d43e50c42bfc24f5c9d36b6f76d7/> Update README.md (missed a spot)
+ - <csr-id-53c553d44045715f91710a266e7e5f39cc71d9c9/> update readmes
+
+### Refactor
+
+ - <csr-id-b08b3b8c8c4699a65dabdac5ff4b19fe50f511aa/> change Amplitude such that new makes a new Amplitude, add conversion traits to AmpOp and PyAmpOp, and fix amplitude! macro
+ - <csr-id-9089c84e481124ff764b24f42507ab14913fef07/> major move required to have rustitude function properly as a Rust crate. I set this up very wrong the first time
+
+### Style
+
+ - <csr-id-0e94ec45850cb6129924b2be27793a17c51b03c2/> get rid of extra git-files and media
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 6 commits contributed to the release.
+ - 1 day passed between releases.
+ - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Get rid of extra git-files and media ([`0e94ec4`](https://github.com/denehoffman/rustitude/commit/0e94ec45850cb6129924b2be27793a17c51b03c2))
+    - Update readme link ([`8824d4c`](https://github.com/denehoffman/rustitude/commit/8824d4c02278fd01de0050be3c3b9c3781e39687))
+    - Change Amplitude such that new makes a new Amplitude, add conversion traits to AmpOp and PyAmpOp, and fix amplitude! macro ([`b08b3b8`](https://github.com/denehoffman/rustitude/commit/b08b3b8c8c4699a65dabdac5ff4b19fe50f511aa))
+    - Major move required to have rustitude function properly as a Rust crate. I set this up very wrong the first time ([`9089c84`](https://github.com/denehoffman/rustitude/commit/9089c84e481124ff764b24f42507ab14913fef07))
+    - Update README.md (missed a spot) ([`27799fd`](https://github.com/denehoffman/rustitude/commit/27799fd50850d43e50c42bfc24f5c9d36b6f76d7))
+    - Update readmes ([`53c553d`](https://github.com/denehoffman/rustitude/commit/53c553d44045715f91710a266e7e5f39cc71d9c9))
+</details>
+
 ## 1.0.0 (2024-05-15)
+
+<csr-id-64ec5097cc99eb9bb6d73376e6d3b2788f637d9d/>
+<csr-id-fa66ff1c89c3761f22b8d1586c9df4eb81937a49/>
 
 ### Documentation
 
@@ -24,7 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release.
+ - 5 commits contributed to the release.
  - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -35,6 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release rustitude-core v1.0.0, rustitude-gluex v0.2.0, rustitude v0.4.0, safety bump 2 crates ([`23a8807`](https://github.com/denehoffman/rustitude/commit/23a880783702368ee873ce4839310f4b392c6862))
     - Update ExtendedLogLikelihood call signature to make num_threads optional and default to 1 ([`ae5bd43`](https://github.com/denehoffman/rustitude/commit/ae5bd43902756b612beecb057151dac39dfca208))
     - Update links in readmes ([`95f85ed`](https://github.com/denehoffman/rustitude/commit/95f85ed6b16400c882e7535c7fa113ead9876353))
     - More Cargo.lock and readme updates ([`64ec509`](https://github.com/denehoffman/rustitude/commit/64ec5097cc99eb9bb6d73376e6d3b2788f637d9d))

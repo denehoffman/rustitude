@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.2.2 (2024-05-16)
 
+<csr-id-0e94ec45850cb6129924b2be27793a17c51b03c2/>
+
 ### Bug Fixes
 
  - <csr-id-77054e334d90077decd54d4f970400efa1a31f47/> update amplitudes to account for changes in core
@@ -19,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 2 commits contributed to the release.
+ - 3 commits contributed to the release.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -30,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release rustitude-gluex v0.2.2, rustitude v0.4.3 ([`0062542`](https://github.com/denehoffman/rustitude/commit/006254211c6dda1924cede7818c94ab4dcf1f49a))
     - Get rid of extra git-files and media ([`0e94ec4`](https://github.com/denehoffman/rustitude/commit/0e94ec45850cb6129924b2be27793a17c51b03c2))
     - Update amplitudes to account for changes in core ([`77054e3`](https://github.com/denehoffman/rustitude/commit/77054e334d90077decd54d4f970400efa1a31f47))
 </details>
