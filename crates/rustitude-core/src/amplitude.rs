@@ -888,7 +888,7 @@ impl Model {
         self.parameters
             .iter()
             .sorted_by_key(|par| par.index)
-            .group_by(|par| par.index)
+            .chunk_by(|par| par.index)
             .into_iter()
             .map(|(_, group)| group.collect::<Vec<_>>())
             .collect()
@@ -897,7 +897,7 @@ impl Model {
         self.parameters
             .iter_mut()
             .sorted_by_key(|par| par.index)
-            .group_by(|par| par.index)
+            .chunk_by(|par| par.index)
             .into_iter()
             .map(|(_, group)| group.collect())
             .collect()

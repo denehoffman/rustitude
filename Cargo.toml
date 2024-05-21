@@ -26,9 +26,15 @@ parquet = "51.0.0"
 indexmap = "2.2.6"
 parking_lot = "0.12.1"
 oxyroot = "0.1.18"
-itertools = "0.12.1"
+itertools = "0.13.0"
 pyo3 = "0.21.2"
 thiserror = "1.0.60"
 factorial = "0.4.0"
 sphrs = "0.2.2"
 divan = "0.1.14"
+rand = "0.8.5"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
