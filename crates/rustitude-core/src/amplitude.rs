@@ -818,7 +818,7 @@ impl Model {
     }
 }
 impl Model {
-    fn new(root: AmpOp) -> Self {
+    pub fn new(root: AmpOp) -> Self {
         let mut amp_names = HashSet::new();
         let amplitudes: Vec<Amplitude> = root
             .walk()
