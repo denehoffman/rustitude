@@ -1,15 +1,10 @@
-use divan::black_box;
+use criterion::{criterion_group, criterion_main, Criterion};
 use rustitude::gluex::harmonics::Zlm;
 use rustitude::gluex::resonances::{KMatrixA0, KMatrixA2, KMatrixF0, KMatrixF2};
 use rustitude::gluex::utils::{Frame, Reflectivity, Wave};
 use rustitude::prelude::*;
 
-fn main() {
-    divan::main();
-}
-
-#[divan::bench(threads = [0, 1, 4, 8, 16])]
-fn kmatrix(bencher: divan::Bencher) {
+pub fn criterion_kmatrix(c: &mut Criterion) {
     let dataset = Dataset::from_parquet("benches/data_pol.parquet");
     let f0p: AmpOp = amplitude!("f0+", KMatrixF0::new(2));
     let f0n: AmpOp = amplitude!("f0-", KMatrixF0::new(2));
@@ -41,11 +36,15 @@ fn kmatrix(bencher: divan::Bencher) {
     model.fix("f0-", "f0_500 im", 0.0);
     model.fix("f0-", "f0_980 im", 0.0);
     let m = Manager::new(&model, &dataset);
-    bencher
-        .with_inputs(|| {
-            (0..model.get_n_free())
+    c.bench_function("kmatrix", |b| {
+        b.iter(|| {
+            let v = (0..model.get_n_free())
                 .map(|_| rand::random::<f64>() * 100.0)
-                .collect::<Vec<_>>()
+                .collect::<Vec<_>>();
+            criterion::black_box(m.evaluate(&v))
         })
-        .bench_values(|v| black_box(m.evaluate(&v)));
+    });
 }
+
+criterion_group!(benches, criterion_kmatrix);
+criterion_main!(benches);

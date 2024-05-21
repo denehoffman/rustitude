@@ -31,7 +31,7 @@ pyo3 = "0.21.2"
 thiserror = "1.0.60"
 factorial = "0.4.0"
 sphrs = "0.2.2"
-divan = "0.1.14"
+criterion = "0.5.1"
 rand = "0.8.5"
 
 [profile.release]

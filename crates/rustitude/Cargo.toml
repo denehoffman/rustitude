@@ -14,8 +14,8 @@ rustitude-core = { workspace = true }
 rustitude-gluex = { workspace = true, optional = true }
 
 [dev-dependencies]
-divan = { workspace = true }
 rand = { workspace = true }
+criterion = { workspace = true }
 
 [[bench]]
 name = "kmatrix"
