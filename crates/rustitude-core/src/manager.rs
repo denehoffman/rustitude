@@ -15,10 +15,13 @@ pub struct Manager {
 #[pymethods]
 impl Manager {
     #[new]
-    pub fn new(model: Model, dataset: Dataset) -> Self {
-        let mut model = model;
-        model.load(&dataset);
-        Self { model, dataset }
+    pub fn new(model: &Model, dataset: &Dataset) -> Self {
+        let mut model = model.clone();
+        model.load(dataset);
+        Self {
+            model: model.clone(),
+            dataset: dataset.clone(),
+        }
     }
     #[pyo3(name = "__call__")]
     fn pyevaluate(&self, parameters: Vec<f64>) -> Vec<f64> {
