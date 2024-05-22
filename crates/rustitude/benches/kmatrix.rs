@@ -5,7 +5,7 @@ use rustitude::gluex::utils::{Frame, Reflectivity, Wave};
 use rustitude::prelude::*;
 
 pub fn criterion_kmatrix(c: &mut Criterion) {
-    let dataset = Dataset::from_parquet("benches/data_pol.parquet");
+    let dataset = Dataset::from_parquet("benches/test_data.parquet");
     let f0p: AmpOp = amplitude!("f0+", KMatrixF0::new(2));
     let f0n: AmpOp = amplitude!("f0-", KMatrixF0::new(2));
     let f2: AmpOp = amplitude!("f2", KMatrixF2::new(2));
