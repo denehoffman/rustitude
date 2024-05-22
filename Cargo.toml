@@ -16,7 +16,6 @@ license-file = "LICENSE"
 rustitude = { version = "0.4.3", path = "crates/rustitude", default-features = false }
 rustitude-core = { version = "1.0.1", path = "crates/rustitude-core", default-features = false }
 rustitude-gluex = { version = "0.2.2", path = "crates/rustitude-gluex", default-features = false }
-criterion = "0.5.1"
 rayon = { version = "1.8.0" }
 approx = { version = "0.5.1", features = ["num-complex"] }
 nalgebra = "0.32.3"
@@ -27,8 +26,15 @@ parquet = "51.0.0"
 indexmap = "2.2.6"
 parking_lot = "0.12.1"
 oxyroot = "0.1.18"
-itertools = "0.12.1"
+itertools = "0.13.0"
 pyo3 = "0.21.2"
 thiserror = "1.0.60"
 factorial = "0.4.0"
 sphrs = "0.2.2"
+criterion = "0.5.1"
+rand = "0.8.5"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
