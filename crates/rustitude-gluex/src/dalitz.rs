@@ -1,4 +1,3 @@
-use pyo3::prelude::*;
 use rayon::prelude::*;
 use rustitude_core::prelude::*;
 
@@ -74,14 +73,4 @@ impl Node for OmegaDalitz {
             "delta".to_string(),
         ]
     }
-}
-
-#[pyfunction(name = "OmegaDalitz")]
-fn omega_dalitz(name: &str) -> PyAmpOp {
-    Amplitude::new(name, OmegaDalitz::default()).into()
-}
-
-pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(omega_dalitz, m)?)?;
-    Ok(())
 }

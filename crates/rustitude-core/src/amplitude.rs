@@ -1,7 +1,6 @@
 use itertools::Itertools;
 use num::complex::Complex64;
 use parking_lot::RwLock;
-use pyo3::prelude::*;
 use rayon::prelude::*;
 use std::{
     collections::HashSet,
@@ -13,31 +12,16 @@ use thiserror::Error;
 
 use crate::dataset::{Dataset, Event};
 
-#[pyclass]
 #[derive(Clone)]
 pub struct Parameter {
-    #[pyo3(get)]
     pub amplitude: String,
-    #[pyo3(get)]
     pub name: String,
-    #[pyo3(get)]
-    index: Option<usize>,
-    #[pyo3(get)]
-    fixed_index: Option<usize>,
-    #[pyo3(get)]
-    initial: f64,
-    #[pyo3(get)]
-    bounds: (f64, f64),
+    pub index: Option<usize>,
+    pub fixed_index: Option<usize>,
+    pub initial: f64,
+    pub bounds: (f64, f64),
 }
-#[pymethods]
 impl Parameter {
-    fn __str__(&self) -> String {
-        format!("{}", self)
-    }
-    fn __repr__(&self) -> String {
-        format!("{:?}", self)
-    }
-    #[new]
     pub fn new(amplitude: &str, name: &str, index: usize) -> Self {
         Self {
             amplitude: amplitude.to_string(),
@@ -239,40 +223,6 @@ pub trait Node: Sync + Send {
     /// are expected to be given as input to the [`Node::calculate`] method.
     fn parameters(&self) -> Vec<String> {
         vec![]
-    }
-}
-
-#[pyclass(name = "AmpOp")]
-#[derive(Clone)]
-pub struct PyAmpOp {
-    pub op: AmpOp,
-}
-
-impl From<AmpOp> for PyAmpOp {
-    fn from(value: AmpOp) -> Self {
-        Self { op: value }
-    }
-}
-
-#[pymethods]
-impl PyAmpOp {
-    pub fn print_tree(&self) {
-        self.op.print_tree()
-    }
-    pub fn real(&self) -> Self {
-        self.op.real().into()
-    }
-    pub fn imag(&self) -> Self {
-        self.op.imag().into()
-    }
-    pub fn norm_sqr(&self) -> Self {
-        self.op.norm_sqr().into()
-    }
-    pub fn __add__(&self, other: Self) -> Self {
-        (self.op.clone() + other.op).into()
-    }
-    pub fn __mul__(&self, other: Self) -> Self {
-        (self.op.clone() * other.op).into()
     }
 }
 
@@ -557,21 +507,16 @@ impl Mul for &AmpOp {
 /// in an analysis, and makes each [`Node`]'s parameters unique.
 ///
 /// This is mostly used interally as an intermediate step to an [`AmpOp`].
-#[pyclass]
 #[derive(Clone)]
 pub struct Amplitude {
     /// A name which uniquely identifies an [`Amplitude`] within a sum and group.
-    #[pyo3(get)]
     pub name: String,
     /// A [`Node`] which contains all of the operations needed to compute a [`Complex64`] from an
     /// [`Event`] in a [`Dataset`], a [`Vec<f64>`] of parameter values, and possibly some
     /// precomputed values.
     pub node: Arc<RwLock<Box<dyn Node>>>,
-    #[pyo3(get)]
     pub active: bool,
-    #[pyo3(get)]
     pub cache_position: usize,
-    #[pyo3(get)]
     pub parameter_index_start: usize,
 }
 impl Debug for Amplitude {
@@ -593,23 +538,9 @@ impl Display for Amplitude {
         }
     }
 }
-#[pymethods]
-impl Amplitude {
-    fn __str__(&self) -> String {
-        format!("{}", self)
-    }
-    fn __repr__(&self) -> String {
-        format!("{:?}", self)
-    }
-}
 impl From<Amplitude> for AmpOp {
     fn from(amp: Amplitude) -> Self {
         Self::Amplitude(amp)
-    }
-}
-impl From<Amplitude> for PyAmpOp {
-    fn from(amp: Amplitude) -> Self {
-        AmpOp::Amplitude(amp).into()
     }
 }
 impl Amplitude {
@@ -649,26 +580,14 @@ impl Node for Amplitude {
     }
 }
 
-#[pyclass]
 #[derive(Debug, Clone)]
 pub struct Model {
     pub root: AmpOp,
-    #[pyo3(get)]
     pub amplitudes: Vec<Amplitude>,
-    #[pyo3(get)]
     pub parameters: Vec<Parameter>,
 }
 
-#[pymethods]
 impl Model {
-    #[new]
-    fn from_pyampop(root: PyAmpOp) -> Self {
-        Self::new(root.op)
-    }
-    #[getter]
-    fn get_root(&self) -> PyResult<PyAmpOp> {
-        Ok(self.root.clone().into())
-    }
     pub fn get_parameter(&self, amplitude_name: &str, parameter_name: &str) -> Option<Parameter> {
         self.parameters
             .iter()
@@ -816,8 +735,6 @@ impl Model {
             }
         })
     }
-}
-impl Model {
     pub fn new(root: AmpOp) -> Self {
         let mut amp_names = HashSet::new();
         let amplitudes: Vec<Amplitude> = root
@@ -946,16 +863,6 @@ impl Node for Scalar {
     }
 }
 
-#[pyfunction(name = "Scalar")]
-pub fn py_scalar(name: &str) -> PyAmpOp {
-    //! Creates a named [`Scalar`].
-    //!
-    //! This is a convenience method to generate a [`PyAmpOp`] which is just a single free
-    //! parameter called `value`.
-    //!
-    //! See also: [`scalar`]
-    scalar(name).into()
-}
 pub fn scalar(name: &str) -> AmpOp {
     //! Creates a named [`Scalar`].
     //!
@@ -995,16 +902,6 @@ impl Node for ComplexScalar {
     }
 }
 
-#[pyfunction(name = "CScalar")]
-pub fn py_cscalar(name: &str) -> PyAmpOp {
-    //! Creates a named [`ComplexScalar`].
-    //!
-    //! This is a convenience method to generate an [`PyAmpOp`] which represents a complex
-    //! value determined by two parameters, `real` and `imag`.
-    //!
-    //! See also: [`cscalar`]
-    cscalar(name).into()
-}
 pub fn cscalar(name: &str) -> AmpOp {
     //! Creates a named [`ComplexScalar`].
     //!
@@ -1045,16 +942,6 @@ impl Node for PolarComplexScalar {
     }
 }
 
-#[pyfunction(name = "PCScalar")]
-pub fn py_pcscalar(name: &str) -> PyAmpOp {
-    //! Creates a named [`PolarComplexScalar`].
-    //!
-    //! This is a convenience method to generate an [`PyAmpOp`] which represents a complex
-    //! value determined by two parameters, `real` and `imag`.
-    //!
-    //! See also: [`pcscalar`]
-    pcscalar(name).into()
-}
 pub fn pcscalar(name: &str) -> AmpOp {
     //! Creates a named [`PolarComplexScalar`].
     //!
@@ -1150,21 +1037,4 @@ pub fn piecewise_m(name: &str, bins: usize, range: (f64, f64)) -> AmpOp {
         }),
     )
     .into()
-}
-
-#[pyfunction(name = "PiecewiseM")]
-pub fn py_piecewise_m(name: &str, bins: usize, range: (f64, f64)) -> PyAmpOp {
-    piecewise_m(name, bins, range).into()
-}
-
-pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<PyAmpOp>()?;
-    m.add_class::<Parameter>()?;
-    m.add_class::<Amplitude>()?;
-    m.add_class::<Model>()?;
-    m.add_function(wrap_pyfunction!(py_scalar, m)?)?;
-    m.add_function(wrap_pyfunction!(py_cscalar, m)?)?;
-    m.add_function(wrap_pyfunction!(py_pcscalar, m)?)?;
-    m.add_function(wrap_pyfunction!(py_piecewise_m, m)?)?;
-    Ok(())
 }

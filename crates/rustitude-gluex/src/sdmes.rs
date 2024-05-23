@@ -1,4 +1,3 @@
-use pyo3::prelude::*;
 use rayon::prelude::*;
 use rustitude_core::prelude::*;
 use sphrs::SHCoordinates;
@@ -191,29 +190,4 @@ impl Node for ThreePiSDME {
             "rho_1n12".to_string(),
         ]
     }
-}
-
-#[pyfunction]
-#[pyo3(name = "TwoPiSDME", signature = (name, frame="helicity"))]
-fn two_pi_sdme(name: &str, frame: &str) -> PyAmpOp {
-    Amplitude::new(
-        name,
-        TwoPiSDME::new(<Frame as std::str::FromStr>::from_str(frame).unwrap()),
-    )
-    .into()
-}
-#[pyfunction]
-#[pyo3(name = "ThreePiSDME", signature = (name, frame="helicity"))]
-fn three_pi_sdme(name: &str, frame: &str) -> PyAmpOp {
-    Amplitude::new(
-        name,
-        ThreePiSDME::new(<Frame as std::str::FromStr>::from_str(frame).unwrap()),
-    )
-    .into()
-}
-
-pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(two_pi_sdme, m)?)?;
-    m.add_function(wrap_pyfunction!(three_pi_sdme, m)?)?;
-    Ok(())
 }

@@ -1,4 +1,3 @@
-use pyo3::prelude::*;
 use rayon::prelude::*;
 
 use crate::{
@@ -6,15 +5,12 @@ use crate::{
     prelude::{Dataset, Event, Model},
 };
 
-#[pyclass]
 #[derive(Clone)]
 pub struct Manager {
     model: Model,
     dataset: Dataset,
 }
-#[pymethods]
 impl Manager {
-    #[new]
     pub fn new(model: &Model, dataset: &Dataset) -> Self {
         let mut model = model.clone();
         model.load(dataset);
@@ -23,12 +19,6 @@ impl Manager {
             dataset: dataset.clone(),
         }
     }
-    #[pyo3(name = "__call__")]
-    fn pyevaluate(&self, parameters: Vec<f64>) -> Vec<f64> {
-        self.evaluate(&parameters)
-    }
-}
-impl Manager {
     pub fn evaluate(&self, parameters: &[f64]) -> Vec<f64> {
         self.dataset
             .events
@@ -39,21 +29,17 @@ impl Manager {
     }
 }
 
-#[pyclass]
 pub struct ExtendedLogLikelihood {
     data_manager: Manager,
     mc_manager: Manager,
 }
-#[pymethods]
 impl ExtendedLogLikelihood {
-    #[new]
     pub const fn new(data_manager: Manager, mc_manager: Manager) -> Self {
         Self {
             data_manager,
             mc_manager,
         }
     }
-    #[pyo3(name = "__call__", signature = (parameters, *, num_threads = 1))]
     #[allow(clippy::suboptimal_flops)]
     pub fn evaluate(&self, parameters: Vec<f64>, num_threads: usize) -> f64 {
         create_pool(num_threads).unwrap().install(|| {
@@ -77,10 +63,4 @@ impl ExtendedLogLikelihood {
             -2.0 * ln_l
         })
     }
-}
-
-pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<Manager>()?;
-    m.add_class::<ExtendedLogLikelihood>()?;
-    Ok(())
 }
