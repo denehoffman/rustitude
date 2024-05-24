@@ -8,4 +8,4 @@ build:
 develop:
   source .venv/bin/activate
   cargo update -q
-  maturin develop -r
+  maturin develop -r -m py-rustitude/Cargo.toml

@@ -1,10 +1,20 @@
 use pyo3::prelude::*;
 use rustitude_core::amplitude as rust;
-use std::mem::transmute;
 
 #[pyclass]
 #[derive(Clone)]
 pub struct Parameter(rust::Parameter);
+
+impl From<rust::Parameter> for Parameter {
+    fn from(par: rust::Parameter) -> Self {
+        Parameter(par)
+    }
+}
+impl From<Parameter> for rust::Parameter {
+    fn from(par: Parameter) -> Self {
+        par.0
+    }
+}
 
 #[pymethods]
 impl Parameter {
@@ -71,14 +81,30 @@ impl AmpOp {
 }
 
 impl From<rust::AmpOp> for AmpOp {
-    fn from(r_ampop: rust::AmpOp) -> Self {
-        unsafe { transmute(r_ampop) }
+    fn from(ampop: rust::AmpOp) -> Self {
+        AmpOp(ampop)
+    }
+}
+impl From<AmpOp> for rust::AmpOp {
+    fn from(ampop: AmpOp) -> Self {
+        ampop.0
     }
 }
 
 #[pyclass]
 #[derive(Clone)]
 pub struct Amplitude(rust::Amplitude);
+
+impl From<rust::Amplitude> for Amplitude {
+    fn from(amp: rust::Amplitude) -> Self {
+        Amplitude(amp)
+    }
+}
+impl From<Amplitude> for rust::Amplitude {
+    fn from(amp: Amplitude) -> Self {
+        amp.0
+    }
+}
 
 impl Amplitude {
     pub fn new(name: &str, node: impl rust::Node + 'static) -> Self {
@@ -88,7 +114,7 @@ impl Amplitude {
 
 impl From<Amplitude> for AmpOp {
     fn from(amp: Amplitude) -> Self {
-        unsafe { transmute(rust::AmpOp::Amplitude(transmute(amp))) }
+        rust::AmpOp::Amplitude(amp.into()).into()
     }
 }
 
@@ -122,19 +148,40 @@ impl Amplitude {
 #[derive(Clone)]
 pub struct Model(rust::Model);
 
+impl From<rust::Model> for Model {
+    fn from(model: rust::Model) -> Self {
+        Model(model)
+    }
+}
+impl From<Model> for rust::Model {
+    fn from(model: Model) -> Self {
+        model.0
+    }
+}
+
 #[pymethods]
 impl Model {
     #[getter]
     fn root(&self) -> AmpOp {
-        unsafe { transmute(self.0.root.clone()) }
+        self.0.root.clone().into()
     }
     #[getter]
     fn amplitudes(&self) -> Vec<Amplitude> {
-        unsafe { transmute(self.0.amplitudes.clone()) }
+        self.0
+            .amplitudes
+            .clone()
+            .into_iter()
+            .map(Amplitude::from)
+            .collect()
     }
     #[getter]
     fn parameters(&self) -> Vec<Parameter> {
-        unsafe { transmute(self.0.parameters.clone()) }
+        self.0
+            .parameters
+            .clone()
+            .into_iter()
+            .map(Parameter::from)
+            .collect()
     }
     #[getter]
     fn bounds(&self) -> Vec<(f64, f64)> {
@@ -150,10 +197,13 @@ impl Model {
     }
     #[new]
     fn new(root: AmpOp) -> Self {
-        unsafe { Self(rust::Model::new(transmute(root))) }
+        Self(rust::Model::new(root.into()))
     }
-    fn get_parameter(&self, amplitude_name: &str, parameter_name: &str) -> Option<Parameter> {
-        unsafe { transmute(self.0.get_parameter(amplitude_name, parameter_name)) }
+    fn get_parameter(&self, amplitude_name: &str, parameter_name: &str) -> PyResult<Parameter> {
+        self.0
+            .get_parameter(amplitude_name, parameter_name)
+            .map(Parameter::from)
+            .map_err(PyErr::from)
     }
     fn print_parameters(&self) {
         self.0.print_parameters()

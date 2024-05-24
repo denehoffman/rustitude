@@ -4,11 +4,22 @@ use pyo3::prelude::*;
 use rayon::prelude::*;
 use rustitude_core::dataset as rust;
 use rustitude_core::four_momentum as rust_fm;
-use std::{collections::HashMap, mem::transmute};
+use std::collections::HashMap;
 
 #[pyclass]
 #[derive(Debug, Default, Clone)]
 pub struct Event(rust::Event);
+
+impl From<rust::Event> for Event {
+    fn from(event: rust::Event) -> Self {
+        Event(event)
+    }
+}
+impl From<Event> for rust::Event {
+    fn from(event: Event) -> Self {
+        event.0
+    }
+}
 
 #[pymethods]
 impl Event {
@@ -22,15 +33,20 @@ impl Event {
     }
     #[getter]
     fn beam_p4(&self) -> FourMomentum {
-        unsafe { transmute(self.0.beam_p4) }
+        self.0.beam_p4.into()
     }
     #[getter]
     fn recoil_p4(&self) -> FourMomentum {
-        unsafe { transmute(self.0.recoil_p4) }
+        self.0.recoil_p4.into()
     }
     #[getter]
     fn daughter_p4s(&self) -> Vec<FourMomentum> {
-        unsafe { transmute(self.0.daughter_p4s.clone()) }
+        self.0
+            .daughter_p4s
+            .clone()
+            .into_iter()
+            .map(FourMomentum::from)
+            .collect()
     }
     #[getter]
     fn eps(&self) -> [f64; 3] {
@@ -48,11 +64,22 @@ impl Event {
 #[derive(Default, Debug, Clone)]
 pub struct Dataset(rust::Dataset);
 
+impl From<rust::Dataset> for Dataset {
+    fn from(dataset: rust::Dataset) -> Self {
+        Dataset(dataset)
+    }
+}
+impl From<Dataset> for rust::Dataset {
+    fn from(dataset: Dataset) -> Self {
+        dataset.0
+    }
+}
+
 #[pymethods]
 impl Dataset {
     #[getter]
     fn events(&self) -> Vec<Event> {
-        unsafe { transmute(self.0.events()) }
+        self.0.events().into_iter().map(Event::from).collect()
     }
     #[getter]
     fn weights(&self) -> Vec<f64> {
@@ -72,12 +99,17 @@ impl Dataset {
         p1: Option<Vec<usize>>,
         p2: Option<Vec<usize>>,
     ) -> (Vec<Self>, Self, Self) {
-        unsafe { transmute(self.0.split_m(range, bins, p1, p2)) }
+        let (binned_data, underflow, overflow) = self.0.split_m(range, bins, p1, p2);
+        (
+            binned_data.into_iter().map(Dataset::from).collect(),
+            underflow.into(),
+            overflow.into(),
+        )
     }
 
     #[staticmethod]
     fn from_events(events: Vec<Event>) -> Self {
-        unsafe { transmute(rust::Dataset::from_events(transmute(events))) }
+        rust::Dataset::from_events(events.into_iter().map(rust::Event::from).collect()).into()
     }
 
     #[staticmethod]
@@ -163,23 +195,33 @@ impl Dataset {
 
     #[staticmethod]
     fn from_parquet(path: &str) -> PyResult<Self> {
-        unsafe { transmute(rust::Dataset::from_parquet(path).map_err(PyErr::from)) }
+        rust::Dataset::from_parquet(path)
+            .map(Dataset::from)
+            .map_err(PyErr::from)
     }
     #[staticmethod]
     fn from_parquet_eps_in_beam(path: &str) -> PyResult<Self> {
-        unsafe { transmute(rust::Dataset::from_parquet_eps_in_beam(path).map_err(PyErr::from)) }
+        rust::Dataset::from_parquet_eps_in_beam(path)
+            .map(Dataset::from)
+            .map_err(PyErr::from)
     }
     #[staticmethod]
     fn from_parquet_with_eps(path: &str, eps: Vec<f64>) -> PyResult<Self> {
-        unsafe { transmute(rust::Dataset::from_parquet_with_eps(path, eps).map_err(PyErr::from)) }
+        rust::Dataset::from_parquet_with_eps(path, eps)
+            .map(Dataset::from)
+            .map_err(PyErr::from)
     }
     #[staticmethod]
     fn from_parquet_unpolarized(path: &str) -> PyResult<Self> {
-        unsafe { transmute(rust::Dataset::from_parquet_unpolarized(path).map_err(PyErr::from)) }
+        rust::Dataset::from_parquet_unpolarized(path)
+            .map(Dataset::from)
+            .map_err(PyErr::from)
     }
     #[staticmethod]
     fn from_root(path: &str) -> PyResult<Self> {
-        unsafe { transmute(rust::Dataset::from_root(path).map_err(PyErr::from)) }
+        rust::Dataset::from_root(path)
+            .map(Dataset::from)
+            .map_err(PyErr::from)
     }
 }
 

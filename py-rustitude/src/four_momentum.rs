@@ -1,10 +1,20 @@
 use pyo3::prelude::*;
 use rustitude_core::four_momentum as rust;
-use std::mem::transmute;
 
 #[pyclass]
 #[derive(Debug, Clone, PartialEq, Copy, Default)]
 pub struct FourMomentum(rust::FourMomentum);
+
+impl From<FourMomentum> for rust::FourMomentum {
+    fn from(p4: FourMomentum) -> Self {
+        p4.0
+    }
+}
+impl From<rust::FourMomentum> for FourMomentum {
+    fn from(p4: rust::FourMomentum) -> Self {
+        FourMomentum(p4)
+    }
+}
 
 #[pymethods]
 impl FourMomentum {
@@ -43,14 +53,14 @@ impl FourMomentum {
     fn m2(&self) -> f64 {
         self.0.m2()
     }
-    fn boost_along(&self, other: &Self) -> Self {
-        unsafe { transmute(self.0.boost_along(transmute(other))) }
+    fn boost_along(&self, other: Self) -> Self {
+        self.0.boost_along(&other.into()).into()
     }
     fn __add__(&self, other: Self) -> Self {
-        unsafe { transmute(self.0 + other.0) }
+        (self.0 + other.0).into()
     }
     fn __sub__(&self, other: Self) -> Self {
-        unsafe { transmute(self.0 - other.0) }
+        (self.0 - other.0).into()
     }
 }
 

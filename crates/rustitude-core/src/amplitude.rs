@@ -74,7 +74,6 @@ impl Display for Parameter {
 /// Creates a wrapped [`AmpOp`] which can be registered by a [`crate::amplitude::Model`].
 ///
 /// This macro is a convenience method which takes a name and a [`Node`] and generates a new [`AmpOp`].
-/// ```
 #[macro_export]
 macro_rules! amplitude {
     ($name:expr, $node:expr) => {{
