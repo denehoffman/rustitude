@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.3.0 (2024-05-24)
+
+### Documentation
+
+ - <csr-id-45107c4c719503310ac171186b016212bf4d5370/> Update README.md
+
+### New Features
+
+ - <csr-id-6955773a3e96890efa4573d5c7bc355bb23a07e6/> add RustitudeError and remove unwraps, error handling should work in python as well
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 4 commits contributed to the release.
+ - 8 days passed between releases.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Update README.md ([`45107c4`](https://github.com/denehoffman/rustitude/commit/45107c4c719503310ac171186b016212bf4d5370))
+    - Merge pull request #3 from denehoffman/python_reorg ([`467caac`](https://github.com/denehoffman/rustitude/commit/467caacc688f94c074d28be1ec54a422d8d9ebc0))
+    - Add RustitudeError and remove unwraps, error handling should work in python as well ([`6955773`](https://github.com/denehoffman/rustitude/commit/6955773a3e96890efa4573d5c7bc355bb23a07e6))
+    - Move all pyo3 code to the py-rustitude crate ([`9bcdb46`](https://github.com/denehoffman/rustitude/commit/9bcdb4615fdb4df5b4566673fbed955930926b7c))
+</details>
+
 ## v0.2.2 (2024-05-16)
 
 <csr-id-0e94ec45850cb6129924b2be27793a17c51b03c2/>
@@ -21,7 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 3 commits contributed to the release.
+ - 4 commits contributed to the release.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -32,6 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release rustitude-core v1.0.1, rustitude-gluex v0.2.2, rustitude v0.4.3 ([`fe0c603`](https://github.com/denehoffman/rustitude/commit/fe0c6036d4816587b1d65ae2697f3b241cfe579c))
     - Release rustitude-gluex v0.2.2, rustitude v0.4.3 ([`0062542`](https://github.com/denehoffman/rustitude/commit/006254211c6dda1924cede7818c94ab4dcf1f49a))
     - Get rid of extra git-files and media ([`0e94ec4`](https://github.com/denehoffman/rustitude/commit/0e94ec45850cb6129924b2be27793a17c51b03c2))
     - Update amplitudes to account for changes in core ([`77054e3`](https://github.com/denehoffman/rustitude/commit/77054e334d90077decd54d4f970400efa1a31f47))

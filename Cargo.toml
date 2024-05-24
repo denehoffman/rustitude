@@ -13,9 +13,9 @@ homepage = "https://github.com/denehoffman/rustitude/"
 license-file = "LICENSE"
 
 [workspace.dependencies]
-rustitude = { version = "0.4.3", path = "crates/rustitude", default-features = false }
-rustitude-core = { version = "1.0.1", path = "crates/rustitude-core", default-features = false }
-rustitude-gluex = { version = "0.2.2", path = "crates/rustitude-gluex", default-features = false }
+rustitude = { version = "0.5.0", path = "crates/rustitude", default-features = false }
+rustitude-core = { version = "1.1.0", path = "crates/rustitude-core", default-features = false }
+rustitude-gluex = { version = "0.3.0", path = "crates/rustitude-gluex", default-features = false }
 rayon = { version = "1.10.0" }
 approx = { version = "0.5.1", features = ["num-complex"] }
 nalgebra = "0.32.5"

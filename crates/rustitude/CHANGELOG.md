@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.0 (2024-05-24)
+
+### New Features
+
+ - <csr-id-6955773a3e96890efa4573d5c7bc355bb23a07e6/> add RustitudeError and remove unwraps, error handling should work in python as well
+ - <csr-id-b495892674a3fad4937de6e830241230b52880c3/> update benchmark and itertools dep, which deprecated group_by -> chunk_by
+ - <csr-id-8b1eee79d545caaca39b8b38be1f00f7762adcda/> make Model::new public to allow for proper benchmarking, and add divan benchmark for basic kmatrix
+
+### Bug Fixes
+
+ - <csr-id-6a67ab1c8b98ea21a00a3098dfcf150ae6baa228/> switch from divan to criterion because I don't trust the threaded benchmarks
+ - <csr-id-36236e54eb26dbe0015482feb60e65ce4e0cb698/> didn't need an extra pyproject.toml
+
+### Test
+
+ - <csr-id-a306fc4c47acc701aae32104ea2e017d2a4f97cc/> add convert script and update benchmark to use a standardized test file
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 8 commits contributed to the release over the course of 2 calendar days.
+ - 8 days passed between releases.
+ - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge pull request #3 from denehoffman/python_reorg ([`467caac`](https://github.com/denehoffman/rustitude/commit/467caacc688f94c074d28be1ec54a422d8d9ebc0))
+    - Add RustitudeError and remove unwraps, error handling should work in python as well ([`6955773`](https://github.com/denehoffman/rustitude/commit/6955773a3e96890efa4573d5c7bc355bb23a07e6))
+    - Add convert script and update benchmark to use a standardized test file ([`a306fc4`](https://github.com/denehoffman/rustitude/commit/a306fc4c47acc701aae32104ea2e017d2a4f97cc))
+    - Merge pull request #2 from denehoffman/create_benchmarks ([`1297b92`](https://github.com/denehoffman/rustitude/commit/1297b9275dfac49f2591573b46438ff588a77c51))
+    - Switch from divan to criterion because I don't trust the threaded benchmarks ([`6a67ab1`](https://github.com/denehoffman/rustitude/commit/6a67ab1c8b98ea21a00a3098dfcf150ae6baa228))
+    - Didn't need an extra pyproject.toml ([`36236e5`](https://github.com/denehoffman/rustitude/commit/36236e54eb26dbe0015482feb60e65ce4e0cb698))
+    - Update benchmark and itertools dep, which deprecated group_by -> chunk_by ([`b495892`](https://github.com/denehoffman/rustitude/commit/b495892674a3fad4937de6e830241230b52880c3))
+    - Make Model::new public to allow for proper benchmarking, and add divan benchmark for basic kmatrix ([`8b1eee7`](https://github.com/denehoffman/rustitude/commit/8b1eee79d545caaca39b8b38be1f00f7762adcda))
+</details>
+
 ## 0.4.3 (2024-05-16)
 
 <csr-id-e4399efe07ea8e66d9769a067c55c72d9dc09c69/>
@@ -22,7 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 3 commits contributed to the release.
+ - 4 commits contributed to the release.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -33,6 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release rustitude-core v1.0.1, rustitude-gluex v0.2.2, rustitude v0.4.3 ([`fe0c603`](https://github.com/denehoffman/rustitude/commit/fe0c6036d4816587b1d65ae2697f3b241cfe579c))
     - Release rustitude-gluex v0.2.2, rustitude v0.4.3 ([`0062542`](https://github.com/denehoffman/rustitude/commit/006254211c6dda1924cede7818c94ab4dcf1f49a))
     - Get rid of extra git-files and media ([`0e94ec4`](https://github.com/denehoffman/rustitude/commit/0e94ec45850cb6129924b2be27793a17c51b03c2))
     - This is no longer a python crate ([`e4399ef`](https://github.com/denehoffman/rustitude/commit/e4399efe07ea8e66d9769a067c55c72d9dc09c69))

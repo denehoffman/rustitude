@@ -5,7 +5,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.1.0 (2024-05-24)
+
+### Documentation
+
+ - <csr-id-7867bc0bf9c47203f94c8720a1e84d6e86ed159d/> Update README.md
+
+### New Features
+
+ - <csr-id-d2a94a57466c0b2556850315b8902cf9528598de/> additional API so python interactions with managers can actually modify the amplitudes they manage
+ - <csr-id-6955773a3e96890efa4573d5c7bc355bb23a07e6/> add RustitudeError and remove unwraps, error handling should work in python as well
+ - <csr-id-b495892674a3fad4937de6e830241230b52880c3/> update benchmark and itertools dep, which deprecated group_by -> chunk_by
+ - <csr-id-8b1eee79d545caaca39b8b38be1f00f7762adcda/> make Model::new public to allow for proper benchmarking, and add divan benchmark for basic kmatrix
+
+### Bug Fixes
+
+ - <csr-id-dba3b5bbd9b93622c32e6042062d75da972c073e/> remove unsafe transmutes, they weren't working properly and probably aren't needed anyway
+ - <csr-id-14359c9e7af9a155c1fe64e7f809f3a4771c5e1f/> pass model and dataset to manager as reference to avoid issues using the model later, might change the way the dataset is cloned in the future
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 10 commits contributed to the release over the course of 2 calendar days.
+ - 8 days passed between releases.
+ - 7 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Update README.md ([`7867bc0`](https://github.com/denehoffman/rustitude/commit/7867bc0bf9c47203f94c8720a1e84d6e86ed159d))
+    - Merge pull request #3 from denehoffman/python_reorg ([`467caac`](https://github.com/denehoffman/rustitude/commit/467caacc688f94c074d28be1ec54a422d8d9ebc0))
+    - Additional API so python interactions with managers can actually modify the amplitudes they manage ([`d2a94a5`](https://github.com/denehoffman/rustitude/commit/d2a94a57466c0b2556850315b8902cf9528598de))
+    - Remove unsafe transmutes, they weren't working properly and probably aren't needed anyway ([`dba3b5b`](https://github.com/denehoffman/rustitude/commit/dba3b5bbd9b93622c32e6042062d75da972c073e))
+    - Add RustitudeError and remove unwraps, error handling should work in python as well ([`6955773`](https://github.com/denehoffman/rustitude/commit/6955773a3e96890efa4573d5c7bc355bb23a07e6))
+    - Move all pyo3 code to the py-rustitude crate ([`9bcdb46`](https://github.com/denehoffman/rustitude/commit/9bcdb4615fdb4df5b4566673fbed955930926b7c))
+    - Merge pull request #2 from denehoffman/create_benchmarks ([`1297b92`](https://github.com/denehoffman/rustitude/commit/1297b9275dfac49f2591573b46438ff588a77c51))
+    - Update benchmark and itertools dep, which deprecated group_by -> chunk_by ([`b495892`](https://github.com/denehoffman/rustitude/commit/b495892674a3fad4937de6e830241230b52880c3))
+    - Pass model and dataset to manager as reference to avoid issues using the model later, might change the way the dataset is cloned in the future ([`14359c9`](https://github.com/denehoffman/rustitude/commit/14359c9e7af9a155c1fe64e7f809f3a4771c5e1f))
+    - Make Model::new public to allow for proper benchmarking, and add divan benchmark for basic kmatrix ([`8b1eee7`](https://github.com/denehoffman/rustitude/commit/8b1eee79d545caaca39b8b38be1f00f7762adcda))
+</details>
+
 ## 1.0.1 (2024-05-16)
+
+<csr-id-b08b3b8c8c4699a65dabdac5ff4b19fe50f511aa/>
+<csr-id-9089c84e481124ff764b24f42507ab14913fef07/>
+<csr-id-0e94ec45850cb6129924b2be27793a17c51b03c2/>
 
 ### Documentation
 
@@ -26,7 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 6 commits contributed to the release.
+ - 7 commits contributed to the release.
  - 1 day passed between releases.
  - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -38,6 +88,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release rustitude-core v1.0.1, rustitude-gluex v0.2.2, rustitude v0.4.3 ([`fe0c603`](https://github.com/denehoffman/rustitude/commit/fe0c6036d4816587b1d65ae2697f3b241cfe579c))
     - Get rid of extra git-files and media ([`0e94ec4`](https://github.com/denehoffman/rustitude/commit/0e94ec45850cb6129924b2be27793a17c51b03c2))
     - Update readme link ([`8824d4c`](https://github.com/denehoffman/rustitude/commit/8824d4c02278fd01de0050be3c3b9c3781e39687))
     - Change Amplitude such that new makes a new Amplitude, add conversion traits to AmpOp and PyAmpOp, and fix amplitude! macro ([`b08b3b8`](https://github.com/denehoffman/rustitude/commit/b08b3b8c8c4699a65dabdac5ff4b19fe50f511aa))
