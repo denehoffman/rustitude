@@ -1,6 +1,6 @@
 [package]
 name = "py-rustitude"
-version = { workspace = true }
+version = "0.4.3"
 edition = "2021"
 readme = { workspace = true }
 license-file = { workspace = true }

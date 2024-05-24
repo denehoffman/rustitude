@@ -5,7 +5,62 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.3 (2024-05-24)
+
+### Chore
+
+ - <csr-id-800db450c6743d409c44b1dff74263288d63d8c1/> bump python library version
+ - <csr-id-9d854af5046ac30aacc6c369716337a863b4279a/> bump python library version
+
+### New Features
+
+ - <csr-id-d2a94a57466c0b2556850315b8902cf9528598de/> additional API so python interactions with managers can actually modify the amplitudes they manage
+ - <csr-id-6955773a3e96890efa4573d5c7bc355bb23a07e6/> add RustitudeError and remove unwraps, error handling should work in python as well
+
+### Bug Fixes
+
+ - <csr-id-dba3b5bbd9b93622c32e6042062d75da972c073e/> remove unsafe transmutes, they weren't working properly and probably aren't needed anyway
+ - <csr-id-b6c8e24db3376ebabbe3fc113712dc0f33072caa/> fix py-rustitude dependencies
+ - <csr-id-174a6f540fa8f2b0292a9657e87acbe65edcaf71/> readmes and licenses suck
+
+### Refactor
+
+ - <csr-id-9089c84e481124ff764b24f42507ab14913fef07/> major move required to have rustitude function properly as a Rust crate. I set this up very wrong the first time
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 10 commits contributed to the release over the course of 8 calendar days.
+ - 8 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge pull request #3 from denehoffman/python_reorg ([`467caac`](https://github.com/denehoffman/rustitude/commit/467caacc688f94c074d28be1ec54a422d8d9ebc0))
+    - Additional API so python interactions with managers can actually modify the amplitudes they manage ([`d2a94a5`](https://github.com/denehoffman/rustitude/commit/d2a94a57466c0b2556850315b8902cf9528598de))
+    - Remove unsafe transmutes, they weren't working properly and probably aren't needed anyway ([`dba3b5b`](https://github.com/denehoffman/rustitude/commit/dba3b5bbd9b93622c32e6042062d75da972c073e))
+    - Add RustitudeError and remove unwraps, error handling should work in python as well ([`6955773`](https://github.com/denehoffman/rustitude/commit/6955773a3e96890efa4573d5c7bc355bb23a07e6))
+    - Move all pyo3 code to the py-rustitude crate ([`9bcdb46`](https://github.com/denehoffman/rustitude/commit/9bcdb4615fdb4df5b4566673fbed955930926b7c))
+    - Bump python library version ([`800db45`](https://github.com/denehoffman/rustitude/commit/800db450c6743d409c44b1dff74263288d63d8c1))
+    - Fix py-rustitude dependencies ([`b6c8e24`](https://github.com/denehoffman/rustitude/commit/b6c8e24db3376ebabbe3fc113712dc0f33072caa))
+    - Readmes and licenses suck ([`174a6f5`](https://github.com/denehoffman/rustitude/commit/174a6f540fa8f2b0292a9657e87acbe65edcaf71))
+    - Bump python library version ([`9d854af`](https://github.com/denehoffman/rustitude/commit/9d854af5046ac30aacc6c369716337a863b4279a))
+    - Major move required to have rustitude function properly as a Rust crate. I set this up very wrong the first time ([`9089c84`](https://github.com/denehoffman/rustitude/commit/9089c84e481124ff764b24f42507ab14913fef07))
+</details>
+
 ## 0.4.1 (2024-05-15)
+
+<csr-id-9617a27322460b378fb022ef28561f31197fc86f/>
+<csr-id-64ec5097cc99eb9bb6d73376e6d3b2788f637d9d/>
+<csr-id-78b96b94097670af64886abb84ed263048e91e62/>
+<csr-id-8f2f28c972c20c0b8cef2869ab08fc4abaec5cf7/>
+<csr-id-097311224630f5a4d98381a11d2917ca6378ad46/>
 
 ### Bug Fixes
 
@@ -21,29 +76,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Refactor
 
  - <csr-id-097311224630f5a4d98381a11d2917ca6378ad46/> move rustitude into the crates directory and add to workspace
-
-### Commit Statistics
-
-<csr-read-only-do-not-edit/>
-
- - 6 commits contributed to the release over the course of 1 calendar day.
- - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
- - 0 issues like '(#ID)' were seen in commit messages
-
-### Commit Details
-
-<csr-read-only-do-not-edit/>
-
-<details><summary>view details</summary>
-
- * **Uncategorized**
-    - Add package info into workspace ([`740a018`](https://github.com/denehoffman/rustitude/commit/740a0186ae22bdab87f514a5e035f3917a531c86))
-    - Move rustitude into the crates directory and add to workspace ([`0973112`](https://github.com/denehoffman/rustitude/commit/097311224630f5a4d98381a11d2917ca6378ad46))
-    - Merge rustitude-core to crates subdirectory ([`9617a27`](https://github.com/denehoffman/rustitude/commit/9617a27322460b378fb022ef28561f31197fc86f))
-    - More Cargo.lock and readme updates ([`64ec509`](https://github.com/denehoffman/rustitude/commit/64ec5097cc99eb9bb6d73376e6d3b2788f637d9d))
-    - Update Cargo.tomls ([`78b96b9`](https://github.com/denehoffman/rustitude/commit/78b96b94097670af64886abb84ed263048e91e62))
-    - Move rustitude to crates subdirectory ([`8f2f28c`](https://github.com/denehoffman/rustitude/commit/8f2f28c972c20c0b8cef2869ab08fc4abaec5cf7))
-</details>
 
 ## 0.4.0 (2024-05-15)
 
