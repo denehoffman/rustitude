@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.5.0 (2024-05-24)
 
+<csr-id-a306fc4c47acc701aae32104ea2e017d2a4f97cc/>
+
 ### New Features
 
  - <csr-id-6955773a3e96890efa4573d5c7bc355bb23a07e6/> add RustitudeError and remove unwraps, error handling should work in python as well
@@ -17,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  - <csr-id-6a67ab1c8b98ea21a00a3098dfcf150ae6baa228/> switch from divan to criterion because I don't trust the threaded benchmarks
  - <csr-id-36236e54eb26dbe0015482feb60e65ce4e0cb698/> didn't need an extra pyproject.toml
+ - <csr-id-405ed0cb2ad417ccf0041a49ce6fbd6b6693539c/> bump versions
 
 ### Test
 
@@ -26,9 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 8 commits contributed to the release over the course of 2 calendar days.
+ - 9 commits contributed to the release over the course of 2 calendar days.
  - 8 days passed between releases.
- - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 7 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
 ### Commit Details
@@ -38,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Bump versions ([`405ed0c`](https://github.com/denehoffman/rustitude/commit/405ed0cb2ad417ccf0041a49ce6fbd6b6693539c))
     - Merge pull request #3 from denehoffman/python_reorg ([`467caac`](https://github.com/denehoffman/rustitude/commit/467caacc688f94c074d28be1ec54a422d8d9ebc0))
     - Add RustitudeError and remove unwraps, error handling should work in python as well ([`6955773`](https://github.com/denehoffman/rustitude/commit/6955773a3e96890efa4573d5c7bc355bb23a07e6))
     - Add convert script and update benchmark to use a standardized test file ([`a306fc4`](https://github.com/denehoffman/rustitude/commit/a306fc4c47acc701aae32104ea2e017d2a4f97cc))

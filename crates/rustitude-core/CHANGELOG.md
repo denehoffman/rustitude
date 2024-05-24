@@ -22,14 +22,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  - <csr-id-dba3b5bbd9b93622c32e6042062d75da972c073e/> remove unsafe transmutes, they weren't working properly and probably aren't needed anyway
  - <csr-id-14359c9e7af9a155c1fe64e7f809f3a4771c5e1f/> pass model and dataset to manager as reference to avoid issues using the model later, might change the way the dataset is cloned in the future
+ - <csr-id-405ed0cb2ad417ccf0041a49ce6fbd6b6693539c/> bump versions
 
 ### Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
- - 10 commits contributed to the release over the course of 2 calendar days.
+ - 11 commits contributed to the release over the course of 2 calendar days.
  - 8 days passed between releases.
- - 7 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 8 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
 ### Commit Details
@@ -39,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Bump versions ([`405ed0c`](https://github.com/denehoffman/rustitude/commit/405ed0cb2ad417ccf0041a49ce6fbd6b6693539c))
     - Update README.md ([`7867bc0`](https://github.com/denehoffman/rustitude/commit/7867bc0bf9c47203f94c8720a1e84d6e86ed159d))
     - Merge pull request #3 from denehoffman/python_reorg ([`467caac`](https://github.com/denehoffman/rustitude/commit/467caacc688f94c074d28be1ec54a422d8d9ebc0))
     - Additional API so python interactions with managers can actually modify the amplitudes they manage ([`d2a94a5`](https://github.com/denehoffman/rustitude/commit/d2a94a57466c0b2556850315b8902cf9528598de))
