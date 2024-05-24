@@ -1,7 +1,6 @@
 use itertools::Itertools;
 use num::complex::Complex64;
 use parking_lot::RwLock;
-use pyo3::prelude::*;
 use rayon::prelude::*;
 use std::{
     collections::HashSet,
@@ -9,35 +8,22 @@ use std::{
     ops::{Add, Mul},
     sync::Arc,
 };
-use thiserror::Error;
 
-use crate::dataset::{Dataset, Event};
+use crate::{
+    dataset::{Dataset, Event},
+    errors::RustitudeError,
+};
 
-#[pyclass]
 #[derive(Clone)]
 pub struct Parameter {
-    #[pyo3(get)]
     pub amplitude: String,
-    #[pyo3(get)]
     pub name: String,
-    #[pyo3(get)]
-    index: Option<usize>,
-    #[pyo3(get)]
-    fixed_index: Option<usize>,
-    #[pyo3(get)]
-    initial: f64,
-    #[pyo3(get)]
-    bounds: (f64, f64),
+    pub index: Option<usize>,
+    pub fixed_index: Option<usize>,
+    pub initial: f64,
+    pub bounds: (f64, f64),
 }
-#[pymethods]
 impl Parameter {
-    fn __str__(&self) -> String {
-        format!("{}", self)
-    }
-    fn __repr__(&self) -> String {
-        format!("{:?}", self)
-    }
-    #[new]
     pub fn new(amplitude: &str, name: &str, index: usize) -> Self {
         Self {
             amplitude: amplitude.to_string(),
@@ -88,20 +74,11 @@ impl Display for Parameter {
 /// Creates a wrapped [`AmpOp`] which can be registered by a [`crate::amplitude::Model`].
 ///
 /// This macro is a convenience method which takes a name and a [`Node`] and generates a new [`AmpOp`].
-/// ```
 #[macro_export]
 macro_rules! amplitude {
     ($name:expr, $node:expr) => {{
         Amplitude::new($name, $node).into()
     }};
-}
-
-#[derive(Debug, Clone, Error)]
-pub enum NodeError {
-    #[error("invalid parameter value")]
-    InvalidParameterValue(String),
-    #[error("evaluation error")]
-    EvaluationError(String),
 }
 
 /// A trait which contains all the required methods for a functioning [`Amplitude`].
@@ -167,7 +144,7 @@ pub enum NodeError {
 /// }
 /// impl Node for Ylm {
 ///     fn parameters(&self) -> Vec<String> { vec![] }
-///     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+///     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
 ///         self.1 = dataset.events.read()
 ///             .par_iter()
 ///             .map(|event| {
@@ -189,7 +166,7 @@ pub enum NodeError {
 ///         Ok(())
 ///     }
 ///
-///     fn calculate(&self, _parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+///     fn calculate(&self, _parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
 ///         Ok(self.1[event.index])
 ///     }
 /// }
@@ -201,7 +178,7 @@ pub enum NodeError {
 /// use rustitude_core::prelude::*;
 /// struct ComplexScalar;
 /// impl Node for ComplexScalar {
-///     fn calculate(&self, parameters: &[f64], _event: &Event) -> Result<Complex64, NodeError> {
+///     fn calculate(&self, parameters: &[f64], _event: &Event) -> Result<Complex64, RustitudeError> {
 ///         Ok(Complex64::new(parameters[0], parameters[1]))
 ///     }
 ///
@@ -217,7 +194,7 @@ pub trait Node: Sync + Send {
     /// parameters. For instance, to calculate a spherical harmonic, we don't actually need any
     /// other information than what is contained in the [`Event`], so we can calculate a spherical
     /// harmonic for every event once and then retrieve the data in the [`Node::calculate`] method.
-    fn precalculate(&mut self, _dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, _dataset: &Dataset) -> Result<(), RustitudeError> {
         Ok(())
     }
 
@@ -229,7 +206,7 @@ pub trait Node: Sync + Send {
     /// a slice of [`f64`]s. This slice is guaranteed to have the same length and order as
     /// specified in the [`Node::parameters`] method, or it will be empty if that method returns
     /// [`None`].
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError>;
+    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError>;
 
     /// A method which specifies the number and order of parameters used by the [`Node`].
     ///
@@ -239,40 +216,6 @@ pub trait Node: Sync + Send {
     /// are expected to be given as input to the [`Node::calculate`] method.
     fn parameters(&self) -> Vec<String> {
         vec![]
-    }
-}
-
-#[pyclass(name = "AmpOp")]
-#[derive(Clone)]
-pub struct PyAmpOp {
-    pub op: AmpOp,
-}
-
-impl From<AmpOp> for PyAmpOp {
-    fn from(value: AmpOp) -> Self {
-        Self { op: value }
-    }
-}
-
-#[pymethods]
-impl PyAmpOp {
-    pub fn print_tree(&self) {
-        self.op.print_tree()
-    }
-    pub fn real(&self) -> Self {
-        self.op.real().into()
-    }
-    pub fn imag(&self) -> Self {
-        self.op.imag().into()
-    }
-    pub fn norm_sqr(&self) -> Self {
-        self.op.norm_sqr().into()
-    }
-    pub fn __add__(&self, other: Self) -> Self {
-        (self.op.clone() + other.op).into()
-    }
-    pub fn __mul__(&self, other: Self) -> Self {
-        (self.op.clone() * other.op).into()
     }
 }
 
@@ -557,21 +500,16 @@ impl Mul for &AmpOp {
 /// in an analysis, and makes each [`Node`]'s parameters unique.
 ///
 /// This is mostly used interally as an intermediate step to an [`AmpOp`].
-#[pyclass]
 #[derive(Clone)]
 pub struct Amplitude {
     /// A name which uniquely identifies an [`Amplitude`] within a sum and group.
-    #[pyo3(get)]
     pub name: String,
     /// A [`Node`] which contains all of the operations needed to compute a [`Complex64`] from an
     /// [`Event`] in a [`Dataset`], a [`Vec<f64>`] of parameter values, and possibly some
     /// precomputed values.
     pub node: Arc<RwLock<Box<dyn Node>>>,
-    #[pyo3(get)]
     pub active: bool,
-    #[pyo3(get)]
     pub cache_position: usize,
-    #[pyo3(get)]
     pub parameter_index_start: usize,
 }
 impl Debug for Amplitude {
@@ -593,23 +531,9 @@ impl Display for Amplitude {
         }
     }
 }
-#[pymethods]
-impl Amplitude {
-    fn __str__(&self) -> String {
-        format!("{}", self)
-    }
-    fn __repr__(&self) -> String {
-        format!("{:?}", self)
-    }
-}
 impl From<Amplitude> for AmpOp {
     fn from(amp: Amplitude) -> Self {
         Self::Amplitude(amp)
-    }
-}
-impl From<Amplitude> for PyAmpOp {
-    fn from(amp: Amplitude) -> Self {
-        AmpOp::Amplitude(amp).into()
     }
 }
 impl Amplitude {
@@ -627,17 +551,17 @@ impl Amplitude {
         cache_position: usize,
         parameter_index_start: usize,
         dataset: &Dataset,
-    ) -> Result<(), NodeError> {
+    ) -> Result<(), RustitudeError> {
         self.cache_position = cache_position;
         self.parameter_index_start = parameter_index_start;
         self.precalculate(dataset)
     }
 }
 impl Node for Amplitude {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.node.write().precalculate(dataset)
     }
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         self.node.read().calculate(
             &parameters
                 [self.parameter_index_start..self.parameter_index_start + self.parameters().len()],
@@ -649,30 +573,31 @@ impl Node for Amplitude {
     }
 }
 
-#[pyclass]
 #[derive(Debug, Clone)]
 pub struct Model {
     pub root: AmpOp,
-    #[pyo3(get)]
     pub amplitudes: Vec<Amplitude>,
-    #[pyo3(get)]
     pub parameters: Vec<Parameter>,
 }
 
-#[pymethods]
 impl Model {
-    #[new]
-    fn from_pyampop(root: PyAmpOp) -> Self {
-        Self::new(root.op)
+    pub fn get_amplitude(&self, amplitude_name: &str) -> Result<Amplitude, RustitudeError> {
+        self.amplitudes
+            .iter()
+            .find(|a: &&Amplitude| a.name == amplitude_name)
+            .ok_or_else(|| RustitudeError::AmplitudeNotFoundError(amplitude_name.to_string()))
+            .cloned()
     }
-    #[getter]
-    fn get_root(&self) -> PyResult<PyAmpOp> {
-        Ok(self.root.clone().into())
-    }
-    pub fn get_parameter(&self, amplitude_name: &str, parameter_name: &str) -> Option<Parameter> {
+    pub fn get_parameter(
+        &self,
+        amplitude_name: &str,
+        parameter_name: &str,
+    ) -> Result<Parameter, RustitudeError> {
+        self.get_amplitude(amplitude_name)?;
         self.parameters
             .iter()
             .find(|p: &&Parameter| p.amplitude == amplitude_name && p.name == parameter_name)
+            .ok_or_else(|| RustitudeError::ParameterNotFoundError(parameter_name.to_string()))
             .cloned()
     }
     pub fn print_parameters(&self) {
@@ -700,9 +625,9 @@ impl Model {
         parameter_1: &str,
         amplitude_2: &str,
         parameter_2: &str,
-    ) {
-        let p1 = self.get_parameter(amplitude_1, parameter_1).unwrap();
-        let p2 = self.get_parameter(amplitude_2, parameter_2).unwrap();
+    ) -> Result<(), RustitudeError> {
+        let p1 = self.get_parameter(amplitude_1, parameter_1)?;
+        let p2 = self.get_parameter(amplitude_2, parameter_2)?;
         for par in self.parameters.iter_mut() {
             // None < Some(0)
             match p1.index.cmp(&p2.index) {
@@ -726,10 +651,16 @@ impl Model {
             }
         }
         self.reindex_parameters();
+        Ok(())
     }
 
-    pub fn fix(&mut self, amplitude: &str, parameter: &str, value: f64) {
-        let search_par = self.get_parameter(amplitude, parameter).unwrap();
+    pub fn fix(
+        &mut self,
+        amplitude: &str,
+        parameter: &str,
+        value: f64,
+    ) -> Result<(), RustitudeError> {
+        let search_par = self.get_parameter(amplitude, parameter)?;
         let fixed_index = self.get_min_fixed_index();
         for par in self.parameters.iter_mut() {
             if par.index == search_par.index {
@@ -739,9 +670,10 @@ impl Model {
             }
         }
         self.reindex_parameters();
+        Ok(())
     }
-    pub fn free(&mut self, amplitude: &str, parameter: &str) {
-        let search_par = self.get_parameter(amplitude, parameter).unwrap();
+    pub fn free(&mut self, amplitude: &str, parameter: &str) -> Result<(), RustitudeError> {
+        let search_par = self.get_parameter(amplitude, parameter)?;
         let index = self.get_min_free_index();
         for par in self.parameters.iter_mut() {
             if par.fixed_index == search_par.fixed_index {
@@ -750,9 +682,15 @@ impl Model {
             }
         }
         self.reindex_parameters();
+        Ok(())
     }
-    pub fn set_bounds(&mut self, amplitude: &str, parameter: &str, bounds: (f64, f64)) {
-        let search_par = self.get_parameter(amplitude, parameter).unwrap();
+    pub fn set_bounds(
+        &mut self,
+        amplitude: &str,
+        parameter: &str,
+        bounds: (f64, f64),
+    ) -> Result<(), RustitudeError> {
+        let search_par = self.get_parameter(amplitude, parameter)?;
         if search_par.index.is_some() {
             for par in self.parameters.iter_mut() {
                 if par.index == search_par.index {
@@ -766,9 +704,15 @@ impl Model {
                 }
             }
         }
+        Ok(())
     }
-    pub fn set_initial(&mut self, amplitude: &str, parameter: &str, initial: f64) {
-        let search_par = self.get_parameter(amplitude, parameter).unwrap();
+    pub fn set_initial(
+        &mut self,
+        amplitude: &str,
+        parameter: &str,
+        initial: f64,
+    ) -> Result<(), RustitudeError> {
+        let search_par = self.get_parameter(amplitude, parameter)?;
         if search_par.index.is_some() {
             for par in self.parameters.iter_mut() {
                 if par.index == search_par.index {
@@ -782,6 +726,7 @@ impl Model {
                 }
             }
         }
+        Ok(())
     }
     pub fn get_bounds(&self) -> Vec<(f64, f64)> {
         let any_fixed = if self.any_fixed() { 1 } else { 0 };
@@ -816,8 +761,6 @@ impl Model {
             }
         })
     }
-}
-impl Model {
     pub fn new(root: AmpOp) -> Self {
         let mut amp_names = HashSet::new();
         let amplitudes: Vec<Amplitude> = root
@@ -845,7 +788,7 @@ impl Model {
             parameters,
         }
     }
-    pub fn compute(&self, parameters: &[f64], event: &Event) -> f64 {
+    pub fn compute(&self, parameters: &[f64], event: &Event) -> Result<f64, RustitudeError> {
         let pars: Vec<f64> = self
             .parameters
             .iter()
@@ -857,23 +800,19 @@ impl Model {
             .iter()
             .map(|amp| {
                 if amp.active {
-                    let res = amp.calculate(&pars, event).unwrap(); // unwrap panics if any
-                                                                    // errors occur in calculation
-                    Some(res)
+                    amp.calculate(&pars, event).map(Some)
                 } else {
-                    None
+                    Ok(None)
                 }
             })
-            .collect();
-        let res = self.root.compute(&cache).unwrap(); // unwrap panics if all the
-        res.re
+            .collect::<Result<Vec<Option<Complex64>>, RustitudeError>>()?;
+        Ok(self.root.compute(&cache).unwrap_or_default().re)
     }
-    pub fn load(&mut self, dataset: &Dataset) {
+    pub fn load(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         let mut next_cache_pos = 0;
         let mut parameter_index = 0;
-        self.amplitudes.iter_mut().for_each(|amp| {
-            amp.register(next_cache_pos, parameter_index, dataset)
-                .unwrap(); // unwrap panics if precalculate fails
+        self.amplitudes.iter_mut().try_for_each(|amp| {
+            amp.register(next_cache_pos, parameter_index, dataset)?;
             self.root.walk_mut().iter_mut().for_each(|r_amp| {
                 if r_amp.name == amp.name {
                     r_amp.cache_position = next_cache_pos;
@@ -882,7 +821,8 @@ impl Model {
             });
             next_cache_pos += 1;
             parameter_index += amp.parameters().len();
-        });
+            Ok(())
+        })
     }
     fn group_by_index(&self) -> Vec<Vec<&Parameter>> {
         self.parameters
@@ -941,21 +881,11 @@ impl Node for Scalar {
     fn parameters(&self) -> Vec<String> {
         vec!["value".to_string()]
     }
-    fn calculate(&self, parameters: &[f64], _event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, parameters: &[f64], _event: &Event) -> Result<Complex64, RustitudeError> {
         Ok(Complex64::new(parameters[0], 0.0))
     }
 }
 
-#[pyfunction(name = "Scalar")]
-pub fn py_scalar(name: &str) -> PyAmpOp {
-    //! Creates a named [`Scalar`].
-    //!
-    //! This is a convenience method to generate a [`PyAmpOp`] which is just a single free
-    //! parameter called `value`.
-    //!
-    //! See also: [`scalar`]
-    scalar(name).into()
-}
 pub fn scalar(name: &str) -> AmpOp {
     //! Creates a named [`Scalar`].
     //!
@@ -986,7 +916,7 @@ pub fn scalar(name: &str) -> AmpOp {
 /// - `imag`: The imaginary part of the complex scalar.
 pub struct ComplexScalar;
 impl Node for ComplexScalar {
-    fn calculate(&self, parameters: &[f64], _event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, parameters: &[f64], _event: &Event) -> Result<Complex64, RustitudeError> {
         Ok(Complex64::new(parameters[0], parameters[1]))
     }
 
@@ -995,16 +925,6 @@ impl Node for ComplexScalar {
     }
 }
 
-#[pyfunction(name = "CScalar")]
-pub fn py_cscalar(name: &str) -> PyAmpOp {
-    //! Creates a named [`ComplexScalar`].
-    //!
-    //! This is a convenience method to generate an [`PyAmpOp`] which represents a complex
-    //! value determined by two parameters, `real` and `imag`.
-    //!
-    //! See also: [`cscalar`]
-    cscalar(name).into()
-}
 pub fn cscalar(name: &str) -> AmpOp {
     //! Creates a named [`ComplexScalar`].
     //!
@@ -1036,7 +956,7 @@ pub fn cscalar(name: &str) -> AmpOp {
 /// - `phi`: The phase of the complex scalar.
 pub struct PolarComplexScalar;
 impl Node for PolarComplexScalar {
-    fn calculate(&self, parameters: &[f64], _event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, parameters: &[f64], _event: &Event) -> Result<Complex64, RustitudeError> {
         Ok(parameters[0] * Complex64::cis(parameters[1]))
     }
 
@@ -1045,16 +965,6 @@ impl Node for PolarComplexScalar {
     }
 }
 
-#[pyfunction(name = "PCScalar")]
-pub fn py_pcscalar(name: &str) -> PyAmpOp {
-    //! Creates a named [`PolarComplexScalar`].
-    //!
-    //! This is a convenience method to generate an [`PyAmpOp`] which represents a complex
-    //! value determined by two parameters, `real` and `imag`.
-    //!
-    //! See also: [`pcscalar`]
-    pcscalar(name).into()
-}
 pub fn pcscalar(name: &str) -> AmpOp {
     //! Creates a named [`PolarComplexScalar`].
     //!
@@ -1110,7 +1020,7 @@ impl<F> Node for Piecewise<F>
 where
     F: Fn(&Event) -> f64 + Send + Sync + Copy,
 {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.calculated_variable = dataset
             .events
             .read()
@@ -1120,7 +1030,7 @@ where
         Ok(())
     }
 
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         let val = self.calculated_variable[event.index];
         let opt_i_bin = self.edges.iter().position(|&(l, r)| val >= l && val <= r);
         opt_i_bin.map_or_else(
@@ -1150,21 +1060,4 @@ pub fn piecewise_m(name: &str, bins: usize, range: (f64, f64)) -> AmpOp {
         }),
     )
     .into()
-}
-
-#[pyfunction(name = "PiecewiseM")]
-pub fn py_piecewise_m(name: &str, bins: usize, range: (f64, f64)) -> PyAmpOp {
-    piecewise_m(name, bins, range).into()
-}
-
-pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<PyAmpOp>()?;
-    m.add_class::<Parameter>()?;
-    m.add_class::<Amplitude>()?;
-    m.add_class::<Model>()?;
-    m.add_function(wrap_pyfunction!(py_scalar, m)?)?;
-    m.add_function(wrap_pyfunction!(py_cscalar, m)?)?;
-    m.add_function(wrap_pyfunction!(py_pcscalar, m)?)?;
-    m.add_function(wrap_pyfunction!(py_piecewise_m, m)?)?;
-    Ok(())
 }

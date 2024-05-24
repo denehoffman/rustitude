@@ -1,4 +1,3 @@
-use pyo3::prelude::*;
 use rayon::prelude::*;
 use rustitude_core::prelude::*;
 use sphrs::SHCoordinates;
@@ -21,7 +20,7 @@ impl TwoPiSDME {
 }
 
 impl Node for TwoPiSDME {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.data = dataset
             .events
             .read()
@@ -51,7 +50,7 @@ impl Node for TwoPiSDME {
         Ok(())
     }
 
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         let (costheta, sinsqtheta, sin2theta, phi, big_phi, pgamma) = self.data[event.index];
         let pol_angle = event.eps[0].acos();
         let r_big_phi = pol_angle * 0.017453293 + big_phi;
@@ -113,7 +112,7 @@ impl ThreePiSDME {
 }
 
 impl Node for ThreePiSDME {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.data = dataset
             .events
             .read()
@@ -146,7 +145,7 @@ impl Node for ThreePiSDME {
         Ok(())
     }
 
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         let (costheta, sinsqtheta, sin2theta, phi, big_phi, pgamma) = self.data[event.index];
         let pol_angle = event.eps[0].acos();
         let r_big_phi = pol_angle * 0.017453293 + big_phi;
@@ -191,29 +190,4 @@ impl Node for ThreePiSDME {
             "rho_1n12".to_string(),
         ]
     }
-}
-
-#[pyfunction]
-#[pyo3(name = "TwoPiSDME", signature = (name, frame="helicity"))]
-fn two_pi_sdme(name: &str, frame: &str) -> PyAmpOp {
-    Amplitude::new(
-        name,
-        TwoPiSDME::new(<Frame as std::str::FromStr>::from_str(frame).unwrap()),
-    )
-    .into()
-}
-#[pyfunction]
-#[pyo3(name = "ThreePiSDME", signature = (name, frame="helicity"))]
-fn three_pi_sdme(name: &str, frame: &str) -> PyAmpOp {
-    Amplitude::new(
-        name,
-        ThreePiSDME::new(<Frame as std::str::FromStr>::from_str(frame).unwrap()),
-    )
-    .into()
-}
-
-pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(two_pi_sdme, m)?)?;
-    m.add_function(wrap_pyfunction!(three_pi_sdme, m)?)?;
-    Ok(())
 }

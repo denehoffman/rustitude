@@ -8,7 +8,6 @@ features = ["pyo3/extension-module"]
 
 [project]
 name = "rustitude"
-version = "0.4.3"
 description = "Python bindings for the Rustitude library"
 readme = "README.md"
 requires-python = ">=3.7"
@@ -20,8 +19,12 @@ classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
 ]
+dynamic = ["version"]
 
 dependencies = ["uproot", "numpy"]
+
+[tool.setuptools.dynamic]
+version = { attr = "rustitude.__version__" }
 
 [project.urls]
 homepage = "https://github.com/denehoffman/rustitude"

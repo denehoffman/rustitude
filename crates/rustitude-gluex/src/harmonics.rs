@@ -1,7 +1,6 @@
 use std::f64::consts::PI;
 
 use num_complex::ComplexFloat;
-use pyo3::prelude::*;
 use rayon::prelude::*;
 use rustitude_core::prelude::*;
 use sphrs::{ComplexSH, SHEval};
@@ -23,7 +22,7 @@ impl Ylm {
     }
 }
 impl Node for Ylm {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.data = dataset
             .events
             .read()
@@ -38,7 +37,7 @@ impl Node for Ylm {
         Ok(())
     }
 
-    fn calculate(&self, _parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, _parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         Ok(self.data[event.index])
     }
 }
@@ -60,7 +59,7 @@ impl Zlm {
     }
 }
 impl Node for Zlm {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.data = dataset
             .events
             .read()
@@ -89,7 +88,7 @@ impl Node for Zlm {
             .collect();
         Ok(())
     }
-    fn calculate(&self, _parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, _parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         Ok(self.data[event.index])
     }
 }
@@ -109,7 +108,7 @@ impl OnePS {
     }
 }
 impl Node for OnePS {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.data = dataset
             .events
             .read()
@@ -137,7 +136,7 @@ impl Node for OnePS {
         Ok(())
     }
 
-    fn calculate(&self, _parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, _parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         Ok(self.data[event.index])
     }
 }
@@ -159,7 +158,7 @@ impl TwoPS {
     }
 }
 impl Node for TwoPS {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.data = dataset
             .events
             .read()
@@ -192,69 +191,7 @@ impl Node for TwoPS {
         Ok(())
     }
 
-    fn calculate(&self, _parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, _parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         Ok(self.data[event.index])
     }
-}
-
-#[pyfunction]
-#[pyo3(name = "Ylm", signature = (name, l, m, frame="helicity"))]
-fn ylm(name: &str, l: usize, m: isize, frame: &str) -> PyAmpOp {
-    Amplitude::new(
-        name,
-        Ylm::new(
-            Wave::new(l, m),
-            <Frame as std::str::FromStr>::from_str(frame).unwrap(),
-        ),
-    )
-    .into()
-}
-
-#[pyfunction]
-#[pyo3(name = "Zlm", signature = (name, l, m, reflectivity="positive", frame="helicity"))]
-fn zlm(name: &str, l: usize, m: isize, reflectivity: &str, frame: &str) -> PyAmpOp {
-    Amplitude::new(
-        name,
-        Zlm::new(
-            Wave::new(l, m),
-            <Reflectivity as std::str::FromStr>::from_str(reflectivity).unwrap(),
-            <Frame as std::str::FromStr>::from_str(frame).unwrap(),
-        ),
-    )
-    .into()
-}
-
-#[pyfunction]
-#[pyo3(name = "OnePS", signature = (name, reflectivity="positive", frame="helicity"))]
-fn one_ps(name: &str, reflectivity: &str, frame: &str) -> PyAmpOp {
-    Amplitude::new(
-        name,
-        OnePS::new(
-            <Reflectivity as std::str::FromStr>::from_str(reflectivity).unwrap(),
-            <Frame as std::str::FromStr>::from_str(frame).unwrap(),
-        ),
-    )
-    .into()
-}
-
-#[pyfunction]
-#[pyo3(name = "TwoPS", signature = (name, l, m, reflectivity="positive", frame="helicity"))]
-fn two_ps(name: &str, l: usize, m: isize, reflectivity: &str, frame: &str) -> PyAmpOp {
-    Amplitude::new(
-        name,
-        TwoPS::new(
-            Wave::new(l, m),
-            <Reflectivity as std::str::FromStr>::from_str(reflectivity).unwrap(),
-            <Frame as std::str::FromStr>::from_str(frame).unwrap(),
-        ),
-    )
-    .into()
-}
-
-pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(ylm, m)?)?;
-    m.add_function(wrap_pyfunction!(zlm, m)?)?;
-    m.add_function(wrap_pyfunction!(one_ps, m)?)?;
-    m.add_function(wrap_pyfunction!(two_ps, m)?)?;
-    Ok(())
 }

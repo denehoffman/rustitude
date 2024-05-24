@@ -68,7 +68,7 @@ pub struct OmegaDalitz {
 }
 
 impl Node for OmegaDalitz {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         (self.dalitz_z, (self.dalitz_sin3theta, self.lambda)) = dataset
             .events
             .read()
@@ -105,7 +105,7 @@ impl Node for OmegaDalitz {
         Ok(())
     }
 
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         let dalitz_z = self.dalitz_z[event.index];
         let dalitz_sin3theta = self.dalitz_sin3theta[event.index];
         let lambda = self.lambda[event.index];
@@ -137,9 +137,9 @@ impl Node for OmegaDalitz {
 
 Let's walk through this code. First, we need to define a `struct` which has all of the general information about the amplitude, and in this case some kind of `Vec` for storing precalculated data. We consider this precalculated data to correspond to a single dataset, and each dataset gets its own copy of the amplitude `struct`. Because this particular amplitude doesn't have any input parameters, we can `#[derive(Default)]` on it to make a default constructor, which allows the amplitude to be initialized with something like `let amp = OmegaDalitz::default();`. If we wanted a parameterized constructor, we have to define our own, and while Rust has no default name for constructors, `pub fn new(...) -> rustitude_core::AmpOp` is preferred.
 
-Next, we implement the `Node` trait for the `struct`. Traits in Rust are kind of like abstract classes or interfaces in object-oriented languages, they provide some set of methods which a `struct` must implement. The first of these methods is `fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError>`. As the signature suggests, it takes a `Dataset` and mutates the `struct` in some way. It should raise a `NodeError` if anything goes wrong in the evaluation. The intended usage of this function is to precalculate some terms in the amplitude's mathematical expression, things which don't change when you update the free parameter inputs to the amplitude. In this case, the four input parameters, $`\alpha`$, $`\beta`$, $`\gamma`$, and $`\delta`$, are independent from `dalitz_z`, `dalitz_sin3theta`, and `lambda`, so we can safely calculate those ahead of time and just pull from their respective `Vec`s when needed later. I won't go too far into Rust's syntax here, but typical precalculation functions will start by iterating over the dataset's events in parallel (the line `use rayon::prelude::*;` is needed to use `par_iter` here) and collecting or unzipping that iterator into a `Vec` or group of `Vec`s.
+Next, we implement the `Node` trait for the `struct`. Traits in Rust are kind of like abstract classes or interfaces in object-oriented languages, they provide some set of methods which a `struct` must implement. The first of these methods is `fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError>`. As the signature suggests, it takes a `Dataset` and mutates the `struct` in some way. It should raise a `RustitudeError` if anything goes wrong in the evaluation. The intended usage of this function is to precalculate some terms in the amplitude's mathematical expression, things which don't change when you update the free parameter inputs to the amplitude. In this case, the four input parameters, $`\alpha`$, $`\beta`$, $`\gamma`$, and $`\delta`$, are independent from `dalitz_z`, `dalitz_sin3theta`, and `lambda`, so we can safely calculate those ahead of time and just pull from their respective `Vec`s when needed later. I won't go too far into Rust's syntax here, but typical precalculation functions will start by iterating over the dataset's events in parallel (the line `use rayon::prelude::*;` is needed to use `par_iter` here) and collecting or unzipping that iterator into a `Vec` or group of `Vec`s.
 
-The calculate step has the signature `fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError>`. This means we need to take a list of parameters and a single event and turn them into a complex value. The `Event` struct contains an `index` field which can be used to access the precalculated storage arrays made in the previous step.
+The calculate step has the signature `fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError>`. This means we need to take a list of parameters and a single event and turn them into a complex value. The `Event` struct contains an `index` field which can be used to access the precalculated storage arrays made in the previous step.
 
 Finally, the `parameters` function just returns a list of the parameter names in the order they are expected to be input into `calculate`. In the event that an amplitude doesn't have any free parameters (like [my implementation of the `Ylm` and `Zlm` amplitudes](https://github.com/denehoffman/rustitude/blob/main/crates/rustitude-gluex/src/harmonics.rs)), we can omit this function entirely, as the default implementation returns `vec![]`.
 

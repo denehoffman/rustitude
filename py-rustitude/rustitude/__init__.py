@@ -5,12 +5,15 @@ from pathlib import Path
 import numpy as np
 import uproot
 
-from ._rustitude import amplitude, dataset, four_momentum, gluex, manager
+from ._rustitude import amplitude, dataset, four_momentum, gluex, manager, __version__
 from .amplitude import CScalar, PCScalar, Scalar, PiecewiseM, AmpOp, Parameter, Model, Amplitude
 from .dataset import Event, Dataset
 from .manager import ExtendedLogLikelihood, Manager
 
+__version__: str = __version__
+
 __all__ = [
+    '__version__',
     'dataset',
     'manager',
     'amplitude',

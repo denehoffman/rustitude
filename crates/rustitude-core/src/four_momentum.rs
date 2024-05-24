@@ -1,5 +1,4 @@
 use nalgebra::{Matrix4, Vector3, Vector4};
-use pyo3::prelude::*;
 use std::{
     fmt::Display,
     ops::{Add, Sub},
@@ -9,12 +8,10 @@ use std::{
 use std::simd::prelude::*;
 
 #[cfg(not(feature = "simd"))]
-#[pyclass]
 #[derive(Debug, Clone, PartialEq, Copy, Default)]
 pub struct FourMomentum([f64; 4]);
 
 #[cfg(feature = "simd")]
-#[pyclass]
 #[derive(Debug, Clone, PartialEq, Copy, Default)]
 pub struct FourMomentum(f64x4);
 
@@ -33,7 +30,6 @@ impl Display for FourMomentum {
     }
 }
 
-#[pymethods]
 impl FourMomentum {
     //! A four-momentum structure with helpful methods for boosts.
     //!
@@ -50,7 +46,6 @@ impl FourMomentum {
     //! ```
 
     #[cfg(not(feature = "simd"))]
-    #[new]
     pub const fn new(e: f64, px: f64, py: f64, pz: f64) -> Self {
         //! Create a new [`FourMomentum`] from energy and momentum components.
         //!
@@ -59,20 +54,11 @@ impl FourMomentum {
     }
 
     #[cfg(feature = "simd")]
-    #[new]
     pub fn new(e: f64, px: f64, py: f64, pz: f64) -> Self {
         //! Create a new [`FourMomentum`] from energy and momentum components.
         //!
         //! Components are listed in the order $` (E, p_x, p_y, p_z) `$
         Self([e, px, py, pz].into())
-    }
-
-    fn __repr__(&self) -> String {
-        format!("<FourMomentum ({})>", self)
-    }
-
-    fn __str__(&self) -> String {
-        self.to_string()
     }
 
     #[allow(clippy::missing_const_for_fn)]
@@ -156,9 +142,6 @@ impl FourMomentum {
         let m_boost = other.boost_matrix();
         (m_boost * Vector4::<f64>::from(self)).into()
     }
-}
-
-impl FourMomentum {
     pub fn momentum(&self) -> Vector3<f64> {
         //! Extract the 3-momentum as a [`nalgebra::Vector3<f64>`]
         //!
@@ -352,9 +335,4 @@ impl<'a> std::iter::Sum<&'a Self> for FourMomentum {
     fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.fold(Self::default(), |a, b| a + *b)
     }
-}
-
-pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<FourMomentum>()?;
-    Ok(())
 }

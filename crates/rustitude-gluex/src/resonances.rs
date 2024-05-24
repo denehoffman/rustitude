@@ -1,6 +1,5 @@
 use crate::utils::blatt_weisskopf;
 use crate::utils::breakup_momentum;
-use pyo3::prelude::*;
 use std::f64::consts::PI;
 
 use nalgebra::{SMatrix, SVector};
@@ -29,7 +28,7 @@ impl BreitWigner {
     }
 }
 impl Node for BreitWigner {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         (self.m, (self.m1, (self.m2, (self.q, self.f)))) = dataset
             .events
             .read()
@@ -56,7 +55,7 @@ impl Node for BreitWigner {
         Ok(())
     }
 
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         let m = self.m[event.index];
         let m1 = self.m1[event.index];
         let m2 = self.m2[event.index];
@@ -204,7 +203,7 @@ impl KMatrixF0 {
 }
 
 impl Node for KMatrixF0 {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.2 = dataset
             .events
             .read()
@@ -221,7 +220,7 @@ impl Node for KMatrixF0 {
             .collect();
         Ok(())
     }
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         let betas = SVector::<Complex64, 5>::new(
             Complex64::new(parameters[0], parameters[1]),
             Complex64::new(parameters[2], parameters[3]),
@@ -284,7 +283,7 @@ impl KMatrixF2 {
 }
 
 impl Node for KMatrixF2 {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.2 = dataset
             .events
             .read()
@@ -301,7 +300,7 @@ impl Node for KMatrixF2 {
             .collect();
         Ok(())
     }
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         let betas = SVector::<Complex64, 4>::new(
             Complex64::new(parameters[0], parameters[1]),
             Complex64::new(parameters[2], parameters[3]),
@@ -358,7 +357,7 @@ impl KMatrixA0 {
 }
 
 impl Node for KMatrixA0 {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.2 = dataset
             .events
             .read()
@@ -375,7 +374,7 @@ impl Node for KMatrixA0 {
             .collect();
         Ok(())
     }
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         let betas = SVector::<Complex64, 2>::new(
             Complex64::new(parameters[0], parameters[1]),
             Complex64::new(parameters[2], parameters[3]),
@@ -428,7 +427,7 @@ impl KMatrixA2 {
 }
 
 impl Node for KMatrixA2 {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.2 = dataset
             .events
             .read()
@@ -445,7 +444,7 @@ impl Node for KMatrixA2 {
             .collect();
         Ok(())
     }
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         let betas = SVector::<Complex64, 2>::new(
             Complex64::new(parameters[0], parameters[1]),
             Complex64::new(parameters[2], parameters[3]),
@@ -498,7 +497,7 @@ impl KMatrixRho {
 }
 
 impl Node for KMatrixRho {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.2 = dataset
             .events
             .read()
@@ -515,7 +514,7 @@ impl Node for KMatrixRho {
             .collect();
         Ok(())
     }
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         let betas = SVector::<Complex64, 2>::new(
             Complex64::new(parameters[0], parameters[1]),
             Complex64::new(parameters[2], parameters[3]),
@@ -566,7 +565,7 @@ impl KMatrixPi1 {
 }
 
 impl Node for KMatrixPi1 {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.2 = dataset
             .events
             .read()
@@ -583,7 +582,7 @@ impl Node for KMatrixPi1 {
             .collect();
         Ok(())
     }
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         let betas = SVector::<Complex64, 1>::new(Complex64::new(parameters[0], parameters[1]));
         let (ikc_inv_vec, pvector_constants_mat) = self.2[event.index];
         Ok(KMatrixConstants::calculate_k_matrix(
@@ -595,44 +594,4 @@ impl Node for KMatrixPi1 {
     fn parameters(&self) -> Vec<String> {
         vec!["pi1_1600 re".to_string(), "pi1_1600 im".to_string()]
     }
-}
-
-#[pyfunction(name = "BreitWigner")]
-fn breit_wigner(name: &str, p1_indices: Vec<usize>, p2_indices: Vec<usize>, l: usize) -> PyAmpOp {
-    Amplitude::new(name, BreitWigner::new(&p1_indices, &p2_indices, l)).into()
-}
-#[pyfunction(name = "KMatrixA0")]
-fn kmatrix_a0(name: &str, channel: usize) -> PyAmpOp {
-    Amplitude::new(name, KMatrixA0::new(channel)).into()
-}
-#[pyfunction(name = "KMatrixA2")]
-fn kmatrix_a2(name: &str, channel: usize) -> PyAmpOp {
-    Amplitude::new(name, KMatrixA2::new(channel)).into()
-}
-#[pyfunction(name = "KMatrixF0")]
-fn kmatrix_f0(name: &str, channel: usize) -> PyAmpOp {
-    Amplitude::new(name, KMatrixF0::new(channel)).into()
-}
-#[pyfunction(name = "KMatrixF2")]
-fn kmatrix_f2(name: &str, channel: usize) -> PyAmpOp {
-    Amplitude::new(name, KMatrixF2::new(channel)).into()
-}
-#[pyfunction(name = "KMatrixPi1")]
-fn kmatrix_pi1(name: &str, channel: usize) -> PyAmpOp {
-    Amplitude::new(name, KMatrixPi1::new(channel)).into()
-}
-#[pyfunction(name = "KMatrixRho")]
-fn kmatrix_rho(name: &str, channel: usize) -> PyAmpOp {
-    Amplitude::new(name, KMatrixRho::new(channel)).into()
-}
-
-pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(breit_wigner, m)?)?;
-    m.add_function(wrap_pyfunction!(kmatrix_a0, m)?)?;
-    m.add_function(wrap_pyfunction!(kmatrix_a2, m)?)?;
-    m.add_function(wrap_pyfunction!(kmatrix_f0, m)?)?;
-    m.add_function(wrap_pyfunction!(kmatrix_f2, m)?)?;
-    m.add_function(wrap_pyfunction!(kmatrix_pi1, m)?)?;
-    m.add_function(wrap_pyfunction!(kmatrix_rho, m)?)?;
-    Ok(())
 }
