@@ -9,7 +9,7 @@ pub struct OmegaDalitz {
 }
 
 impl Node for OmegaDalitz {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         (self.dalitz_z, (self.dalitz_sin3theta, self.lambda)) = dataset
             .events
             .read()
@@ -46,7 +46,7 @@ impl Node for OmegaDalitz {
         Ok(())
     }
 
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         let dalitz_z = self.dalitz_z[event.index];
         let dalitz_sin3theta = self.dalitz_sin3theta[event.index];
         let lambda = self.lambda[event.index];

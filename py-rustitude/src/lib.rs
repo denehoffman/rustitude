@@ -23,6 +23,7 @@ where
 #[pymodule]
 #[pyo3(name = "_rustitude")]
 fn rustitude(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     add_submodule(m, "rustitude.dataset", dataset::pyo3_module)?;
     add_submodule(m, "rustitude.four_momentum", four_momentum::pyo3_module)?;
     add_submodule(m, "rustitude.amplitude", amplitude::pyo3_module)?;

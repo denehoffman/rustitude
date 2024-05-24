@@ -22,7 +22,7 @@ impl Ylm {
     }
 }
 impl Node for Ylm {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.data = dataset
             .events
             .read()
@@ -37,7 +37,7 @@ impl Node for Ylm {
         Ok(())
     }
 
-    fn calculate(&self, _parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, _parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         Ok(self.data[event.index])
     }
 }
@@ -59,7 +59,7 @@ impl Zlm {
     }
 }
 impl Node for Zlm {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.data = dataset
             .events
             .read()
@@ -88,7 +88,7 @@ impl Node for Zlm {
             .collect();
         Ok(())
     }
-    fn calculate(&self, _parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, _parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         Ok(self.data[event.index])
     }
 }
@@ -108,7 +108,7 @@ impl OnePS {
     }
 }
 impl Node for OnePS {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.data = dataset
             .events
             .read()
@@ -136,7 +136,7 @@ impl Node for OnePS {
         Ok(())
     }
 
-    fn calculate(&self, _parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, _parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         Ok(self.data[event.index])
     }
 }
@@ -158,7 +158,7 @@ impl TwoPS {
     }
 }
 impl Node for TwoPS {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.data = dataset
             .events
             .read()
@@ -191,7 +191,7 @@ impl Node for TwoPS {
         Ok(())
     }
 
-    fn calculate(&self, _parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, _parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         Ok(self.data[event.index])
     }
 }

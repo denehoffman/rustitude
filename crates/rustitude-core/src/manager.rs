@@ -2,6 +2,7 @@ use rayon::prelude::*;
 
 use crate::{
     create_pool,
+    errors::RustitudeError,
     prelude::{Dataset, Event, Model},
 };
 
@@ -11,15 +12,15 @@ pub struct Manager {
     dataset: Dataset,
 }
 impl Manager {
-    pub fn new(model: &Model, dataset: &Dataset) -> Self {
+    pub fn new(model: &Model, dataset: &Dataset) -> Result<Self, RustitudeError> {
         let mut model = model.clone();
-        model.load(dataset);
-        Self {
+        model.load(dataset)?;
+        Ok(Self {
             model: model.clone(),
             dataset: dataset.clone(),
-        }
+        })
     }
-    pub fn evaluate(&self, parameters: &[f64]) -> Vec<f64> {
+    pub fn evaluate(&self, parameters: &[f64]) -> Result<Vec<f64>, RustitudeError> {
         self.dataset
             .events
             .read()
@@ -41,12 +42,16 @@ impl ExtendedLogLikelihood {
         }
     }
     #[allow(clippy::suboptimal_flops)]
-    pub fn evaluate(&self, parameters: Vec<f64>, num_threads: usize) -> f64 {
-        create_pool(num_threads).unwrap().install(|| {
-            let data_res = self.data_manager.evaluate(&parameters);
+    pub fn evaluate(
+        &self,
+        parameters: Vec<f64>,
+        num_threads: usize,
+    ) -> Result<f64, RustitudeError> {
+        create_pool(num_threads)?.install(|| {
+            let data_res = self.data_manager.evaluate(&parameters)?;
             let data_weights = self.data_manager.dataset.weights();
             let n_data = self.data_manager.dataset.len() as f64;
-            let mc_res = self.mc_manager.evaluate(&parameters);
+            let mc_res = self.mc_manager.evaluate(&parameters)?;
             let mc_weights = self.mc_manager.dataset.weights();
             let n_mc = self.mc_manager.dataset.len() as f64;
             let ln_l = (data_res
@@ -60,7 +65,7 @@ impl ExtendedLogLikelihood {
                         .zip(mc_weights)
                         .map(|(l, w)| w * l)
                         .sum::<f64>());
-            -2.0 * ln_l
+            Ok(-2.0 * ln_l)
         })
     }
 }

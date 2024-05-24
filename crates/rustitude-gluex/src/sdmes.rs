@@ -20,7 +20,7 @@ impl TwoPiSDME {
 }
 
 impl Node for TwoPiSDME {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.data = dataset
             .events
             .read()
@@ -50,7 +50,7 @@ impl Node for TwoPiSDME {
         Ok(())
     }
 
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         let (costheta, sinsqtheta, sin2theta, phi, big_phi, pgamma) = self.data[event.index];
         let pol_angle = event.eps[0].acos();
         let r_big_phi = pol_angle * 0.017453293 + big_phi;
@@ -112,7 +112,7 @@ impl ThreePiSDME {
 }
 
 impl Node for ThreePiSDME {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.data = dataset
             .events
             .read()
@@ -145,7 +145,7 @@ impl Node for ThreePiSDME {
         Ok(())
     }
 
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         let (costheta, sinsqtheta, sin2theta, phi, big_phi, pgamma) = self.data[event.index];
         let pol_angle = event.eps[0].acos();
         let r_big_phi = pol_angle * 0.017453293 + big_phi;

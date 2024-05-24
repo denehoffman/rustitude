@@ -5,7 +5,7 @@ use rustitude::gluex::utils::{Frame, Reflectivity, Wave};
 use rustitude::prelude::*;
 
 pub fn criterion_kmatrix(c: &mut Criterion) {
-    let dataset = Dataset::from_parquet("benches/test_data.parquet");
+    let dataset = Dataset::from_parquet("benches/test_data.parquet").unwrap();
     let f0p: AmpOp = amplitude!("f0+", KMatrixF0::new(2));
     let f0n: AmpOp = amplitude!("f0-", KMatrixF0::new(2));
     let f2: AmpOp = amplitude!("f2", KMatrixF2::new(2));
@@ -29,13 +29,13 @@ pub fn criterion_kmatrix(c: &mut Criterion) {
     let neg_real = ((&f0n + &a0n) * s0n.real()).norm_sqr();
     let neg_imag = ((&f0n + &a0n) * s0n.imag()).norm_sqr();
     let mut model = Model::new(pos_real + pos_imag + neg_real + neg_imag);
-    model.fix("f0+", "f0_500 re", 0.0);
-    model.fix("f0+", "f0_500 im", 0.0);
-    model.fix("f0+", "f0_980 im", 0.0);
-    model.fix("f0-", "f0_500 re", 0.0);
-    model.fix("f0-", "f0_500 im", 0.0);
-    model.fix("f0-", "f0_980 im", 0.0);
-    let m = Manager::new(&model, &dataset);
+    model.fix("f0+", "f0_500 re", 0.0).unwrap();
+    model.fix("f0+", "f0_500 im", 0.0).unwrap();
+    model.fix("f0+", "f0_980 im", 0.0).unwrap();
+    model.fix("f0-", "f0_500 re", 0.0).unwrap();
+    model.fix("f0-", "f0_500 im", 0.0).unwrap();
+    model.fix("f0-", "f0_980 im", 0.0).unwrap();
+    let m = Manager::new(&model, &dataset).unwrap();
     c.bench_function("kmatrix", |b| {
         b.iter(|| {
             let v = (0..model.get_n_free())

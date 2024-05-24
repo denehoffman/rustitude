@@ -28,7 +28,7 @@ impl BreitWigner {
     }
 }
 impl Node for BreitWigner {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         (self.m, (self.m1, (self.m2, (self.q, self.f)))) = dataset
             .events
             .read()
@@ -55,7 +55,7 @@ impl Node for BreitWigner {
         Ok(())
     }
 
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         let m = self.m[event.index];
         let m1 = self.m1[event.index];
         let m2 = self.m2[event.index];
@@ -203,7 +203,7 @@ impl KMatrixF0 {
 }
 
 impl Node for KMatrixF0 {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.2 = dataset
             .events
             .read()
@@ -220,7 +220,7 @@ impl Node for KMatrixF0 {
             .collect();
         Ok(())
     }
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         let betas = SVector::<Complex64, 5>::new(
             Complex64::new(parameters[0], parameters[1]),
             Complex64::new(parameters[2], parameters[3]),
@@ -283,7 +283,7 @@ impl KMatrixF2 {
 }
 
 impl Node for KMatrixF2 {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.2 = dataset
             .events
             .read()
@@ -300,7 +300,7 @@ impl Node for KMatrixF2 {
             .collect();
         Ok(())
     }
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         let betas = SVector::<Complex64, 4>::new(
             Complex64::new(parameters[0], parameters[1]),
             Complex64::new(parameters[2], parameters[3]),
@@ -357,7 +357,7 @@ impl KMatrixA0 {
 }
 
 impl Node for KMatrixA0 {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.2 = dataset
             .events
             .read()
@@ -374,7 +374,7 @@ impl Node for KMatrixA0 {
             .collect();
         Ok(())
     }
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         let betas = SVector::<Complex64, 2>::new(
             Complex64::new(parameters[0], parameters[1]),
             Complex64::new(parameters[2], parameters[3]),
@@ -427,7 +427,7 @@ impl KMatrixA2 {
 }
 
 impl Node for KMatrixA2 {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.2 = dataset
             .events
             .read()
@@ -444,7 +444,7 @@ impl Node for KMatrixA2 {
             .collect();
         Ok(())
     }
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         let betas = SVector::<Complex64, 2>::new(
             Complex64::new(parameters[0], parameters[1]),
             Complex64::new(parameters[2], parameters[3]),
@@ -497,7 +497,7 @@ impl KMatrixRho {
 }
 
 impl Node for KMatrixRho {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.2 = dataset
             .events
             .read()
@@ -514,7 +514,7 @@ impl Node for KMatrixRho {
             .collect();
         Ok(())
     }
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         let betas = SVector::<Complex64, 2>::new(
             Complex64::new(parameters[0], parameters[1]),
             Complex64::new(parameters[2], parameters[3]),
@@ -565,7 +565,7 @@ impl KMatrixPi1 {
 }
 
 impl Node for KMatrixPi1 {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), NodeError> {
+    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.2 = dataset
             .events
             .read()
@@ -582,7 +582,7 @@ impl Node for KMatrixPi1 {
             .collect();
         Ok(())
     }
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, NodeError> {
+    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
         let betas = SVector::<Complex64, 1>::new(Complex64::new(parameters[0], parameters[1]));
         let (ikc_inv_vec, pvector_constants_mat) = self.2[event.index];
         Ok(KMatrixConstants::calculate_k_matrix(

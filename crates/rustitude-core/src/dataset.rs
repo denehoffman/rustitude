@@ -11,7 +11,7 @@ use parquet::{
 };
 use rayon::prelude::*;
 
-use crate::prelude::FourMomentum;
+use crate::{errors::RustitudeError, prelude::FourMomentum};
 
 #[derive(Debug, Default, Clone)]
 pub struct Event {
@@ -42,7 +42,10 @@ impl Display for Event {
     }
 }
 impl Event {
-    pub fn read_parquet_row(index: usize, row: Row) -> Self {
+    pub fn read_parquet_row(
+        index: usize,
+        row: Result<Row, parquet::errors::ParquetError>,
+    ) -> Result<Self, RustitudeError> {
         let mut event = Self {
             index,
             ..Default::default()
@@ -51,7 +54,7 @@ impl Event {
         let mut px_fs: Vec<f64> = Vec::new();
         let mut py_fs: Vec<f64> = Vec::new();
         let mut pz_fs: Vec<f64> = Vec::new();
-        for (name, field) in row.get_column_iter() {
+        for (name, field) in row?.get_column_iter() {
             match (name.as_str(), field) {
                 ("E_Beam", Field::Float(value)) => {
                     event.beam_p4.set_e(f64::from(*value));
@@ -149,9 +152,12 @@ impl Event {
         for dp4 in event.daughter_p4s.iter_mut() {
             *dp4 = dp4.boost_along(&final_state_p4);
         }
-        event
+        Ok(event)
     }
-    pub fn read_parquet_row_eps_in_beam(index: usize, row: Row) -> Self {
+    pub fn read_parquet_row_eps_in_beam(
+        index: usize,
+        row: Result<Row, parquet::errors::ParquetError>,
+    ) -> Result<Self, RustitudeError> {
         let mut event = Self {
             index,
             ..Default::default()
@@ -160,7 +166,7 @@ impl Event {
         let mut px_fs: Vec<f64> = Vec::new();
         let mut py_fs: Vec<f64> = Vec::new();
         let mut pz_fs: Vec<f64> = Vec::new();
-        for (name, field) in row.get_column_iter() {
+        for (name, field) in row?.get_column_iter() {
             match (name.as_str(), field) {
                 ("E_Beam", Field::Float(value)) => {
                     event.beam_p4.set_e(f64::from(*value));
@@ -244,10 +250,14 @@ impl Event {
         for dp4 in event.daughter_p4s.iter_mut() {
             *dp4 = dp4.boost_along(&final_state_p4);
         }
-        event
+        Ok(event)
     }
 
-    pub fn read_parquet_row_with_eps(index: usize, row: Row, eps: Vector3<f64>) -> Self {
+    pub fn read_parquet_row_with_eps(
+        index: usize,
+        row: Result<Row, parquet::errors::ParquetError>,
+        eps: Vector3<f64>,
+    ) -> Result<Self, RustitudeError> {
         let mut event = Self {
             index,
             eps,
@@ -257,7 +267,7 @@ impl Event {
         let mut px_fs: Vec<f64> = Vec::new();
         let mut py_fs: Vec<f64> = Vec::new();
         let mut pz_fs: Vec<f64> = Vec::new();
-        for (name, field) in row.get_column_iter() {
+        for (name, field) in row?.get_column_iter() {
             match (name.as_str(), field) {
                 ("E_Beam", Field::Float(value)) => {
                     event.beam_p4.set_e(f64::from(*value));
@@ -341,10 +351,13 @@ impl Event {
         for dp4 in event.daughter_p4s.iter_mut() {
             *dp4 = dp4.boost_along(&final_state_p4);
         }
-        event
+        Ok(event)
     }
 
-    pub fn read_parquet_row_unpolarized(index: usize, row: Row) -> Self {
+    pub fn read_parquet_row_unpolarized(
+        index: usize,
+        row: Result<Row, parquet::errors::ParquetError>,
+    ) -> Result<Self, RustitudeError> {
         Self::read_parquet_row_with_eps(index, row, Vector3::default())
     }
 }
@@ -403,125 +416,158 @@ impl Dataset {
         }
     }
 
-    pub fn from_parquet(path: &str) -> Self {
+    pub fn from_parquet(path: &str) -> Result<Self, RustitudeError> {
         let path = Path::new(path);
-        let file = File::open(path).unwrap();
-        let reader = SerializedFileReader::new(file).unwrap();
-        let row_iter = reader.get_row_iter(None).unwrap();
-        Self::new(
+        let file = File::open(path)?;
+        let reader = SerializedFileReader::new(file)?;
+        let row_iter = reader.get_row_iter(None)?;
+        Ok(Self::new(
             row_iter
                 .enumerate()
-                .map(|(i, row)| Event::read_parquet_row(i, row.unwrap()))
-                .collect(),
-        )
+                .map(|(i, row)| Event::read_parquet_row(i, row))
+                .collect::<Result<Vec<Event>, RustitudeError>>()?,
+        ))
     }
 
-    pub fn from_parquet_eps_in_beam(path: &str) -> Self {
+    pub fn from_parquet_eps_in_beam(path: &str) -> Result<Self, RustitudeError> {
         let path = Path::new(path);
-        let file = File::open(path).unwrap();
-        let reader = SerializedFileReader::new(file).unwrap();
-        let row_iter = reader.get_row_iter(None).unwrap();
-        Self::new(
+        let file = File::open(path)?;
+        let reader = SerializedFileReader::new(file)?;
+        let row_iter = reader.get_row_iter(None)?;
+        Ok(Self::new(
             row_iter
                 .enumerate()
-                .map(|(i, row)| Event::read_parquet_row_eps_in_beam(i, row.unwrap()))
-                .collect(),
-        )
+                .map(|(i, row)| Event::read_parquet_row_eps_in_beam(i, row))
+                .collect::<Result<Vec<Event>, RustitudeError>>()?,
+        ))
     }
 
-    pub fn from_parquet_with_eps(path: &str, eps: Vec<f64>) -> Self {
+    pub fn from_parquet_with_eps(path: &str, eps: Vec<f64>) -> Result<Self, RustitudeError> {
         let path = Path::new(path);
-        let file = File::open(path).unwrap();
-        let reader = SerializedFileReader::new(file).unwrap();
-        let row_iter = reader.get_row_iter(None).unwrap();
+        let file = File::open(path)?;
+        let reader = SerializedFileReader::new(file)?;
+        let row_iter = reader.get_row_iter(None)?;
         let eps_vec = Vector3::from_vec(eps);
-        Self::new(
+        Ok(Self::new(
             row_iter
                 .enumerate()
-                .map(|(i, row)| Event::read_parquet_row_with_eps(i, row.unwrap(), eps_vec))
-                .collect(),
-        )
+                .map(|(i, row)| Event::read_parquet_row_with_eps(i, row, eps_vec))
+                .collect::<Result<Vec<Event>, RustitudeError>>()?,
+        ))
     }
 
-    pub fn from_parquet_unpolarized(path: &str) -> Self {
+    pub fn from_parquet_unpolarized(path: &str) -> Result<Self, RustitudeError> {
         let path = Path::new(path);
-        let file = File::open(path).unwrap();
-        let reader = SerializedFileReader::new(file).unwrap();
-        let row_iter = reader.get_row_iter(None).unwrap();
-        Self::new(
+        let file = File::open(path)?;
+        let reader = SerializedFileReader::new(file)?;
+        let row_iter = reader.get_row_iter(None)?;
+        Ok(Self::new(
             row_iter
                 .enumerate()
-                .map(|(i, row)| Event::read_parquet_row_unpolarized(i, row.unwrap()))
-                .collect(),
-        )
+                .map(|(i, row)| Event::read_parquet_row_unpolarized(i, row))
+                .collect::<Result<Vec<Event>, RustitudeError>>()?,
+        ))
     }
 
-    pub fn from_root(path: &str) -> Self {
-        let ttree = RootFile::open(path).unwrap().get_tree("kin").unwrap(); // TODO:
+    pub fn from_root(path: &str) -> Result<Self, RustitudeError> {
+        let ttree = RootFile::open(path)
+            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
+            .get_tree("kin")
+            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?;
         let weight: Vec<f64> = ttree
             .branch("Weight")
-            .unwrap()
+            .ok_or_else(|| {
+                RustitudeError::OxyrootError(format!("Could not find Weight branch in {}", path))
+            })?
             .as_iter::<f32>()
-            .unwrap()
+            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
             .map(f64::from)
             .collect();
         let e_beam: Vec<f64> = ttree
             .branch("E_Beam")
-            .unwrap()
+            .ok_or_else(|| {
+                RustitudeError::OxyrootError(format!("Could not find E_Beam branch in {}", path))
+            })?
             .as_iter::<f32>()
-            .unwrap()
+            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
             .map(f64::from)
             .collect();
         let px_beam: Vec<f64> = ttree
             .branch("Px_Beam")
-            .unwrap()
+            .ok_or_else(|| {
+                RustitudeError::OxyrootError(format!("Could not find Px_Beam branch in {}", path))
+            })?
             .as_iter::<f32>()
-            .unwrap()
+            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
             .map(f64::from)
             .collect();
         let py_beam: Vec<f64> = ttree
             .branch("Py_Beam")
-            .unwrap()
+            .ok_or_else(|| {
+                RustitudeError::OxyrootError(format!("Could not find Py_Beam branch in {}", path))
+            })?
             .as_iter::<f32>()
-            .unwrap()
+            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
             .map(f64::from)
             .collect();
         let pz_beam: Vec<f64> = ttree
             .branch("Pz_Beam")
-            .unwrap()
+            .ok_or_else(|| {
+                RustitudeError::OxyrootError(format!("Could not find Pz_Beam branch in {}", path))
+            })?
             .as_iter::<f32>()
-            .unwrap()
+            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
             .map(f64::from)
             .collect();
         let e_fs: Vec<Vec<f64>> = ttree
             .branch("E_FinalState")
-            .unwrap()
+            .ok_or_else(|| {
+                RustitudeError::OxyrootError(format!(
+                    "Could not find E_FinalState branch in {}",
+                    path
+                ))
+            })?
             .as_iter::<Slice<f64>>()
-            .unwrap()
+            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
             .map(|v| v.into_vec())
             .collect();
         let px_fs: Vec<Vec<f64>> = ttree
             .branch("Px_FinalState")
-            .unwrap()
+            .ok_or_else(|| {
+                RustitudeError::OxyrootError(format!(
+                    "Could not find Px_FinalState branch in {}",
+                    path
+                ))
+            })?
             .as_iter::<Slice<f64>>()
-            .unwrap()
+            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
             .map(|v| v.into_vec())
             .collect();
         let py_fs: Vec<Vec<f64>> = ttree
             .branch("Py_FinalState")
-            .unwrap()
+            .ok_or_else(|| {
+                RustitudeError::OxyrootError(format!(
+                    "Could not find Px_FinalState branch in {}",
+                    path
+                ))
+            })?
             .as_iter::<Slice<f64>>()
-            .unwrap()
+            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
             .map(|v| v.into_vec())
             .collect();
         let pz_fs: Vec<Vec<f64>> = ttree
             .branch("Pz_FinalState")
-            .unwrap()
+            .ok_or_else(|| {
+                RustitudeError::OxyrootError(format!(
+                    "Could not find Px_FinalState branch in {}",
+                    path
+                ))
+            })?
             .as_iter::<Slice<f64>>()
-            .unwrap()
+            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
             .map(|v| v.into_vec())
             .collect();
-        Self::new(
+        Ok(Self::new(
             izip!(weight, e_beam, px_beam, py_beam, pz_beam, e_fs, px_fs, py_fs, pz_fs)
                 .enumerate()
                 .map(
@@ -542,7 +588,7 @@ impl Dataset {
                     },
                 )
                 .collect(),
-        )
+        ))
     }
     pub fn new(events: Vec<Event>) -> Self {
         Self {

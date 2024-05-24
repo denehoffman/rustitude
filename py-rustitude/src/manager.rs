@@ -1,3 +1,4 @@
+use crate::{amplitude::Model, dataset::Dataset};
 use pyo3::prelude::*;
 use rustitude_core::manager as rust;
 use std::mem::transmute;
@@ -8,9 +9,18 @@ pub struct Manager(rust::Manager);
 
 #[pymethods]
 impl Manager {
+    #[new]
+    pub fn new(model: Model, dataset: Dataset) -> PyResult<Self> {
+        unsafe {
+            transmute(Self(rust::Manager::new(
+                &transmute(model),
+                transmute(dataset),
+            )?))
+        }
+    }
     #[pyo3(name = "__call__")]
-    fn evaluate(&self, parameters: Vec<f64>) -> Vec<f64> {
-        self.0.evaluate(&parameters)
+    fn evaluate(&self, parameters: Vec<f64>) -> PyResult<Vec<f64>> {
+        self.0.evaluate(&parameters).map_err(PyErr::from)
     }
 }
 
@@ -29,8 +39,10 @@ impl ExtendedLogLikelihood {
         }
     }
     #[pyo3(name = "__call__", signature = (parameters, *, num_threads = 1))]
-    fn evaluate(&self, parameters: Vec<f64>, num_threads: usize) -> f64 {
-        self.0.evaluate(parameters, num_threads)
+    fn evaluate(&self, parameters: Vec<f64>, num_threads: usize) -> PyResult<f64> {
+        self.0
+            .evaluate(parameters, num_threads)
+            .map_err(PyErr::from)
     }
 }
 

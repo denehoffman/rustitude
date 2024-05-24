@@ -136,6 +136,18 @@ impl Model {
     fn parameters(&self) -> Vec<Parameter> {
         unsafe { transmute(self.0.parameters.clone()) }
     }
+    #[getter]
+    fn bounds(&self) -> Vec<(f64, f64)> {
+        self.0.get_bounds()
+    }
+    #[getter]
+    fn initial(&self) -> Vec<f64> {
+        self.0.get_initial()
+    }
+    #[getter]
+    fn n_free(&self) -> usize {
+        self.0.get_n_free()
+    }
     #[new]
     fn new(root: AmpOp) -> Self {
         unsafe { Self(rust::Model::new(transmute(root))) }
@@ -152,33 +164,26 @@ impl Model {
         parameter_1: &str,
         amplitude_2: &str,
         parameter_2: &str,
-    ) {
+    ) -> PyResult<()> {
         self.0
             .constrain(amplitude_1, parameter_1, amplitude_2, parameter_2)
+            .map_err(PyErr::from)
     }
-    fn fix(&mut self, amplitude: &str, parameter: &str, value: f64) {
-        self.0.fix(amplitude, parameter, value)
+    fn fix(&mut self, amplitude: &str, parameter: &str, value: f64) -> PyResult<()> {
+        self.0.fix(amplitude, parameter, value).map_err(PyErr::from)
     }
-    fn free(&mut self, amplitude: &str, parameter: &str) {
-        self.0.free(amplitude, parameter)
+    fn free(&mut self, amplitude: &str, parameter: &str) -> PyResult<()> {
+        self.0.free(amplitude, parameter).map_err(PyErr::from)
     }
-    fn set_bounds(&mut self, amplitude: &str, parameter: &str, bounds: (f64, f64)) {
-        self.0.set_bounds(amplitude, parameter, bounds)
+    fn set_bounds(&mut self, amplitude: &str, parameter: &str, bounds: (f64, f64)) -> PyResult<()> {
+        self.0
+            .set_bounds(amplitude, parameter, bounds)
+            .map_err(PyErr::from)
     }
-    fn set_initial(&mut self, amplitude: &str, parameter: &str, value: f64) {
-        self.0.set_initial(amplitude, parameter, value)
-    }
-    #[getter]
-    fn bounds(&self) -> Vec<(f64, f64)> {
-        self.0.get_bounds()
-    }
-    #[getter]
-    fn initial(&self) -> Vec<f64> {
-        self.0.get_initial()
-    }
-    #[getter]
-    fn n_free(&self) -> usize {
-        self.0.get_n_free()
+    fn set_initial(&mut self, amplitude: &str, parameter: &str, value: f64) -> PyResult<()> {
+        self.0
+            .set_initial(amplitude, parameter, value)
+            .map_err(PyErr::from)
     }
     fn activate(&mut self, amplitude: &str) {
         self.0.activate(amplitude)

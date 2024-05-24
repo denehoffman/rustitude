@@ -33,8 +33,8 @@ impl Event {
         unsafe { transmute(self.0.daughter_p4s.clone()) }
     }
     #[getter]
-    fn eps(&self) -> PyResult<[f64; 3]> {
-        Ok([self.0.eps[0], self.0.eps[1], self.0.eps[2]])
+    fn eps(&self) -> [f64; 3] {
+        [self.0.eps[0], self.0.eps[1], self.0.eps[2]]
     }
     fn __str__(&self) -> String {
         format!("{}", self.0)
@@ -54,15 +54,16 @@ impl Dataset {
     fn events(&self) -> Vec<Event> {
         unsafe { transmute(self.0.events()) }
     }
+    #[getter]
+    fn weights(&self) -> Vec<f64> {
+        self.0.weights()
+    }
     fn __len__(&self) -> PyResult<usize> {
         Ok(self.0.len())
     }
 
     fn __getitem__(&self, idx: isize) -> PyResult<Py<Event>> {
         Ok(Python::with_gil(|py| Py::new(py, self.events()[idx as usize].clone())).unwrap())
-    }
-    fn weights(&self) -> Vec<f64> {
-        self.0.weights()
     }
     fn split_m(
         &self,
@@ -161,24 +162,24 @@ impl Dataset {
     }
 
     #[staticmethod]
-    fn from_parquet(path: &str) -> Self {
-        unsafe { transmute(rust::Dataset::from_parquet(path)) }
+    fn from_parquet(path: &str) -> PyResult<Self> {
+        unsafe { transmute(rust::Dataset::from_parquet(path).map_err(PyErr::from)) }
     }
     #[staticmethod]
-    fn from_parquet_eps_in_beam(path: &str) -> Self {
-        unsafe { transmute(rust::Dataset::from_parquet_eps_in_beam(path)) }
+    fn from_parquet_eps_in_beam(path: &str) -> PyResult<Self> {
+        unsafe { transmute(rust::Dataset::from_parquet_eps_in_beam(path).map_err(PyErr::from)) }
     }
     #[staticmethod]
-    fn from_parquet_with_eps(path: &str, eps: Vec<f64>) -> Self {
-        unsafe { transmute(rust::Dataset::from_parquet_with_eps(path, eps)) }
+    fn from_parquet_with_eps(path: &str, eps: Vec<f64>) -> PyResult<Self> {
+        unsafe { transmute(rust::Dataset::from_parquet_with_eps(path, eps).map_err(PyErr::from)) }
     }
     #[staticmethod]
-    fn from_parquet_unpolarized(path: &str) -> Self {
-        unsafe { transmute(rust::Dataset::from_parquet_unpolarized(path)) }
+    fn from_parquet_unpolarized(path: &str) -> PyResult<Self> {
+        unsafe { transmute(rust::Dataset::from_parquet_unpolarized(path).map_err(PyErr::from)) }
     }
     #[staticmethod]
-    fn from_root(path: &str) -> Self {
-        unsafe { transmute(rust::Dataset::from_root(path)) }
+    fn from_root(path: &str) -> PyResult<Self> {
+        unsafe { transmute(rust::Dataset::from_root(path).map_err(PyErr::from)) }
     }
 }
 
