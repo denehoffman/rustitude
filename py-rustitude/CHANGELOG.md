@@ -35,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 11 commits contributed to the release over the course of 8 calendar days.
+ - 12 commits contributed to the release over the course of 8 calendar days.
  - 8 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -46,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release py-rustitude v0.4.3 ([`85fa50e`](https://github.com/denehoffman/rustitude/commit/85fa50ee82bc94d288c2ae145cb9bc8d1ca073d2))
     - Release py-rustitude v0.4.3 ([`573e76a`](https://github.com/denehoffman/rustitude/commit/573e76ae26b8008046cc6c4221c20bc476e18f88))
     - Merge pull request #3 from denehoffman/python_reorg ([`467caac`](https://github.com/denehoffman/rustitude/commit/467caacc688f94c074d28be1ec54a422d8d9ebc0))
     - Additional API so python interactions with managers can actually modify the amplitudes they manage ([`d2a94a5`](https://github.com/denehoffman/rustitude/commit/d2a94a57466c0b2556850315b8902cf9528598de))
