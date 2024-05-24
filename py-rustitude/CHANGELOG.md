@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.4.3 (2024-05-24)
 
+<csr-id-800db450c6743d409c44b1dff74263288d63d8c1/>
+<csr-id-9d854af5046ac30aacc6c369716337a863b4279a/>
+<csr-id-9089c84e481124ff764b24f42507ab14913fef07/>
+
 ### Chore
 
  - <csr-id-800db450c6743d409c44b1dff74263288d63d8c1/> bump python library version
@@ -31,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 10 commits contributed to the release over the course of 8 calendar days.
+ - 11 commits contributed to the release over the course of 8 calendar days.
  - 8 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -42,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release py-rustitude v0.4.3 ([`573e76a`](https://github.com/denehoffman/rustitude/commit/573e76ae26b8008046cc6c4221c20bc476e18f88))
     - Merge pull request #3 from denehoffman/python_reorg ([`467caac`](https://github.com/denehoffman/rustitude/commit/467caacc688f94c074d28be1ec54a422d8d9ebc0))
     - Additional API so python interactions with managers can actually modify the amplitudes they manage ([`d2a94a5`](https://github.com/denehoffman/rustitude/commit/d2a94a57466c0b2556850315b8902cf9528598de))
     - Remove unsafe transmutes, they weren't working properly and probably aren't needed anyway ([`dba3b5b`](https://github.com/denehoffman/rustitude/commit/dba3b5bbd9b93622c32e6042062d75da972c073e))
