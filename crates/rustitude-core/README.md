@@ -155,8 +155,8 @@ use pyo3::prelude::*;
 // OmegaDalitz code here
 
 #[pyfunction(name = "OmegaDalitz")]
-fn omega_dalitz(name: &str) -> PyAmpOp {
-    Amplitude::new(name, Box::<OmegaDalitz>::default()).into()
+fn omega_dalitz(name: &str) -> AmpOp {
+    Amplitude::new(name, OmegaDalitz::default()).into()
 }
 
 pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
