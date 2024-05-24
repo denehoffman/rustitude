@@ -199,6 +199,12 @@ impl Model {
     fn new(root: AmpOp) -> Self {
         Self(rust::Model::new(root.into()))
     }
+    fn get_amplitude(&self, amplitude_name: &str) -> PyResult<Amplitude> {
+        self.0
+            .get_amplitude(amplitude_name)
+            .map(Amplitude::from)
+            .map_err(PyErr::from)
+    }
     fn get_parameter(&self, amplitude_name: &str, parameter_name: &str) -> PyResult<Parameter> {
         self.0
             .get_parameter(amplitude_name, parameter_name)
