@@ -112,7 +112,7 @@ m_mc = rt.Manager(mod, ds_mc)
 
 nll = rt.ExtendedLogLikelihood(m_data, m_mc)
 
-res = nll([10.0] * mod.get_n_free())
+res = nll([10.0] * mod.n_free)
 print(res) # prints some value for the NLL
 ```
 
