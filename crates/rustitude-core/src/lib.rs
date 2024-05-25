@@ -181,12 +181,14 @@
 //! together using operator overloading. To do any of this, we must create an
 //! [`AmpOp`](crate::amplitude::AmpOp), an enum which wraps [`Amplitude`](crate::amplitude::Amplitude).
 //! This struct is just a container for a [`Node`](crate::amplitude::Node)-implementor with a
-//! [`String`] name. This crate provides a convenience macro [`crate::amplitude!`] to do this wrapping.
-//! The [`crate::amplitude::Scalar`], [`crate::amplitude::ComplexScalar`], and
-//! [`crate::amplitude::PolarComplexScalar`] amplitudes all have convenience methods,
-//! [`crate::amplitude::scalar`], [`crate::amplitude::cscalar`], and [`crate::amplitude::pcscalar`]
-//! respectively. We then wrap the final expression in a [`Model`](crate::amplitude::Model) which can
-//! manage all of the [`crate::amplitude::Parameter`]s.
+//! [`String`] name. This crate provides a convenience macro [`amplitude!`](`crate::amplitude!`) to do
+//! this wrapping. The [`Scalar`](`crate::amplitude::Scalar`),
+//! [`ComplexScalar`](`crate::amplitude::ComplexScalar`), and
+//! [`PolarComplexScalar`](`crate::amplitude::PolarComplexScalar`) amplitudes all have convenience
+//! methods, [`scalar`](`crate::amplitude::scalar`), [`cscalar`](`crate::amplitude::cscalar`), and
+//! [`pcscalar`](`crate::amplitude::pcscalar`) respectively. We then wrap the final expression in a
+//! [`Model`](crate::amplitude::Model) which can manage all of the
+//! [`Parameter`](`crate::amplitude::Parameter`)s.
 //!
 //! ```ignore
 //! use rustitude_core::prelude::*;
