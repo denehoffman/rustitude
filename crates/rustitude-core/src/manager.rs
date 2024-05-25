@@ -108,11 +108,7 @@ impl ExtendedLogLikelihood {
         }
     }
     #[allow(clippy::suboptimal_flops)]
-    pub fn evaluate(
-        &self,
-        parameters: Vec<f64>,
-        num_threads: usize,
-    ) -> Result<f64, RustitudeError> {
+    pub fn evaluate(&self, parameters: &[f64], num_threads: usize) -> Result<f64, RustitudeError> {
         create_pool(num_threads)?.install(|| {
             let data_res = self.data_manager.evaluate(&parameters)?;
             let data_weights = self.data_manager.dataset.weights();

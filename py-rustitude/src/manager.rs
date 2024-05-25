@@ -183,7 +183,7 @@ impl ExtendedLogLikelihood {
     #[pyo3(name = "__call__", signature = (parameters, *, num_threads = 1))]
     fn evaluate(&self, parameters: Vec<f64>, num_threads: usize) -> PyResult<f64> {
         self.0
-            .evaluate(parameters, num_threads)
+            .evaluate(&parameters, num_threads)
             .map_err(PyErr::from)
     }
     fn get_amplitude(&self, amplitude_name: &str) -> PyResult<Amplitude> {
