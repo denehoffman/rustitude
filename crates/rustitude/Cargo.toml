@@ -24,3 +24,6 @@ harness = false
 [features]
 default = ["gluex"]
 gluex = ["dep:rustitude-gluex"]
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--html-in-header", "./docs-header.html"]

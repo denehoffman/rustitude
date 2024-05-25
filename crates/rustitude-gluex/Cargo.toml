@@ -16,3 +16,6 @@ pyo3 = { workspace = true }
 rayon = { workspace = true }
 rustitude-core = { workspace = true }
 sphrs = { workspace = true }
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--html-in-header", "./docs-header.html"]
