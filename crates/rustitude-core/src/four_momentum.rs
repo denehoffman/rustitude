@@ -1,3 +1,9 @@
+//! # Four-Momentum
+//!
+//! This module contains a helper struct, [`FourMomentum`], which contains useful methods and
+//! manipulations for physics four-vectors representing momentum coordinates. In particular,
+//! this struct has the same layout as a `[f64; 4]` with components identified as
+//! $`(E, p_x, p_y, p_z)`$.
 use nalgebra::{Matrix4, Vector3, Vector4};
 use std::{
     fmt::Display,
@@ -7,10 +13,12 @@ use std::{
 #[cfg(feature = "simd")]
 use std::simd::prelude::*;
 
+/// Struct which holds energy and three-momentum as a four-vector.
 #[cfg(not(feature = "simd"))]
 #[derive(Debug, Clone, PartialEq, Copy, Default)]
 pub struct FourMomentum([f64; 4]);
 
+/// Struct which holds energy and three-momentum as a four-vector.
 #[cfg(feature = "simd")]
 #[derive(Debug, Clone, PartialEq, Copy, Default)]
 pub struct FourMomentum(f64x4);
@@ -61,121 +69,128 @@ impl FourMomentum {
         Self([e, px, py, pz].into())
     }
 
+    /// Returns the energy of the given [`FourMomentum`].
     #[allow(clippy::missing_const_for_fn)]
     pub fn e(&self) -> f64 {
         self.0[0]
     }
+    /// Returns the momentum along the $`x`$-axis of the given [`FourMomentum`].
     #[allow(clippy::missing_const_for_fn)]
     pub fn px(&self) -> f64 {
         self.0[1]
     }
+    /// Returns the momentum along the $`y`$-axis of the given [`FourMomentum`].
     #[allow(clippy::missing_const_for_fn)]
     pub fn py(&self) -> f64 {
         self.0[2]
     }
+    /// Returns the momentum along the $`z`$-axis of the given [`FourMomentum`].
     #[allow(clippy::missing_const_for_fn)]
     pub fn pz(&self) -> f64 {
         self.0[3]
     }
 
+    /// Sets the energy of the given [`FourMomentum`].
     pub fn set_e(&mut self, value: f64) {
         self.0[0] = value;
     }
+    /// Sets the momentum along the $`x`$-axis of the given [`FourMomentum`].
     pub fn set_px(&mut self, value: f64) {
         self.0[1] = value;
     }
+    /// Sets the momentum along the $`x`$-axis of the given [`FourMomentum`].
     pub fn set_py(&mut self, value: f64) {
         self.0[2] = value;
     }
+    /// Sets the momentum along the $`x`$-axis of the given [`FourMomentum`].
     pub fn set_pz(&mut self, value: f64) {
         self.0[3] = value;
     }
 
+    /// Calculate the invariant $ m^2 $ for this [`FourMomentum`] instance.
+    ///
+    /// Calculates $` m^2 = E^2 - \overrightarrow{p}^2 `$
+    ///
+    /// # Examples
+    /// ```
+    /// use rustitude_core::prelude::*;
+    ///
+    /// let vec_a = FourMomentum::new(20.0, 1.0, 0.2, -0.1);
+    /// //assert_eq!(vec_a.m2(), 20.0 * 20.0 - (1.0 * 1.0 + 0.0 * 0.2 + (-0.1) * (-0.1)));
+    ///
+    /// ```
     #[allow(clippy::suboptimal_flops)]
     pub fn m2(&self) -> f64 {
-        //! Calculate the invariant $ m^2 $ for this [`FourMomentum`] instance.
-        //!
-        //! Calculates $` m^2 = E^2 - \overrightarrow{p}^2 `$
-        //!
-        //! # Examples
-        //! ```
-        //! use rustitude_core::prelude::*;
-        //!
-        //! let vec_a = FourMomentum::new(20.0, 1.0, 0.2, -0.1);
-        //! //assert_eq!(vec_a.m2(), 20.0 * 20.0 - (1.0 * 1.0 + 0.0 * 0.2 + (-0.1) * (-0.1)));
-        //!
-        //! ```
         self.e().powi(2) - self.px().powi(2) - self.py().powi(2) - self.pz().powi(2)
     }
 
+    /// Calculate the invariant $ m $ for this [`FourMomentum`] instance.
+    ///
+    /// Calculates $` m = \sqrt{E^2 - \overrightarrow{p}^2} `$
+    ///
+    /// # See Also:
+    ///
+    /// [`FourMomentum::m2`]
     pub fn m(&self) -> f64 {
-        //! Calculate the invariant $ m $ for this [`FourMomentum`] instance.
-        //!
-        //! Calculates $` m = \sqrt{E^2 - \overrightarrow{p}^2} `$
-        //!
-        //! # See Also:
-        //!
-        //! [`FourMomentum::m2`]
-
         self.m2().sqrt()
     }
 
+    /// Boosts an instance of [`FourMomentum`] along the $`\overrightarrow{\beta}`$
+    /// vector of another [`FourMomentum`].
+    ///
+    /// Calculates $`\mathbf{\Lambda} \cdot \mathbf{x}`$
+    ///
+    /// # Examples
+    /// ```
+    /// #[macro_use]
+    /// use approx::*;
+    ///
+    /// use rustitude_core::prelude::*;
+    ///
+    /// let vec_a = FourMomentum::new(20.0, 1.0, -3.2, 4.0);
+    /// let vec_a_COM = vec_a.boost_along(&vec_a);
+    /// assert_abs_diff_eq!(vec_a_COM.px(), 0.0, epsilon = 1e-15);
+    /// assert_abs_diff_eq!(vec_a_COM.py(), 0.0, epsilon = 1e-15);
+    /// assert_abs_diff_eq!(vec_a_COM.pz(), 0.0, epsilon = 1e-15);
+    /// ```
     pub fn boost_along(&self, other: &Self) -> Self {
-        //! Boosts an instance of [`FourMomentum`] along the $`\overrightarrow{\beta}`$
-        //! vector of another [`FourMomentum`].
-        //!
-        //! Calculates $`\mathbf{\Lambda} \cdot \mathbf{x}`$
-        //!
-        //! # Examples
-        //! ```
-        //! #[macro_use]
-        //! use approx::*;
-        //!
-        //! use rustitude_core::prelude::*;
-        //!
-        //! let vec_a = FourMomentum::new(20.0, 1.0, -3.2, 4.0);
-        //! let vec_a_COM = vec_a.boost_along(&vec_a);
-        //! assert_abs_diff_eq!(vec_a_COM.px(), 0.0, epsilon = 1e-15);
-        //! assert_abs_diff_eq!(vec_a_COM.py(), 0.0, epsilon = 1e-15);
-        //! assert_abs_diff_eq!(vec_a_COM.pz(), 0.0, epsilon = 1e-15);
-        //! ```
         let m_boost = other.boost_matrix();
         (m_boost * Vector4::<f64>::from(self)).into()
     }
+    /// Extract the 3-momentum as a [`nalgebra::Vector3<f64>`]
+    ///
+    /// # Examples
+    /// ```
+    /// use rustitude_core::prelude::*;
+    /// use nalgebra::Vector3;
+    ///
+    /// let vec_a = FourMomentum::new(20.0, 1.0, 0.2, -0.1);
+    /// assert_eq!(vec_a.momentum(), Vector3::new(1.0, 0.2, -0.1));
+    /// ```
     pub fn momentum(&self) -> Vector3<f64> {
-        //! Extract the 3-momentum as a [`nalgebra::Vector3<f64>`]
-        //!
-        //! # Examples
-        //! ```
-        //! use rustitude_core::prelude::*;
-        //! use nalgebra::Vector3;
-        //!
-        //! let vec_a = FourMomentum::new(20.0, 1.0, 0.2, -0.1);
-        //! assert_eq!(vec_a.momentum(), Vector3::new(1.0, 0.2, -0.1));
-        //! ```
         Vector3::new(self.px(), self.py(), self.pz())
     }
 
+    /// Construct the 3-vector $\overrightarrow{\beta}$ where
+    ///
+    /// $` \overrightarrow{\beta} = \frac{\overrightarrow{p}}{E} `$
     pub fn beta3(&self) -> Vector3<f64> {
-        //! Construct the 3-vector $\overrightarrow{\beta}$ where
-        //!
-        //! $` \overrightarrow{\beta} = \frac{\overrightarrow{p}}{E} `$
         self.momentum() / self.e()
     }
 
+    /// Construct the Lorentz boost matrix $`\mathbf{\Lambda}`$ where
+    ///
+    /// ```math
+    /// \mathbf{\Lambda} = \begin{pmatrix}
+    /// \gamma & -\gamma \beta_x & -\gamma \beta_y & -\gamma \beta_z \\
+    /// -\gamma \beta_x & 1 + (\gamma - 1) \frac{\beta_x^2}{\overrightarrow{\beta}^2} & (\gamma - 1) \frac{\beta_x \b/ta_y}{\overrightarrow{\beta}^2} & (\gamma - 1) \frac{\beta_x \beta_z}{\overrightarrow{\beta}^2} \\
+    /// -\gamma \beta_y & (\gamma - 1) \frac{\beta_y \beta_x}{\overrightarrow{\beta}^2} & 1 + (\gamma - 1) \frac{\beta_y^2}{\overrightarrow{\beta}^2} & (\gamma - 1) \frac{\beta_y \beta_z}{\overrightarrow{\beta}^2} \\
+    /// -\gamma \beta_z & (\gamma - 1) \frac{\beta_z \beta_x}{\overrightarrow{\beta}^2} & (\gamma - 1) \frac{\beta_z \beta_y}{\overrightarrow{\beta}^2} & 1 + (\gamma - 1) \frac{\beta_z^2}{\overrightarrow{\beta}^2}
+    /// \end{pmatrix}
+    /// ```
+    /// where
+    /// $`\overrightarrow{\beta} = \frac{\overrightarrow{p}}{E}`$ and $`\gamma = \frac{1}{\sqrt{1 - \overrightarrow{\beta}^2}}`$.
     pub fn boost_matrix(&self) -> Matrix4<f64> {
-        //! Construct the Lorentz boost matrix $`\mathbf{\Lambda}`$ where
-        //!
-        //! ```math
-        //! \mathbf{\Lambda} = \begin{pmatrix}
-        //! \gamma & -\gamma \beta_x & -\gamma \beta_y & -\gamma \beta_z \\
-        //! -\gamma \beta_x & 1 + (\gamma - 1) \frac{\beta_x^2}{\overrightarrow{\beta}^2} & (\gamma - 1) \frac{\beta_x \beta_y}{\overrightarrow{\beta}^2} & (\gamma - 1) \frac{\beta_x \beta_z}{\overrightarrow{\beta}^2} \\
-        //! -\gamma \beta_y & (\gamma - 1) \frac{\beta_y \beta_x}{\overrightarrow{\beta}^2} & 1 + (\gamma - 1) \frac{\beta_y^2}{\overrightarrow{\beta}^2} & (\gamma - 1) \frac{\beta_y \beta_z}{\overrightarrow{\beta}^2} \\
-        //! -\gamma \beta_z & (\gamma - 1) \frac{\beta_z \beta_x}{\overrightarrow{\beta}^2} & (\gamma - 1) \frac{\beta_z \beta_y}{\overrightarrow{\beta}^2} & 1 + (\gamma - 1) \frac{\beta_z^2}{\overrightarrow{\beta}^2}
-        //! \end{pmatrix}
-        //! ```
-        //! where
-        //! $`\overrightarrow{\beta} = \frac{\overrightarrow{p}}{E}`$ and $`\gamma = \frac{1}{\sqrt{1 - \overrightarrow{\beta}^2}}`$.
         let b = self.beta3();
         let b2 = b.dot(&b);
         let g = 1.0 / (1.0 - b2).sqrt();
