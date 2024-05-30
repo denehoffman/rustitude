@@ -21,6 +21,8 @@
     <img src="https://img.shields.io/docsrs/rustitude" /></a>
 </p>
 
+# WARNING: This crate currently has a flaw which was pointed out to me by Lawrence Ng. It will require a considerable rewrite of the amplitude system to correct, and this is underway.
+
 ### Table of Contents:
 
 - [Introduction](#Introduction)
