@@ -14,16 +14,32 @@ use crate::{
     errors::RustitudeError,
 };
 
+/// A single parameter within an [`Amplitude`].
 #[derive(Clone)]
 pub struct Parameter {
+    /// Name of the parent [`Amplitude`] containing this parameter.
     pub amplitude: String,
+    /// Name of the parameter.
     pub name: String,
+    /// Index of the parameter with respect to the [`Model`]. This will be [`Option::None`] if
+    /// the parameter is fixed.
     pub index: Option<usize>,
+    /// A separate index for fixed parameters to ensure they stay constrained properly if freed.
+    /// This will be [`Option::None`] if the parameter is free in the [`Model`].
     pub fixed_index: Option<usize>,
+    /// The initial value the parameter takes, or alternatively the value of the parameter if it is
+    /// fixed in the fit.
     pub initial: f64,
+    /// Bounds for the given parameter (defaults to +/- infinity). This is mostly optional and
+    /// isn't used in any Rust code asside from being able to get and set it.
     pub bounds: (f64, f64),
 }
 impl Parameter {
+    /// Creates a new [`Parameter`] within an [`Amplitude`] using the name of the [`Amplitude`],
+    /// the name of the [`Parameter`], and the index of the parameter within the [`Model`].
+    ///
+    /// By default, new [`Parameter`]s are free, have an initial value of `0.0`, and their bounds
+    /// are set to `(f64::NEG_INFINITY, f64::INFINITY)`.
     pub fn new(amplitude: &str, name: &str, index: usize) -> Self {
         Self {
             amplitude: amplitude.to_string(),
@@ -194,6 +210,11 @@ pub trait Node: Sync + Send {
     /// parameters. For instance, to calculate a spherical harmonic, we don't actually need any
     /// other information than what is contained in the [`Event`], so we can calculate a spherical
     /// harmonic for every event once and then retrieve the data in the [`Node::calculate`] method.
+    ///
+    /// # Errors
+    ///
+    /// This function should be written to return a [`RustitudeError`] if any part of the
+    /// calculation fails.
     fn precalculate(&mut self, _dataset: &Dataset) -> Result<(), RustitudeError> {
         Ok(())
     }
@@ -206,6 +227,11 @@ pub trait Node: Sync + Send {
     /// a slice of [`f64`]s. This slice is guaranteed to have the same length and order as
     /// specified in the [`Node::parameters`] method, or it will be empty if that method returns
     /// [`None`].
+    ///
+    /// # Errors
+    ///
+    /// This function should be written to return a [`RustitudeError`] if any part of the
+    /// calculation fails.
     fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError>;
 
     /// A method which specifies the number and order of parameters used by the [`Node`].
