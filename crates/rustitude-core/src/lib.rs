@@ -303,6 +303,10 @@ pub mod errors {
         ThreadPoolBuildError(#[from] rayon::ThreadPoolBuildError),
 
         #[allow(missing_docs)]
+        #[error("Could not cast value from {0} (type in file) to {1} (required type)")]
+        DatasetReadError(String, String),
+
+        #[allow(missing_docs)]
         #[error("Parameter not found: {0}")]
         ParameterNotFoundError(String),
 
