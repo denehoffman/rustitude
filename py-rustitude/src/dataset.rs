@@ -79,7 +79,13 @@ impl From<Dataset> for rust::Dataset {
 impl Dataset {
     #[getter]
     fn events(&self) -> Vec<Event> {
-        self.0.events().into_iter().map(Event::from).collect()
+        self.0
+            .events
+            .read_arc()
+            .iter()
+            .cloned()
+            .map(Event::from)
+            .collect()
     }
     #[getter]
     fn weights(&self) -> Vec<f64> {
@@ -96,10 +102,9 @@ impl Dataset {
         &self,
         range: (f64, f64),
         bins: usize,
-        p1: Option<Vec<usize>>,
-        p2: Option<Vec<usize>>,
+        daughter_indices: Option<Vec<usize>>,
     ) -> (Vec<Self>, Self, Self) {
-        let (binned_data, underflow, overflow) = self.0.split_m(range, bins, p1, p2);
+        let (binned_data, underflow, overflow) = self.0.split_m(range, bins, daughter_indices);
         (
             binned_data.into_iter().map(Dataset::from).collect(),
             underflow.into(),
@@ -109,7 +114,7 @@ impl Dataset {
 
     #[staticmethod]
     fn from_events(events: Vec<Event>) -> Self {
-        rust::Dataset::from_events(events.into_iter().map(rust::Event::from).collect()).into()
+        rust::Dataset::new(events.into_iter().map(rust::Event::from).collect()).into()
     }
 
     #[staticmethod]

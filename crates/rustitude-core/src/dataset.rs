@@ -2,8 +2,7 @@ use std::{fmt::Display, fs::File, path::Path, sync::Arc};
 
 use itertools::izip;
 use nalgebra::Vector3;
-use num::Zero;
-use oxyroot::{RootFile, Slice};
+use oxyroot::{ReaderTree, RootFile, Slice};
 use parking_lot::RwLock;
 use parquet::{
     file::reader::{FileReader, SerializedFileReader},
@@ -42,7 +41,7 @@ impl Display for Event {
     }
 }
 impl Event {
-    pub fn read_parquet_row(
+    /// Reads an [`Event`] from a single [`Row`] in a Parquet file.
         index: usize,
         row: Result<Row, parquet::errors::ParquetError>,
     ) -> Result<Self, RustitudeError> {
@@ -154,7 +153,7 @@ impl Event {
         }
         Ok(event)
     }
-    pub fn read_parquet_row_eps_in_beam(
+    /// Reads an [`Event`] from a single [`Row`] in a Parquet file, assuming EPS is stored in the
         index: usize,
         row: Result<Row, parquet::errors::ParquetError>,
     ) -> Result<Self, RustitudeError> {
@@ -253,7 +252,7 @@ impl Event {
         Ok(event)
     }
 
-    pub fn read_parquet_row_with_eps(
+    /// Reads an [`Event`] from a single [`Row`] in a Parquet file and set EPS for all events.
         index: usize,
         row: Result<Row, parquet::errors::ParquetError>,
         eps: Vector3<f64>,
@@ -354,7 +353,7 @@ impl Event {
         Ok(event)
     }
 
-    pub fn read_parquet_row_unpolarized(
+    /// Reads an [`Event`] from a single [`Row`] in a Parquet file and set EPS = `[0, 0, 0]` for
         index: usize,
         row: Result<Row, parquet::errors::ParquetError>,
     ) -> Result<Self, RustitudeError> {
@@ -368,11 +367,11 @@ pub struct Dataset {
 }
 
 impl Dataset {
-    pub fn events(&self) -> Vec<Event> {
-        self.events.read().clone()
-    }
+    // TODO: can we make an events(&self) -> &Vec<f64> method that actually works without cloning?
+
+    /// Retrieves the weights from the events in the dataset
     pub fn weights(&self) -> Vec<f64> {
-        self.events.read().iter().map(|e| e.weight).collect()
+        self.events.read_arc().iter().map(|e| e.weight).collect()
     }
 
     // TODO:
@@ -389,33 +388,26 @@ impl Dataset {
         &self,
         range: (f64, f64),
         bins: usize,
-        p1: Option<Vec<usize>>,
-        p2: Option<Vec<usize>>,
+        daughter_indices: Option<Vec<usize>>,
     ) -> (Vec<Self>, Self, Self) {
         let mass = |e: &Event| {
-            let p1_p4: FourMomentum = p1
+            let p4: FourMomentum = daughter_indices
                 .clone()
-                .unwrap_or_else(|| vec![0])
+                .unwrap_or_else(|| vec![0, 1])
                 .iter()
                 .map(|i| &e.daughter_p4s[*i])
                 .sum();
-            let p2_p4 = p2
-                .clone()
-                .unwrap_or_else(|| vec![1])
-                .iter()
-                .map(|i| &e.daughter_p4s[*i])
-                .sum::<FourMomentum>();
-            (p1_p4 + p2_p4).m()
+            p4.m()
         };
         self.clone().split(mass, range, bins) // TODO: fix clone here eventually
     }
 
-    pub fn from_events(events: Vec<Event>) -> Self {
-        Self {
-            events: Arc::new(RwLock::new(events)),
-        }
-    }
-
+    /// Generates a new [`Dataset`] from a Parquet file.
+    ///
+    /// # Errors
+    ///
+    /// This method will fail if any individual event is missing all of the required fields, if
+    /// they have the wrong type, or if the file doesn't exist/can't be read for any reason.
     pub fn from_parquet(path: &str) -> Result<Self, RustitudeError> {
         let path = Path::new(path);
         let file = File::open(path)?;
@@ -469,104 +461,161 @@ impl Dataset {
         ))
     }
 
+    /// Extract a branch from a ROOT `TTree` containing a [`f32`] (float in C). This method
+    /// converts the underlying element to an [`f64`].
+    fn extract_f32(
+        path: &str,
+        ttree: &ReaderTree,
+        branch: &str,
+    ) -> Result<Vec<f64>, RustitudeError> {
+        let res = ttree
+            .branch(branch)
+            .ok_or_else(|| {
+                RustitudeError::OxyrootError(format!(
+                    "Could not find {} branch in {}",
+                    branch, path
+                ))
+            })?
+            .as_iter::<f32>()
+            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
+            .map(f64::from)
+            .collect();
+        Ok(res)
+    }
+
+    /// Extract a branch from a ROOT `TTree` containing an array of [`f32`]s (floats in C). This
+    /// method converts the underlying elements to [`f64`]s.
+    fn extract_vec_f32(
+        path: &str,
+        ttree: &ReaderTree,
+        branch: &str,
+    ) -> Result<Vec<Vec<f64>>, RustitudeError> {
+        let res: Vec<Vec<f64>> = ttree
+            .branch(branch)
+            .ok_or_else(|| {
+                RustitudeError::OxyrootError(format!(
+                    "Could not find {} branch in {}",
+                    branch, path
+                ))
+            })?
+            .as_iter::<Slice<f64>>()
+            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
+            .map(|v| v.into_vec())
+            .collect();
+        Ok(res)
+    }
+
+    /// Generates a new [`Dataset`] from a ROOT file.
+    ///
+    /// # Errors
+    ///
+    /// This method will fail if any individual event is missing all of the required fields, if
+    /// they have the wrong type, or if the file doesn't exist/can't be read for any reason.
     pub fn from_root(path: &str) -> Result<Self, RustitudeError> {
         let ttree = RootFile::open(path)
             .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
             .get_tree("kin")
             .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?;
-        let weight: Vec<f64> = ttree
-            .branch("Weight")
-            .ok_or_else(|| {
-                RustitudeError::OxyrootError(format!("Could not find Weight branch in {}", path))
-            })?
-            .as_iter::<f32>()
+        let weight: Vec<f64> = Self::extract_f32(path, &ttree, "Weight")?;
+        let e_beam: Vec<f64> = Self::extract_f32(path, &ttree, "E_Beam")?;
+        let px_beam: Vec<f64> = Self::extract_f32(path, &ttree, "Px_Beam")?;
+        let py_beam: Vec<f64> = Self::extract_f32(path, &ttree, "Py_Beam")?;
+        let pz_beam: Vec<f64> = Self::extract_f32(path, &ttree, "Pz_Beam")?;
+        let e_fs: Vec<Vec<f64>> = Self::extract_vec_f32(path, &ttree, "E_FinalState")?;
+        let px_fs: Vec<Vec<f64>> = Self::extract_vec_f32(path, &ttree, "Px_FinalState")?;
+        let py_fs: Vec<Vec<f64>> = Self::extract_vec_f32(path, &ttree, "Py_FinalState")?;
+        let pz_fs: Vec<Vec<f64>> = Self::extract_vec_f32(path, &ttree, "Pz_FinalState")?;
+        let eps: Vec<Vec<f64>> = Self::extract_vec_f32(path, &ttree, "EPS")?;
+        Ok(Self::new(
+            izip!(weight, e_beam, px_beam, py_beam, pz_beam, e_fs, px_fs, py_fs, pz_fs, eps)
+                .enumerate()
+                .map(
+                    |(i, (w, e_b, px_b, py_b, pz_b, e_f, px_f, py_f, pz_f, eps_vec))| Event {
+                        index: i,
+                        weight: w,
+                        beam_p4: FourMomentum::new(e_b, px_b, py_b, pz_b),
+                        recoil_p4: FourMomentum::new(e_f[0], px_f[0], py_f[0], pz_f[0]),
+                        daughter_p4s: izip!(
+                            e_f[1..].iter(),
+                            px_f[1..].iter(),
+                            py_f[1..].iter(),
+                            pz_f[1..].iter()
+                        )
+                        .map(|(e, px, py, pz)| FourMomentum::new(*e, *px, *py, *pz))
+                        .collect(),
+                        eps: Vector3::from_vec(eps_vec),
+                    },
+                )
+                .collect(),
+        ))
+    }
+
+    /// Generates a new [`Dataset`] from a ROOT file, assuming the EPS vector can be constructed
+    /// from the x and y-components of the beam.
+    ///
+    /// # Errors
+    ///
+    /// This method will fail if any individual event is missing all of the required fields, if
+    /// they have the wrong type, or if the file doesn't exist/can't be read for any reason.
+    pub fn from_root_eps_in_beam(path: &str) -> Result<Self, RustitudeError> {
+        let ttree = RootFile::open(path)
             .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
-            .map(f64::from)
-            .collect();
-        let e_beam: Vec<f64> = ttree
-            .branch("E_Beam")
-            .ok_or_else(|| {
-                RustitudeError::OxyrootError(format!("Could not find E_Beam branch in {}", path))
-            })?
-            .as_iter::<f32>()
+            .get_tree("kin")
+            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?;
+        let weight: Vec<f64> = Self::extract_f32(path, &ttree, "Weight")?;
+        let e_beam: Vec<f64> = Self::extract_f32(path, &ttree, "E_Beam")?;
+        let px_beam: Vec<f64> = Self::extract_f32(path, &ttree, "Px_Beam")?;
+        let py_beam: Vec<f64> = Self::extract_f32(path, &ttree, "Py_Beam")?;
+        let pz_beam: Vec<f64> = Self::extract_f32(path, &ttree, "Pz_Beam")?;
+        let e_fs: Vec<Vec<f64>> = Self::extract_vec_f32(path, &ttree, "E_FinalState")?;
+        let px_fs: Vec<Vec<f64>> = Self::extract_vec_f32(path, &ttree, "Px_FinalState")?;
+        let py_fs: Vec<Vec<f64>> = Self::extract_vec_f32(path, &ttree, "Py_FinalState")?;
+        let pz_fs: Vec<Vec<f64>> = Self::extract_vec_f32(path, &ttree, "Pz_FinalState")?;
+        Ok(Self::new(
+            izip!(weight, e_beam, px_beam, py_beam, pz_beam, e_fs, px_fs, py_fs, pz_fs)
+                .enumerate()
+                .map(
+                    |(i, (w, e_b, px_b, py_b, pz_b, e_f, px_f, py_f, pz_f))| Event {
+                        index: i,
+                        weight: w,
+                        beam_p4: FourMomentum::new(e_b, 0.0, 0.0, pz_b),
+                        recoil_p4: FourMomentum::new(e_f[0], px_f[0], py_f[0], pz_f[0]),
+                        daughter_p4s: izip!(
+                            e_f[1..].iter(),
+                            px_f[1..].iter(),
+                            py_f[1..].iter(),
+                            pz_f[1..].iter()
+                        )
+                        .map(|(e, px, py, pz)| FourMomentum::new(*e, *px, *py, *pz))
+                        .collect(),
+                        eps: Vector3::from_vec(vec![px_b, py_b, 0.0]),
+                    },
+                )
+                .collect(),
+        ))
+    }
+
+    /// Generates a new [`Dataset`] from a Parquet file with a given EPS polarization vector.
+    ///
+    /// # Errors
+    ///
+    /// This method will fail if any individual event is missing all of the required fields, if
+    /// they have the wrong type, or if the file doesn't exist/can't be read for any reason.
+    pub fn from_root_with_eps(path: &str, eps: Vec<f64>) -> Result<Self, RustitudeError> {
+        let ttree = RootFile::open(path)
             .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
-            .map(f64::from)
-            .collect();
-        let px_beam: Vec<f64> = ttree
-            .branch("Px_Beam")
-            .ok_or_else(|| {
-                RustitudeError::OxyrootError(format!("Could not find Px_Beam branch in {}", path))
-            })?
-            .as_iter::<f32>()
-            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
-            .map(f64::from)
-            .collect();
-        let py_beam: Vec<f64> = ttree
-            .branch("Py_Beam")
-            .ok_or_else(|| {
-                RustitudeError::OxyrootError(format!("Could not find Py_Beam branch in {}", path))
-            })?
-            .as_iter::<f32>()
-            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
-            .map(f64::from)
-            .collect();
-        let pz_beam: Vec<f64> = ttree
-            .branch("Pz_Beam")
-            .ok_or_else(|| {
-                RustitudeError::OxyrootError(format!("Could not find Pz_Beam branch in {}", path))
-            })?
-            .as_iter::<f32>()
-            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
-            .map(f64::from)
-            .collect();
-        let e_fs: Vec<Vec<f64>> = ttree
-            .branch("E_FinalState")
-            .ok_or_else(|| {
-                RustitudeError::OxyrootError(format!(
-                    "Could not find E_FinalState branch in {}",
-                    path
-                ))
-            })?
-            .as_iter::<Slice<f64>>()
-            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
-            .map(|v| v.into_vec())
-            .collect();
-        let px_fs: Vec<Vec<f64>> = ttree
-            .branch("Px_FinalState")
-            .ok_or_else(|| {
-                RustitudeError::OxyrootError(format!(
-                    "Could not find Px_FinalState branch in {}",
-                    path
-                ))
-            })?
-            .as_iter::<Slice<f64>>()
-            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
-            .map(|v| v.into_vec())
-            .collect();
-        let py_fs: Vec<Vec<f64>> = ttree
-            .branch("Py_FinalState")
-            .ok_or_else(|| {
-                RustitudeError::OxyrootError(format!(
-                    "Could not find Px_FinalState branch in {}",
-                    path
-                ))
-            })?
-            .as_iter::<Slice<f64>>()
-            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
-            .map(|v| v.into_vec())
-            .collect();
-        let pz_fs: Vec<Vec<f64>> = ttree
-            .branch("Pz_FinalState")
-            .ok_or_else(|| {
-                RustitudeError::OxyrootError(format!(
-                    "Could not find Px_FinalState branch in {}",
-                    path
-                ))
-            })?
-            .as_iter::<Slice<f64>>()
-            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
-            .map(|v| v.into_vec())
-            .collect();
+            .get_tree("kin")
+            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?;
+        let weight: Vec<f64> = Self::extract_f32(path, &ttree, "Weight")?;
+        let e_beam: Vec<f64> = Self::extract_f32(path, &ttree, "E_Beam")?;
+        let px_beam: Vec<f64> = Self::extract_f32(path, &ttree, "Px_Beam")?;
+        let py_beam: Vec<f64> = Self::extract_f32(path, &ttree, "Py_Beam")?;
+        let pz_beam: Vec<f64> = Self::extract_f32(path, &ttree, "Pz_Beam")?;
+        let e_fs: Vec<Vec<f64>> = Self::extract_vec_f32(path, &ttree, "E_FinalState")?;
+        let px_fs: Vec<Vec<f64>> = Self::extract_vec_f32(path, &ttree, "Px_FinalState")?;
+        let py_fs: Vec<Vec<f64>> = Self::extract_vec_f32(path, &ttree, "Py_FinalState")?;
+        let pz_fs: Vec<Vec<f64>> = Self::extract_vec_f32(path, &ttree, "Pz_FinalState")?;
+        let eps = Vector3::from_vec(eps);
         Ok(Self::new(
             izip!(weight, e_beam, px_beam, py_beam, pz_beam, e_fs, px_fs, py_fs, pz_fs)
                 .enumerate()
@@ -584,7 +633,51 @@ impl Dataset {
                         )
                         .map(|(e, px, py, pz)| FourMomentum::new(*e, *px, *py, *pz))
                         .collect(),
-                        eps: Vector3::zero(),
+                        eps,
+                    },
+                )
+                .collect(),
+        ))
+    }
+
+    /// Generates a new [`Dataset`] from a Parquet file with EPS = `[0, 0, 0]`.
+    ///
+    /// # Errors
+    ///
+    /// This method will fail if any individual event is missing all of the required fields, if
+    /// they have the wrong type, or if the file doesn't exist/can't be read for any reason.
+    pub fn from_root_unpolarized(path: &str) -> Result<Self, RustitudeError> {
+        let ttree = RootFile::open(path)
+            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
+            .get_tree("kin")
+            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?;
+        let weight: Vec<f64> = Self::extract_f32(path, &ttree, "Weight")?;
+        let e_beam: Vec<f64> = Self::extract_f32(path, &ttree, "E_Beam")?;
+        let px_beam: Vec<f64> = Self::extract_f32(path, &ttree, "Px_Beam")?;
+        let py_beam: Vec<f64> = Self::extract_f32(path, &ttree, "Py_Beam")?;
+        let pz_beam: Vec<f64> = Self::extract_f32(path, &ttree, "Pz_Beam")?;
+        let e_fs: Vec<Vec<f64>> = Self::extract_vec_f32(path, &ttree, "E_FinalState")?;
+        let px_fs: Vec<Vec<f64>> = Self::extract_vec_f32(path, &ttree, "Px_FinalState")?;
+        let py_fs: Vec<Vec<f64>> = Self::extract_vec_f32(path, &ttree, "Py_FinalState")?;
+        let pz_fs: Vec<Vec<f64>> = Self::extract_vec_f32(path, &ttree, "Pz_FinalState")?;
+        Ok(Self::new(
+            izip!(weight, e_beam, px_beam, py_beam, pz_beam, e_fs, px_fs, py_fs, pz_fs)
+                .enumerate()
+                .map(
+                    |(i, (w, e_b, px_b, py_b, pz_b, e_f, px_f, py_f, pz_f))| Event {
+                        index: i,
+                        weight: w,
+                        beam_p4: FourMomentum::new(e_b, px_b, py_b, pz_b),
+                        recoil_p4: FourMomentum::new(e_f[0], px_f[0], py_f[0], pz_f[0]),
+                        daughter_p4s: izip!(
+                            e_f[1..].iter(),
+                            px_f[1..].iter(),
+                            py_f[1..].iter(),
+                            pz_f[1..].iter()
+                        )
+                        .map(|(e, px, py, pz)| FourMomentum::new(*e, *px, *py, *pz))
+                        .collect(),
+                        eps: Vector3::default(),
                     },
                 )
                 .collect(),
