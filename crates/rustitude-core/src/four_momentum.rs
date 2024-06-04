@@ -14,11 +14,39 @@ use std::{
 use std::simd::prelude::*;
 
 /// Struct which holds energy and three-momentum as a four-vector.
+///
+/// A four-momentum structure with helpful methods for boosts.
+///
+/// This is the basic structure of a Lorentz four-vector
+/// of the form $`(E, \vec{p})`$ where $`E`$ is the energy and $`\vec{p}`$ is the
+/// momentum.
+///
+/// # Examples
+/// ```
+/// use rustitude_core::prelude::*;
+///
+/// let vec_a = FourMomentum::new(1.3, 0.2, 0.3, 0.1);
+/// let vec_b = FourMomentum::new(4.2, 0.5, 0.4, 0.5);
+/// ```
 #[cfg(not(feature = "simd"))]
 #[derive(Debug, Clone, PartialEq, Copy, Default)]
 pub struct FourMomentum([f64; 4]);
 
 /// Struct which holds energy and three-momentum as a four-vector.
+///
+/// A four-momentum structure with helpful methods for boosts.
+///
+/// This is the basic structure of a Lorentz four-vector
+/// of the form $`(E, \vec{p})`$ where $`E`$ is the energy and $`\vec{p}`$ is the
+/// momentum.
+///
+/// # Examples
+/// ```
+/// use rustitude_core::prelude::*;
+///
+/// let vec_a = FourMomentum::new(1.3, 0.2, 0.3, 0.1);
+/// let vec_b = FourMomentum::new(4.2, 0.5, 0.4, 0.5);
+/// ```
 #[cfg(feature = "simd")]
 #[derive(Debug, Clone, PartialEq, Copy, Default)]
 pub struct FourMomentum(f64x4);
@@ -39,20 +67,6 @@ impl Display for FourMomentum {
 }
 
 impl FourMomentum {
-    //! A four-momentum structure with helpful methods for boosts.
-    //!
-    //! This is the basic structure of a Lorentz four-vector
-    //! of the form $`(E, \overrightarrow{p})`$ where $`E`$ is the energy and $`\overrightarrow{p}`$ is the
-    //! momentum.
-    //!
-    //! # Examples
-    //! ```
-    //! use rustitude_core::prelude::*;
-    //!
-    //! let vec_a = FourMomentum::new(1.3, 0.2, 0.3, 0.1);
-    //! let vec_b = FourMomentum::new(4.2, 0.5, 0.4, 0.5);
-    //! ```
-
     #[cfg(not(feature = "simd"))]
     pub const fn new(e: f64, px: f64, py: f64, pz: f64) -> Self {
         //! Create a new [`FourMomentum`] from energy and momentum components.
@@ -107,9 +121,9 @@ impl FourMomentum {
         self.0[3] = value;
     }
 
-    /// Calculate the invariant $ m^2 $ for this [`FourMomentum`] instance.
+    /// Calculate the invariant $`m^2`$ for this [`FourMomentum`] instance.
     ///
-    /// Calculates $` m^2 = E^2 - \overrightarrow{p}^2 `$
+    /// Calculates $` m^2 = E^2 - \vec{p}^2 `$
     ///
     /// # Examples
     /// ```
@@ -124,9 +138,9 @@ impl FourMomentum {
         self.e().powi(2) - self.px().powi(2) - self.py().powi(2) - self.pz().powi(2)
     }
 
-    /// Calculate the invariant $ m $ for this [`FourMomentum`] instance.
+    /// Calculate the invariant $`m`$ for this [`FourMomentum`] instance.
     ///
-    /// Calculates $` m = \sqrt{E^2 - \overrightarrow{p}^2} `$
+    /// Calculates $` m = \sqrt{E^2 - \vec{p}^2} `$
     ///
     /// # See Also:
     ///
@@ -135,7 +149,7 @@ impl FourMomentum {
         self.m2().sqrt()
     }
 
-    /// Boosts an instance of [`FourMomentum`] along the $`\overrightarrow{\beta}`$
+    /// Boosts an instance of [`FourMomentum`] along the $`\vec{\beta}`$
     /// vector of another [`FourMomentum`].
     ///
     /// Calculates $`\mathbf{\Lambda} \cdot \mathbf{x}`$
@@ -171,9 +185,9 @@ impl FourMomentum {
         Vector3::new(self.px(), self.py(), self.pz())
     }
 
-    /// Construct the 3-vector $\overrightarrow{\beta}$ where
+    /// Construct the 3-vector $`\vec{\beta}`$ where
     ///
-    /// $` \overrightarrow{\beta} = \frac{\overrightarrow{p}}{E} `$
+    /// $` \vec{\beta} = \frac{\vec{p}}{E} `$
     pub fn beta3(&self) -> Vector3<f64> {
         self.momentum() / self.e()
     }
@@ -183,13 +197,13 @@ impl FourMomentum {
     /// ```math
     /// \mathbf{\Lambda} = \begin{pmatrix}
     /// \gamma & -\gamma \beta_x & -\gamma \beta_y & -\gamma \beta_z \\
-    /// -\gamma \beta_x & 1 + (\gamma - 1) \frac{\beta_x^2}{\overrightarrow{\beta}^2} & (\gamma - 1) \frac{\beta_x \b/ta_y}{\overrightarrow{\beta}^2} & (\gamma - 1) \frac{\beta_x \beta_z}{\overrightarrow{\beta}^2} \\
-    /// -\gamma \beta_y & (\gamma - 1) \frac{\beta_y \beta_x}{\overrightarrow{\beta}^2} & 1 + (\gamma - 1) \frac{\beta_y^2}{\overrightarrow{\beta}^2} & (\gamma - 1) \frac{\beta_y \beta_z}{\overrightarrow{\beta}^2} \\
-    /// -\gamma \beta_z & (\gamma - 1) \frac{\beta_z \beta_x}{\overrightarrow{\beta}^2} & (\gamma - 1) \frac{\beta_z \beta_y}{\overrightarrow{\beta}^2} & 1 + (\gamma - 1) \frac{\beta_z^2}{\overrightarrow{\beta}^2}
+    /// -\gamma \beta_x & 1 + (\gamma - 1) \frac{\beta_x^2}{\vec{\beta}^2} & (\gamma - 1) \frac{\beta_x \beta_y}{\vec{\beta}^2} & (\gamma - 1) \frac{\beta_x \beta_z}{\vec{\beta}^2} \\
+    /// -\gamma \beta_y & (\gamma - 1) \frac{\beta_y \beta_x}{\vec{\beta}^2} & 1 + (\gamma - 1) \frac{\beta_y^2}{\vec{\beta}^2} & (\gamma - 1) \frac{\beta_y \beta_z}{\vec{\beta}^2} \\
+    /// -\gamma \beta_z & (\gamma - 1) \frac{\beta_z \beta_x}{\vec{\beta}^2} & (\gamma - 1) \frac{\beta_z \beta_y}{\vec{\beta}^2} & 1 + (\gamma - 1) \frac{\beta_z^2}{\vec{\beta}^2}
     /// \end{pmatrix}
     /// ```
     /// where
-    /// $`\overrightarrow{\beta} = \frac{\overrightarrow{p}}{E}`$ and $`\gamma = \frac{1}{\sqrt{1 - \overrightarrow{\beta}^2}}`$.
+    /// $`\vec{\beta} = \frac{\vec{p}}{E}`$ and $`\gamma = \frac{1}{\sqrt{1 - \vec{\beta}^2}}`$.
     pub fn boost_matrix(&self) -> Matrix4<f64> {
         let b = self.beta3();
         let b2 = b.dot(&b);
