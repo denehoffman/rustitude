@@ -1315,7 +1315,7 @@ dependencies = [
 
 [[package]]
 name = "rustitude"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "criterion",
  "num_cpus",
@@ -1326,7 +1326,7 @@ dependencies = [
 
 [[package]]
 name = "rustitude-core"
-version = "1.1.0"
+version = "2.0.0"
 dependencies = [
  "approx",
  "indexmap",
@@ -1346,7 +1346,7 @@ dependencies = [
 
 [[package]]
 name = "rustitude-gluex"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "factorial",
  "nalgebra",

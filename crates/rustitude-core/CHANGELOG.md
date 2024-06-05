@@ -5,6 +5,73 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.0.0 (2024-06-05)
+
+<csr-id-e93d0412dd41b02387d49c9e1f6e9f294d0a5821/>
+
+### Documentation
+
+ - <csr-id-b18e3e16d055d84afce1f719f57dd8b330bb13a5/> finish documentation coverage (not quite full quality, but we can work on that)
+ - <csr-id-04b99c3e6a9b2d1538e0f7d130f7d1975884af47/> add documentation for almost everything
+   I haven't documented amplitude.rs yet because it has some fundamental flaws pointed out to me by Lawrence Ng.
+ - <csr-id-71181fc0cb45fc66b560f33999c8ead0bbbfa568/> finished documenting four_momentum.rs
+ - <csr-id-b8b46d85f2c8e7e25583f8be5244c3f272bf6132/> shortened some links
+ - <csr-id-f337fdb784f4ee6c982218149235c5a1320fa49a/> write crate-level documentation
+
+### New Features
+
+ - <csr-id-82ae77512545c255e1055fde57d8219449a43abf/> added print_tree at CohSum and Model level
+ - <csr-id-a155903c04ea8bba1a22f8feed16aec980ea16a5/> add dataset reading error
+ - <csr-id-4145ddc1075a0cfc5e32e9478a20afcbc2ba3bdd/> add parity between ROOT and Parquet reading formats
+   additionally adds the arc_lock feature to parking_lot and removes the Dataset::events method, which clones the whole dataset and might be misused by mistake.
+
+### Bug Fixes
+
+ - <csr-id-d0da6de9ee1e969c93cae68c60515495cad98c84/> fixed failing docs
+ - <csr-id-e0185980a71ef2b13adf35c7d74c1bb7ba6b6829/> change parameters in Manager.evaluate to be a slice rather than a vector
+
+### Style
+
+ - <csr-id-e93d0412dd41b02387d49c9e1f6e9f294d0a5821/> add KaTeX header to all docs
+
+### New Features (BREAKING)
+
+ - <csr-id-a8041782d9c3822aff84e955ea6dc7f0e9e196f1/> implemented norm_int functions and CohSum
+   This feature is designed to allow for the correct implementation of
+   normalization integrals. Thanks to Lawrence Ng for pointing this out to
+   me.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 13 commits contributed to the release over the course of 11 calendar days.
+ - 11 days passed between releases.
+ - 12 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Fixed failing docs ([`d0da6de`](https://github.com/denehoffman/rustitude/commit/d0da6de9ee1e969c93cae68c60515495cad98c84))
+    - Finish documentation coverage (not quite full quality, but we can work on that) ([`b18e3e1`](https://github.com/denehoffman/rustitude/commit/b18e3e16d055d84afce1f719f57dd8b330bb13a5))
+    - Added print_tree at CohSum and Model level ([`82ae775`](https://github.com/denehoffman/rustitude/commit/82ae77512545c255e1055fde57d8219449a43abf))
+    - Implemented norm_int functions and CohSum ([`a804178`](https://github.com/denehoffman/rustitude/commit/a8041782d9c3822aff84e955ea6dc7f0e9e196f1))
+    - Add documentation for almost everything ([`04b99c3`](https://github.com/denehoffman/rustitude/commit/04b99c3e6a9b2d1538e0f7d130f7d1975884af47))
+    - Add dataset reading error ([`a155903`](https://github.com/denehoffman/rustitude/commit/a155903c04ea8bba1a22f8feed16aec980ea16a5))
+    - Add parity between ROOT and Parquet reading formats ([`4145ddc`](https://github.com/denehoffman/rustitude/commit/4145ddc1075a0cfc5e32e9478a20afcbc2ba3bdd))
+    - Finished documenting four_momentum.rs ([`71181fc`](https://github.com/denehoffman/rustitude/commit/71181fc0cb45fc66b560f33999c8ead0bbbfa568))
+    - Shortened some links ([`b8b46d8`](https://github.com/denehoffman/rustitude/commit/b8b46d85f2c8e7e25583f8be5244c3f272bf6132))
+    - Merge branch 'main' of github.com:denehoffman/rustitude ([`774152a`](https://github.com/denehoffman/rustitude/commit/774152a111024dcca13540c925a02c9c2b851026))
+    - Write crate-level documentation ([`f337fdb`](https://github.com/denehoffman/rustitude/commit/f337fdb784f4ee6c982218149235c5a1320fa49a))
+    - Add KaTeX header to all docs ([`e93d041`](https://github.com/denehoffman/rustitude/commit/e93d0412dd41b02387d49c9e1f6e9f294d0a5821))
+    - Change parameters in Manager.evaluate to be a slice rather than a vector ([`e018598`](https://github.com/denehoffman/rustitude/commit/e0185980a71ef2b13adf35c7d74c1bb7ba6b6829))
+</details>
+
 ## 1.1.0 (2024-05-24)
 
 ### Documentation
@@ -28,7 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 11 commits contributed to the release over the course of 2 calendar days.
+ - 12 commits contributed to the release over the course of 2 calendar days.
  - 8 days passed between releases.
  - 8 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -40,6 +107,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release rustitude-core v1.1.0, rustitude-gluex v0.3.0, rustitude v0.5.0 ([`e7fe5fa`](https://github.com/denehoffman/rustitude/commit/e7fe5fa2d69b19f5fc0d79473411a831ab9de908))
     - Bump versions ([`405ed0c`](https://github.com/denehoffman/rustitude/commit/405ed0cb2ad417ccf0041a49ce6fbd6b6693539c))
     - Update README.md ([`7867bc0`](https://github.com/denehoffman/rustitude/commit/7867bc0bf9c47203f94c8720a1e84d6e86ed159d))
     - Merge pull request #3 from denehoffman/python_reorg ([`467caac`](https://github.com/denehoffman/rustitude/commit/467caacc688f94c074d28be1ec54a422d8d9ebc0))
