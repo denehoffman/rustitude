@@ -103,6 +103,12 @@ impl CohSum {
     fn print_tree(&self) {
         self.0.print_tree()
     }
+    fn __add__(&self, other: Self) -> CohSum {
+        (self.0.clone() + other.0).into()
+    }
+    fn __mul__(&self, other: AmpOp) -> Self {
+        (self.0.clone() * other.0).into()
+    }
 }
 
 impl From<rust::CohSum> for CohSum {
