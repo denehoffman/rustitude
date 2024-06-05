@@ -1,3 +1,16 @@
+//! The amplitude module contains structs and methods for defining and manipulating [`Amplitude`]s
+//! and [`Model`]s
+//!
+//! To create a new [`Amplitude`] in Rust, we simply need to implement the [`Node`] trait on a
+//! struct. You can provide a convenience method for creating a new implementation of your
+//! [`Amplitude`], or you can use the [`crate::amplitude!`] macro as a shortcut.
+//!
+//! Amplitudes are typically defined first, and then [`Model`]s are built by multiplying and
+//! operating on [`Amplitude`]s as [`AmpOp`]s. These [`AmpOp`]s are summed into [`CohSum`]s
+//! (coherent sums), and these are then summed by a [`Model`].
+//!
+//! We can then use [`Manager`](crate::manager::Manager)-like structs to handle computataion
+//! over [`Dataset`]s.
 use itertools::{iproduct, Itertools};
 use nalgebra::ComplexField;
 use num::complex::Complex64;
@@ -246,11 +259,32 @@ pub trait Node: Sync + Send {
     }
 }
 
+/// An enum for storing individual [`Amplitude`]s as well as products of [`AmpOp`]s or the real or
+/// imaginary part of a single [`AmpOp`]. Sums of [`AmpOp`]s are handeled by the [`CohSum`] struct.
+///
+/// These structs follow some rules for addition and multiplication:
+/// ```
+/// AmpOp + AmpOp = CohSum
+/// AmpOp + CohSum = CohSum // (appending)
+/// CohSum + CohSum = CohSum // (concatenating)
+///
+/// AmpOp * AmpOp = AmpOp
+/// AmpOp * CohSum = CohSum // AmpOp is distributed over terms of CohSum
+/// CohSum * CohSum = UNDEFINED
+/// ```
+///
+/// This format should be able to handle any generalized intensity equation based on amplitude
+/// nodes. For instance, if an incoherent sum is needed, two separate [`CohSum`]s can be created
+/// and input as terns in the same [`Model`], since the results are summed normally there.
 #[derive(Clone)]
 pub enum AmpOp {
+    /// An [`Amplitude`] defined by the user.
     Amplitude(Amplitude),
+    /// The product of a set of [`AmpOp`]s.
     Product(Vec<AmpOp>),
+    /// The real part of an [`AmpOp`].
     Real(Box<AmpOp>),
+    /// The imag part of an [`AmpOp`].
     Imag(Box<AmpOp>),
 }
 
@@ -287,6 +321,7 @@ impl Display for AmpOp {
     }
 }
 impl AmpOp {
+    /// Pretty prints a tree diagram to show the node structure of the [`AmpOp`].
     pub fn print_tree(&self) {
         self._print_tree(vec![]);
     }
@@ -352,6 +387,7 @@ impl AmpOp {
             }
         }
     }
+    /// Walks through an [`AmpOp`] and collects all the contained [`Amplitude`]s recursively.
     pub fn walk(&self) -> Vec<Amplitude> {
         match self {
             Self::Amplitude(amp) => vec![amp.clone()],
@@ -360,7 +396,8 @@ impl AmpOp {
             Self::Imag(op) => op.walk(),
         }
     }
-
+    /// Walks through an [`AmpOp`] and collects all the contained [`Amplitude`]s recursively. This
+    /// method gives mutable access to said [`Amplitude`]s.
     pub fn walk_mut(&mut self) -> Vec<&mut Amplitude> {
         match self {
             Self::Amplitude(amp) => vec![amp],
@@ -369,7 +406,12 @@ impl AmpOp {
             Self::Imag(op) => op.walk_mut(),
         }
     }
-
+    /// Shortcut for computation using a cache of precomputed values. This method will return
+    /// [`None`] if the cache value at the corresponding [`Amplitude`]'s
+    /// [`Amplitude::cache_position`] is also [`None`], otherwise it just returns the corresponding
+    /// cached value. Other branches of the enum will perform various operations, such as getting
+    /// the product, real part, or imaginary part, and these will also have [`None`] values passed
+    /// through.
     pub fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
         match self {
             Self::Amplitude(amp) => cache[amp.cache_position],
@@ -378,10 +420,11 @@ impl AmpOp {
             Self::Imag(op) => op.compute(cache).map(|r| r.im.into()),
         }
     }
-
+    /// Converts an [`AmpOp`] into a [`AmpOp::Real`] containing that [`AmpOp`].
     pub fn real(&self) -> Self {
         Self::Real(Box::new(self.clone()))
     }
+    /// Converts an [`AmpOp`] into a [`AmpOp::Imag`] containing that [`AmpOp`].
     pub fn imag(&self) -> Self {
         Self::Imag(Box::new(self.clone()))
     }
@@ -515,8 +558,13 @@ pub struct Amplitude {
     /// [`Event`] in a [`Dataset`], a [`Vec<f64>`] of parameter values, and possibly some
     /// precomputed values.
     pub node: Arc<RwLock<Box<dyn Node>>>,
+    /// Indicates whether the amplitude should be included in calculations or skipped.
     pub active: bool,
+    /// Indicates the reserved position in the cache for shortcutting computation with a
+    /// precomputed cache.
     pub cache_position: usize,
+    /// Indicates the position in the final parameter vector that coincides with the starting index
+    /// for parameters in this [`Amplitude`]
     pub parameter_index_start: usize,
 }
 
@@ -545,6 +593,7 @@ impl From<Amplitude> for AmpOp {
     }
 }
 impl Amplitude {
+    /// Creates a new [`Amplitude`] from a name and a [`Node`]-implementing struct.
     pub fn new(name: &str, node: impl Node + 'static) -> Self {
         Self {
             name: name.to_string(),
@@ -554,6 +603,11 @@ impl Amplitude {
             parameter_index_start: 0,
         }
     }
+    /// Set the [`Amplitude::cache_position`] and [`Amplitude::parameter_index_start`] and runs
+    /// [`Amplitude::precalculate`] over the given [`Dataset`].
+    ///
+    /// # Errors
+    /// This function will raise a [`RustitudeError`] if the precalculation step fails.
     pub fn register(
         &mut self,
         cache_position: usize,
@@ -595,10 +649,12 @@ impl Debug for CohSum {
     }
 }
 impl CohSum {
+    /// Create a new [`CohSum`] from a [`Vec`] of terms ([`AmpOp`]s).
     pub fn new(terms: Vec<AmpOp>) -> Self {
         Self(terms)
     }
 
+    /// Pretty prints a tree diagram to show the node structure of the [`CohSum`].
     pub fn print_tree(&self) {
         let bits = vec![true];
         println!("[ CohSum ]");
@@ -635,6 +691,11 @@ impl CohSum {
             .map(|val| val.re)
     }
 
+    /// Shortcut for computation using a cache of precomputed values. This method will return
+    /// [`None`] if the cache value at the corresponding [`Amplitude`]'s
+    /// [`Amplitude::cache_position`] is also [`None`], otherwise it just returns the corresponding
+    /// cached value. The computation is run across the [`CohSum`]'s terms, and the absolute square
+    /// of the result is returned (coherent sum).
     pub fn compute(&self, cache: &[Option<Complex64>]) -> Option<f64> {
         self.0
             .iter()
@@ -643,28 +704,42 @@ impl CohSum {
             .map(|val| val.norm_sqr())
     }
 
+    /// Walks through a [`CohSum`] and collects all the contained [`Amplitude`]s recursively.
     pub fn walk(&self) -> Vec<Amplitude> {
         self.0.iter().flat_map(|op| op.walk()).collect()
     }
 
+    /// Walks through an [`CohSum`] and collects all the contained [`Amplitude`]s recursively. This
+    /// method gives mutable access to said [`Amplitude`]s.
     pub fn walk_mut(&mut self) -> Vec<&mut Amplitude> {
         self.0.iter_mut().flat_map(|op| op.walk_mut()).collect()
     }
 }
 
+/// A model contains an API to interact with a group of [`CohSum`]s by managing their amplitudes
+/// and parameters. Models are typically passed to [`Manager`](crate::manager::Manager)-like
+/// struct.
 #[derive(Debug, Clone)]
 pub struct Model {
+    /// The set of coherent sums included in the [`Model`].
     pub cohsums: Vec<CohSum>,
+    /// The unique amplitudes located within all [`CohSum`]s.
     pub amplitudes: Vec<Amplitude>,
+    /// The unique parameters located within all [`CohSum`]s.
     pub parameters: Vec<Parameter>,
 }
 
 impl Model {
+    /// Pretty-prints a tree diagram to show the node structure of the [`Model`].
     pub fn print_tree(&self) {
         for cohsum in &self.cohsums {
             cohsum.print_tree()
         }
     }
+    /// Retrieves a copy of an [`Amplitude`] in the [`Model`] by name.
+    ///
+    /// # Errors
+    /// This will throw a [`RustitudeError`] if the amplitude name is not located within the model.
     pub fn get_amplitude(&self, amplitude_name: &str) -> Result<Amplitude, RustitudeError> {
         self.amplitudes
             .iter()
@@ -672,6 +747,11 @@ impl Model {
             .ok_or_else(|| RustitudeError::AmplitudeNotFoundError(amplitude_name.to_string()))
             .cloned()
     }
+    /// Retrieves a copy of a [`Parameter`] in the [`Model`] by name.
+    ///
+    /// # Errors
+    /// This will throw a [`RustitudeError`] if the parameter name is not located within the model
+    /// or if the amplitude name is not located within the model (this is checked first).
     pub fn get_parameter(
         &self,
         amplitude_name: &str,
@@ -684,6 +764,7 @@ impl Model {
             .ok_or_else(|| RustitudeError::ParameterNotFoundError(parameter_name.to_string()))
             .cloned()
     }
+    /// Pretty-prints all parameters in the model
     pub fn print_parameters(&self) {
         let any_fixed = if self.any_fixed() { 1 } else { 0 };
         if self.any_fixed() {
@@ -703,6 +784,12 @@ impl Model {
             );
         }
     }
+    /// Constrains two [`Parameter`]s in the [`Model`] to be equal to each other when evaluated.
+    ///
+    /// # Errors
+    ///
+    /// This method will yield a [`RustitudeError`] if either of the parameters is not found by
+    /// name.
     pub fn constrain(
         &mut self,
         amplitude_1: &str,
@@ -738,6 +825,14 @@ impl Model {
         Ok(())
     }
 
+    /// Fixes a [`Parameter`] in the [`Model`] to a given value.
+    ///
+    /// This method technically sets the [`Parameter`] to be fixed and gives it an initial value of
+    /// the given value. This method also handles groups of constrained parameters.
+    ///
+    /// # Errors
+    ///
+    /// This method yields a [`RustitudeError`] if the parameter is not found by name.
     pub fn fix(
         &mut self,
         amplitude: &str,
@@ -756,6 +851,14 @@ impl Model {
         self.reindex_parameters();
         Ok(())
     }
+    /// Frees a [`Parameter`] in the [`Model`].
+    ///
+    /// This method does not modify the initial value of the parameter. This method
+    /// also handles groups of constrained parameters.
+    ///
+    /// # Errors
+    ///
+    /// This method yields a [`RustitudeError`] if the parameter is not found by name.
     pub fn free(&mut self, amplitude: &str, parameter: &str) -> Result<(), RustitudeError> {
         let search_par = self.get_parameter(amplitude, parameter)?;
         let index = self.get_min_free_index();
@@ -768,6 +871,11 @@ impl Model {
         self.reindex_parameters();
         Ok(())
     }
+    /// Sets the bounds on a [`Parameter`] in the [`Model`].
+    ///
+    /// # Errors
+    ///
+    /// This method yields a [`RustitudeError`] if the parameter is not found by name.
     pub fn set_bounds(
         &mut self,
         amplitude: &str,
@@ -790,6 +898,11 @@ impl Model {
         }
         Ok(())
     }
+    /// Sets the initial value of a [`Parameter`] in the [`Model`].
+    ///
+    /// # Errors
+    ///
+    /// This method yields a [`RustitudeError`] if the parameter is not found by name.
     pub fn set_initial(
         &mut self,
         amplitude: &str,
@@ -812,6 +925,7 @@ impl Model {
         }
         Ok(())
     }
+    /// Returns a list of bounds of free [`Parameter`]s in the [`Model`].
     pub fn get_bounds(&self) -> Vec<(f64, f64)> {
         let any_fixed = if self.any_fixed() { 1 } else { 0 };
         self.group_by_index()
@@ -820,6 +934,7 @@ impl Model {
             .filter_map(|group| group.first().map(|par| par.bounds))
             .collect()
     }
+    /// Returns a list of initial values of free [`Parameter`]s in the [`Model`].
     pub fn get_initial(&self) -> Vec<f64> {
         let any_fixed = if self.any_fixed() { 1 } else { 0 };
         self.group_by_index()
@@ -828,9 +943,11 @@ impl Model {
             .filter_map(|group| group.first().map(|par| par.initial))
             .collect()
     }
+    /// Returns the number of free [`Parameter`]s in the [`Model`].
     pub fn get_n_free(&self) -> usize {
         self.get_min_free_index().unwrap_or(0)
     }
+    /// Activates an [`Amplitude`] in the [`Model`] by name.
     pub fn activate(&mut self, amplitude: &str) {
         self.amplitudes.iter_mut().for_each(|amp| {
             if amp.name == amplitude {
@@ -838,6 +955,7 @@ impl Model {
             }
         })
     }
+    /// Deactivates an [`Amplitude`] in the [`Model`] by name.
     pub fn deactivate(&mut self, amplitude: &str) {
         self.amplitudes.iter_mut().for_each(|amp| {
             if amp.name == amplitude {
@@ -845,6 +963,7 @@ impl Model {
             }
         })
     }
+    /// Creates a new [`Model`] from a list of [`CohSum`]s.
     pub fn new(cohsums: Vec<CohSum>) -> Self {
         let mut amp_names = HashSet::new();
         let amplitudes: Vec<Amplitude> = cohsums
@@ -878,6 +997,13 @@ impl Model {
             parameters,
         }
     }
+    /// Computes the result of evaluating the terms in the model with the given [`Parameter`]s for
+    /// the given [`Event`] by summing the result of [`CohSum::compute`] for each [`CohSum`]
+    /// contained in the [`Model`].
+    ///
+    /// # Errors
+    ///
+    /// This method yields a [`RustitudeError`] if any of the [`Amplitude::calculate`] steps fail.
     pub fn compute(&self, parameters: &[f64], event: &Event) -> Result<f64, RustitudeError> {
         let pars: Vec<f64> = self
             .parameters
@@ -903,6 +1029,13 @@ impl Model {
             .sum::<Option<f64>>()
             .unwrap_or_default())
     }
+    /// Computes the result of evaluating the terms in the model with the given [`Parameter`]s for
+    /// the given [`Event`] by summing the result of [`CohSum::norm_int`] for each [`CohSum`]
+    /// contained in the [`Model`].
+    ///
+    /// # Errors
+    ///
+    /// This method yields a [`RustitudeError`] if any of the [`Amplitude::calculate`] steps fail.
     pub fn norm_int(&self, parameters: &[f64], event: &Event) -> Result<f64, RustitudeError> {
         let pars: Vec<f64> = self
             .parameters
@@ -928,6 +1061,12 @@ impl Model {
             .sum::<Option<f64>>()
             .unwrap_or_default())
     }
+    /// Registers the [`Model`] with the [`Dataset`] by [`Amplitude::register`]ing each
+    /// [`Amplitude`] and setting the proper cache position and parameter starting index.
+    ///
+    /// # Errors
+    ///
+    /// This method will yield a [`RustitudeError`] if any [`Amplitude::precalculate`] steps fail.
     pub fn load(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         let mut next_cache_pos = 0;
         let mut parameter_index = 0;
@@ -1107,6 +1246,7 @@ pub fn pcscalar(name: &str) -> AmpOp {
     Amplitude::new(name, PolarComplexScalar).into()
 }
 
+/// A generic struct which can be used to create any kind of piecewise function.
 pub struct Piecewise<F>
 where
     F: Fn(&Event) -> f64 + Send + Sync + Copy,
@@ -1120,6 +1260,8 @@ impl<F> Piecewise<F>
 where
     F: Fn(&Event) -> f64 + Send + Sync + Copy,
 {
+    /// Create a new [`Piecewise`] struct from a number of bins, a range of values, and a callable
+    /// which defines a variable over the [`Event`]s in a [`Dataset`].
     pub fn new(bins: usize, range: (f64, f64), variable: F) -> Self {
         let diff = (range.1 - range.0) / (bins as f64);
         let edges = (0..bins)

@@ -174,7 +174,6 @@
 //! # Combining Amplitudes into Models
 //! We can use several operations to modify and combine amplitudes. Since amplitudes yield complex
 //! values, the following convenience functions are provided:
-//! [`AmpOp::norm_sqr`](crate::amplitude::AmpOp::norm_sqr),
 //! [`AmpOp::real`](crate::amplitude::AmpOp::real), and
 //! [`AmpOp::imag`](crate::amplitude::AmpOp::imag) which give the absolute-square, real part, and
 //! imaginary part of the amplitude, respectively. Additionally, amplitudes can be added and multiplied
@@ -266,6 +265,7 @@ pub mod amplitude;
 pub mod dataset;
 pub mod four_momentum;
 pub mod manager;
+/// Recommended namespace for use and development.
 pub mod prelude {
     pub use crate::amplitude;
     pub use crate::amplitude::{
@@ -283,6 +283,9 @@ pub mod errors {
     use pyo3::{exceptions::PyException, PyErr};
     use thiserror::Error;
 
+    /// The main [`Error`] structure for `rustitude_core`. All errors internal to the crate should
+    /// eventually pass through here, since it provides a single-location interface for `PyO3`
+    /// errors.
     #[derive(Debug, Error)]
     pub enum RustitudeError {
         #[allow(missing_docs)]
