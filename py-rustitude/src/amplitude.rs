@@ -100,6 +100,9 @@ impl CohSum {
             terms.into_iter().map(rust::AmpOp::from).collect(),
         ))
     }
+    fn print_tree(&self) {
+        self.0.print_tree()
+    }
 }
 
 impl From<rust::CohSum> for CohSum {
@@ -183,6 +186,9 @@ impl From<Model> for rust::Model {
 
 #[pymethods]
 impl Model {
+    fn print_tree(&self) {
+        self.0.print_tree()
+    }
     #[getter]
     fn cohsums(&self) -> Vec<CohSum> {
         self.0

@@ -598,6 +598,14 @@ impl CohSum {
     pub fn new(terms: Vec<AmpOp>) -> Self {
         Self(terms)
     }
+
+    pub fn print_tree(&self) {
+        let bits = vec![true];
+        println!("[ CohSum ]");
+        for term in self.0.iter() {
+            term._print_tree(bits.clone())
+        }
+    }
     /// Function which returns a sum of all cross terms inside a coherent sum.
     ///
     /// Take the following coherent sum, where $`\vec{p}`$ are input parameters $`e`$ is an
@@ -652,6 +660,11 @@ pub struct Model {
 }
 
 impl Model {
+    pub fn print_tree(&self) {
+        for cohsum in &self.cohsums {
+            cohsum.print_tree()
+        }
+    }
     pub fn get_amplitude(&self, amplitude_name: &str) -> Result<Amplitude, RustitudeError> {
         self.amplitudes
             .iter()
