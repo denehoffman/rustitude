@@ -305,6 +305,7 @@ pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<AmpOp>()?;
     m.add_class::<Parameter>()?;
     m.add_class::<Amplitude>()?;
+    m.add_class::<CohSum>()?;
     m.add_class::<Model>()?;
     m.add_function(wrap_pyfunction!(scalar, m)?)?;
     m.add_function(wrap_pyfunction!(cscalar, m)?)?;
