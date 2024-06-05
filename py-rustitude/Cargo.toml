@@ -4,6 +4,7 @@ version = "0.6.0"
 edition = "2021"
 readme = { workspace = true }
 license-file = { workspace = true }
+description = { workspace = true }
 
 [lib]
 name = "rustitude"
