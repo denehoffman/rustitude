@@ -5,6 +5,84 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.6.0 (2024-06-05)
+
+### Chore
+
+ - <csr-id-ce74dd1ee4867a2ca5a34d316b15dfb465a634c6/> bump python versions
+ - <csr-id-800db450c6743d409c44b1dff74263288d63d8c1/> bump python library version
+ - <csr-id-9d854af5046ac30aacc6c369716337a863b4279a/> bump python library version
+
+### New Features
+
+ - <csr-id-82ae77512545c255e1055fde57d8219449a43abf/> added print_tree at CohSum and Model level
+ - <csr-id-4145ddc1075a0cfc5e32e9478a20afcbc2ba3bdd/> add parity between ROOT and Parquet reading formats
+   additionally adds the arc_lock feature to parking_lot and removes the Dataset::events method, which clones the whole dataset and might be misused by mistake.
+ - <csr-id-d2a94a57466c0b2556850315b8902cf9528598de/> additional API so python interactions with managers can actually modify the amplitudes they manage
+ - <csr-id-6955773a3e96890efa4573d5c7bc355bb23a07e6/> add RustitudeError and remove unwraps, error handling should work in python as well
+
+### Bug Fixes
+
+ - <csr-id-d3dda39330173a88a427e72f50b4e6b25e39b001/> added + and * overload type hints
+ - <csr-id-bc47cf13671fd1fd6bb99610746766fce09da517/> register the proper methods for creating new Models and CohSums in PyO3
+ - <csr-id-0a04ca1577536e07a8e2989fd7bb6a1cf1236da4/> add type hint for __version__
+ - <csr-id-e0185980a71ef2b13adf35c7d74c1bb7ba6b6829/> change parameters in Manager.evaluate to be a slice rather than a vector
+ - <csr-id-7e07ac9d57b47abb5822d2a2021168debc855bd8/> change python crate versioning
+ - <csr-id-dba3b5bbd9b93622c32e6042062d75da972c073e/> remove unsafe transmutes, they weren't working properly and probably aren't needed anyway
+ - <csr-id-b6c8e24db3376ebabbe3fc113712dc0f33072caa/> fix py-rustitude dependencies
+ - <csr-id-174a6f540fa8f2b0292a9657e87acbe65edcaf71/> readmes and licenses suck
+
+### Refactor
+
+ - <csr-id-9089c84e481124ff764b24f42507ab14913fef07/> major move required to have rustitude function properly as a Rust crate. I set this up very wrong the first time
+
+### New Features (BREAKING)
+
+ - <csr-id-a8041782d9c3822aff84e955ea6dc7f0e9e196f1/> implemented norm_int functions and CohSum
+   This feature is designed to allow for the correct implementation of
+   normalization integrals. Thanks to Lawrence Ng for pointing this out to
+   me.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 23 commits contributed to the release over the course of 20 calendar days.
+ - 17 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Bump python versions ([`ce74dd1`](https://github.com/denehoffman/rustitude/commit/ce74dd1ee4867a2ca5a34d316b15dfb465a634c6))
+    - Added + and * overload type hints ([`d3dda39`](https://github.com/denehoffman/rustitude/commit/d3dda39330173a88a427e72f50b4e6b25e39b001))
+    - Register the proper methods for creating new Models and CohSums in PyO3 ([`bc47cf1`](https://github.com/denehoffman/rustitude/commit/bc47cf13671fd1fd6bb99610746766fce09da517))
+    - Added print_tree at CohSum and Model level ([`82ae775`](https://github.com/denehoffman/rustitude/commit/82ae77512545c255e1055fde57d8219449a43abf))
+    - Implemented norm_int functions and CohSum ([`a804178`](https://github.com/denehoffman/rustitude/commit/a8041782d9c3822aff84e955ea6dc7f0e9e196f1))
+    - Add parity between ROOT and Parquet reading formats ([`4145ddc`](https://github.com/denehoffman/rustitude/commit/4145ddc1075a0cfc5e32e9478a20afcbc2ba3bdd))
+    - Merge branch 'main' of github.com:denehoffman/rustitude ([`774152a`](https://github.com/denehoffman/rustitude/commit/774152a111024dcca13540c925a02c9c2b851026))
+    - Add type hint for __version__ ([`0a04ca1`](https://github.com/denehoffman/rustitude/commit/0a04ca1577536e07a8e2989fd7bb6a1cf1236da4))
+    - Change parameters in Manager.evaluate to be a slice rather than a vector ([`e018598`](https://github.com/denehoffman/rustitude/commit/e0185980a71ef2b13adf35c7d74c1bb7ba6b6829))
+    - Change python crate versioning ([`7e07ac9`](https://github.com/denehoffman/rustitude/commit/7e07ac9d57b47abb5822d2a2021168debc855bd8))
+    - Release py-rustitude v0.4.3 ([`650568d`](https://github.com/denehoffman/rustitude/commit/650568d80086a57e493f6111d99a1ba9f53f5555))
+    - Release py-rustitude v0.4.3 ([`85fa50e`](https://github.com/denehoffman/rustitude/commit/85fa50ee82bc94d288c2ae145cb9bc8d1ca073d2))
+    - Release py-rustitude v0.4.3 ([`573e76a`](https://github.com/denehoffman/rustitude/commit/573e76ae26b8008046cc6c4221c20bc476e18f88))
+    - Merge pull request #3 from denehoffman/python_reorg ([`467caac`](https://github.com/denehoffman/rustitude/commit/467caacc688f94c074d28be1ec54a422d8d9ebc0))
+    - Additional API so python interactions with managers can actually modify the amplitudes they manage ([`d2a94a5`](https://github.com/denehoffman/rustitude/commit/d2a94a57466c0b2556850315b8902cf9528598de))
+    - Remove unsafe transmutes, they weren't working properly and probably aren't needed anyway ([`dba3b5b`](https://github.com/denehoffman/rustitude/commit/dba3b5bbd9b93622c32e6042062d75da972c073e))
+    - Add RustitudeError and remove unwraps, error handling should work in python as well ([`6955773`](https://github.com/denehoffman/rustitude/commit/6955773a3e96890efa4573d5c7bc355bb23a07e6))
+    - Move all pyo3 code to the py-rustitude crate ([`9bcdb46`](https://github.com/denehoffman/rustitude/commit/9bcdb4615fdb4df5b4566673fbed955930926b7c))
+    - Bump python library version ([`800db45`](https://github.com/denehoffman/rustitude/commit/800db450c6743d409c44b1dff74263288d63d8c1))
+    - Fix py-rustitude dependencies ([`b6c8e24`](https://github.com/denehoffman/rustitude/commit/b6c8e24db3376ebabbe3fc113712dc0f33072caa))
+    - Readmes and licenses suck ([`174a6f5`](https://github.com/denehoffman/rustitude/commit/174a6f540fa8f2b0292a9657e87acbe65edcaf71))
+    - Bump python library version ([`9d854af`](https://github.com/denehoffman/rustitude/commit/9d854af5046ac30aacc6c369716337a863b4279a))
+    - Major move required to have rustitude function properly as a Rust crate. I set this up very wrong the first time ([`9089c84`](https://github.com/denehoffman/rustitude/commit/9089c84e481124ff764b24f42507ab14913fef07))
+</details>
+
 ## 0.4.3 (2024-05-24)
 
 <csr-id-800db450c6743d409c44b1dff74263288d63d8c1/>
@@ -30,35 +108,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Refactor
 
  - <csr-id-9089c84e481124ff764b24f42507ab14913fef07/> major move required to have rustitude function properly as a Rust crate. I set this up very wrong the first time
-
-### Commit Statistics
-
-<csr-read-only-do-not-edit/>
-
- - 12 commits contributed to the release over the course of 8 calendar days.
- - 8 commits were understood as [conventional](https://www.conventionalcommits.org).
- - 0 issues like '(#ID)' were seen in commit messages
-
-### Commit Details
-
-<csr-read-only-do-not-edit/>
-
-<details><summary>view details</summary>
-
- * **Uncategorized**
-    - Release py-rustitude v0.4.3 ([`85fa50e`](https://github.com/denehoffman/rustitude/commit/85fa50ee82bc94d288c2ae145cb9bc8d1ca073d2))
-    - Release py-rustitude v0.4.3 ([`573e76a`](https://github.com/denehoffman/rustitude/commit/573e76ae26b8008046cc6c4221c20bc476e18f88))
-    - Merge pull request #3 from denehoffman/python_reorg ([`467caac`](https://github.com/denehoffman/rustitude/commit/467caacc688f94c074d28be1ec54a422d8d9ebc0))
-    - Additional API so python interactions with managers can actually modify the amplitudes they manage ([`d2a94a5`](https://github.com/denehoffman/rustitude/commit/d2a94a57466c0b2556850315b8902cf9528598de))
-    - Remove unsafe transmutes, they weren't working properly and probably aren't needed anyway ([`dba3b5b`](https://github.com/denehoffman/rustitude/commit/dba3b5bbd9b93622c32e6042062d75da972c073e))
-    - Add RustitudeError and remove unwraps, error handling should work in python as well ([`6955773`](https://github.com/denehoffman/rustitude/commit/6955773a3e96890efa4573d5c7bc355bb23a07e6))
-    - Move all pyo3 code to the py-rustitude crate ([`9bcdb46`](https://github.com/denehoffman/rustitude/commit/9bcdb4615fdb4df5b4566673fbed955930926b7c))
-    - Bump python library version ([`800db45`](https://github.com/denehoffman/rustitude/commit/800db450c6743d409c44b1dff74263288d63d8c1))
-    - Fix py-rustitude dependencies ([`b6c8e24`](https://github.com/denehoffman/rustitude/commit/b6c8e24db3376ebabbe3fc113712dc0f33072caa))
-    - Readmes and licenses suck ([`174a6f5`](https://github.com/denehoffman/rustitude/commit/174a6f540fa8f2b0292a9657e87acbe65edcaf71))
-    - Bump python library version ([`9d854af`](https://github.com/denehoffman/rustitude/commit/9d854af5046ac30aacc6c369716337a863b4279a))
-    - Major move required to have rustitude function properly as a Rust crate. I set this up very wrong the first time ([`9089c84`](https://github.com/denehoffman/rustitude/commit/9089c84e481124ff764b24f42507ab14913fef07))
-</details>
 
 ## 0.4.1 (2024-05-15)
 
