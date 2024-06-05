@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.6.0 (2024-06-05)
+
+### Style
+
+ - <csr-id-e93d0412dd41b02387d49c9e1f6e9f294d0a5821/> add KaTeX header to all docs
+
+### New Features (BREAKING)
+
+ - <csr-id-a8041782d9c3822aff84e955ea6dc7f0e9e196f1/> implemented norm_int functions and CohSum
+   This feature is designed to allow for the correct implementation of
+   normalization integrals. Thanks to Lawrence Ng for pointing this out to
+   me.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 4 commits contributed to the release over the course of 11 calendar days.
+ - 11 days passed between releases.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Release rustitude-core v2.0.0 ([`190918d`](https://github.com/denehoffman/rustitude/commit/190918d2cec595b0538e44070de658ee9ff74103))
+    - Implemented norm_int functions and CohSum ([`a804178`](https://github.com/denehoffman/rustitude/commit/a8041782d9c3822aff84e955ea6dc7f0e9e196f1))
+    - Merge branch 'main' of github.com:denehoffman/rustitude ([`774152a`](https://github.com/denehoffman/rustitude/commit/774152a111024dcca13540c925a02c9c2b851026))
+    - Add KaTeX header to all docs ([`e93d041`](https://github.com/denehoffman/rustitude/commit/e93d0412dd41b02387d49c9e1f6e9f294d0a5821))
+</details>
+
 ## 0.5.0 (2024-05-24)
 
 <csr-id-a306fc4c47acc701aae32104ea2e017d2a4f97cc/>
@@ -29,7 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 9 commits contributed to the release over the course of 2 calendar days.
+ - 10 commits contributed to the release over the course of 2 calendar days.
  - 8 days passed between releases.
  - 7 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -41,6 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release rustitude-core v1.1.0, rustitude-gluex v0.3.0, rustitude v0.5.0 ([`e7fe5fa`](https://github.com/denehoffman/rustitude/commit/e7fe5fa2d69b19f5fc0d79473411a831ab9de908))
     - Bump versions ([`405ed0c`](https://github.com/denehoffman/rustitude/commit/405ed0cb2ad417ccf0041a49ce6fbd6b6693539c))
     - Merge pull request #3 from denehoffman/python_reorg ([`467caac`](https://github.com/denehoffman/rustitude/commit/467caacc688f94c074d28be1ec54a422d8d9ebc0))
     - Add RustitudeError and remove unwraps, error handling should work in python as well ([`6955773`](https://github.com/denehoffman/rustitude/commit/6955773a3e96890efa4573d5c7bc355bb23a07e6))
