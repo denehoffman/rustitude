@@ -1,4 +1,5 @@
-use itertools::Itertools;
+use itertools::{iproduct, Itertools};
+use nalgebra::ComplexField;
 use num::complex::Complex64;
 use parking_lot::RwLock;
 use rayon::prelude::*;
@@ -248,24 +249,15 @@ pub trait Node: Sync + Send {
 #[derive(Clone)]
 pub enum AmpOp {
     Amplitude(Amplitude),
-    Sum(Vec<AmpOp>),
     Product(Vec<AmpOp>),
     Real(Box<AmpOp>),
     Imag(Box<AmpOp>),
-    NormSqr(Box<AmpOp>),
 }
 
 impl Debug for AmpOp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Amplitude(amp) => writeln!(f, "{:?}", amp),
-            Self::Sum(ops) => {
-                write!(f, "Sum [ ")?;
-                for op in ops {
-                    write!(f, "{:?} ", op)?;
-                }
-                write!(f, "]")
-            }
             Self::Product(ops) => {
                 write!(f, "Prod [ ")?;
                 for op in ops {
@@ -275,22 +267,13 @@ impl Debug for AmpOp {
             }
             Self::Real(op) => write!(f, "Re[{:?}]", op),
             Self::Imag(op) => write!(f, "Im[{:?}]", op),
-            Self::NormSqr(op) => write!(f, "|[{:?}]|^2", op),
         }
     }
 }
-
 impl Display for AmpOp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Amplitude(amp) => writeln!(f, "{}", amp),
-            Self::Sum(ops) => {
-                write!(f, "Sum [ ")?;
-                for op in ops {
-                    write!(f, "{} ", op)?;
-                }
-                write!(f, "]")
-            }
             Self::Product(ops) => {
                 write!(f, "Prod [ ")?;
                 for op in ops {
@@ -300,7 +283,6 @@ impl Display for AmpOp {
             }
             Self::Real(op) => write!(f, "Re[{:?}]", op),
             Self::Imag(op) => write!(f, "Im[{:?}]", op),
-            Self::NormSqr(op) => write!(f, "|[{:?}]|^2", op),
         }
     }
 }
@@ -337,21 +319,6 @@ impl AmpOp {
                     );
                 }
             }
-            Self::Sum(ops) => {
-                println!("[ + ]");
-                for (i, op) in ops.iter().enumerate() {
-                    Self::_print_indent(&bits);
-                    if i == ops.len() - 1 {
-                        Self::_print_end();
-                        bits.push(false);
-                    } else {
-                        Self::_print_intermediate();
-                        bits.push(true);
-                    }
-                    op._print_tree(bits.clone());
-                    bits.pop();
-                }
-            }
             Self::Product(ops) => {
                 println!("[ * ]");
                 for (i, op) in ops.iter().enumerate() {
@@ -383,46 +350,32 @@ impl AmpOp {
                 op._print_tree(bits.clone());
                 bits.pop();
             }
-            Self::NormSqr(op) => {
-                println!("[ norm sqr ]");
-                Self::_print_indent(&bits);
-                Self::_print_end();
-                bits.push(false);
-                op._print_tree(bits.clone());
-                bits.pop();
-            }
         }
     }
     pub fn walk(&self) -> Vec<Amplitude> {
         match self {
             Self::Amplitude(amp) => vec![amp.clone()],
-            Self::Sum(ops) => ops.iter().flat_map(|op| op.walk()).collect(),
             Self::Product(ops) => ops.iter().flat_map(|op| op.walk()).collect(),
             Self::Real(op) => op.walk(),
             Self::Imag(op) => op.walk(),
-            Self::NormSqr(op) => op.walk(),
         }
     }
 
     pub fn walk_mut(&mut self) -> Vec<&mut Amplitude> {
         match self {
             Self::Amplitude(amp) => vec![amp],
-            Self::Sum(ops) => ops.iter_mut().flat_map(|op| op.walk_mut()).collect(),
             Self::Product(ops) => ops.iter_mut().flat_map(|op| op.walk_mut()).collect(),
             Self::Real(op) => op.walk_mut(),
             Self::Imag(op) => op.walk_mut(),
-            Self::NormSqr(op) => op.walk_mut(),
         }
     }
 
     pub fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
         match self {
             Self::Amplitude(amp) => cache[amp.cache_position],
-            Self::Sum(ops) => Some(ops.iter().filter_map(|op| op.compute(cache)).sum()),
             Self::Product(ops) => Some(ops.iter().filter_map(|op| op.compute(cache)).product()),
             Self::Real(op) => op.compute(cache).map(|r| r.re.into()),
             Self::Imag(op) => op.compute(cache).map(|r| r.im.into()),
-            Self::NormSqr(op) => op.compute(cache).map(|r| r.norm_sqr().into()),
         }
     }
 
@@ -432,28 +385,12 @@ impl AmpOp {
     pub fn imag(&self) -> Self {
         Self::Imag(Box::new(self.clone()))
     }
-    pub fn norm_sqr(&self) -> Self {
-        Self::NormSqr(Box::new(self.clone()))
-    }
 }
 impl Add for AmpOp {
-    type Output = Self;
+    type Output = CohSum;
 
     fn add(self, rhs: Self) -> Self::Output {
-        match (self.clone(), rhs.clone()) {
-            (Self::Sum(ops_l), Self::Sum(ops_r)) => Self::Sum([ops_l, ops_r].concat()),
-            (Self::Sum(ops), _) => {
-                let mut sum_ops = ops;
-                sum_ops.push(rhs);
-                Self::Sum(sum_ops)
-            }
-            (_, Self::Sum(ops)) => {
-                let mut sum_ops = ops;
-                sum_ops.push(self);
-                Self::Sum(sum_ops)
-            }
-            (_, _) => Self::Sum(vec![self, rhs]),
-        }
+        CohSum(vec![self, rhs])
     }
 }
 impl Add<AmpOp> for &AmpOp {
@@ -477,6 +414,29 @@ impl Add for &AmpOp {
         AmpOp::add(self.clone(), rhs.clone())
     }
 }
+
+impl Add<CohSum> for AmpOp {
+    type Output = CohSum;
+
+    fn add(self, rhs: CohSum) -> Self::Output {
+        CohSum([vec![self], rhs.0].concat())
+    }
+}
+impl Add<AmpOp> for CohSum {
+    type Output = Self;
+
+    fn add(self, rhs: AmpOp) -> Self::Output {
+        Self([self.0, vec![rhs]].concat())
+    }
+}
+impl Add<Self> for CohSum {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self([self.0, rhs.0].concat())
+    }
+}
+
 impl Mul for AmpOp {
     type Output = Self;
 
@@ -519,6 +479,27 @@ impl Mul for &AmpOp {
     }
 }
 
+impl Mul<CohSum> for AmpOp {
+    type Output = CohSum;
+
+    fn mul(self, rhs: CohSum) -> Self::Output {
+        CohSum(rhs.0.iter().map(|term| self.clone() * term).collect())
+    }
+}
+impl Mul<AmpOp> for CohSum {
+    type Output = Self;
+
+    fn mul(self, rhs: AmpOp) -> Self::Output {
+        Self(self.0.iter().map(|term| term * rhs.clone()).collect())
+    }
+}
+
+impl From<AmpOp> for CohSum {
+    fn from(op: AmpOp) -> Self {
+        Self(vec![op])
+    }
+}
+
 /// A struct which stores a named [`Node`].
 ///
 /// The [`Amplitude`] struct turns a [`Node`] trait into a concrete type and also stores a name
@@ -538,6 +519,7 @@ pub struct Amplitude {
     pub cache_position: usize,
     pub parameter_index_start: usize,
 }
+
 impl Debug for Amplitude {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Amplitude")
@@ -599,9 +581,72 @@ impl Node for Amplitude {
     }
 }
 
+/// Struct to hold a coherent sum of [`AmpOp`]s
+#[derive(Clone)]
+pub struct CohSum(Vec<AmpOp>);
+
+impl Debug for CohSum {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Sum [ ")?;
+        for op in &self.0 {
+            write!(f, "{:?} ", op)?;
+        }
+        write!(f, "]")
+    }
+}
+impl CohSum {
+    pub fn new(terms: Vec<AmpOp>) -> Self {
+        Self(terms)
+    }
+    /// Function which returns a sum of all cross terms inside a coherent sum.
+    ///
+    /// Take the following coherent sum, where $`\vec{p}`$ are input parameters $`e`$ is an
+    /// event, and $`f_i`$ is the $`i`$th term in the sum:
+    ///
+    /// ```math
+    /// \left| \sum_{i\in\text{terms}} f_i(\vec{p}, e) \right|^2
+    /// ```
+    ///
+    /// This function will then return
+    ///
+    /// ```math
+    /// \sum_{i\in\text{terms}} \sum_{j\in\text{terms}} f_i(\vec{p}, e) f_j^*(\vec{p}, e)
+    /// ```
+    ///
+    /// This should be used to compute normalization integrals. Note that if on of the terms is
+    /// [`None`], this function will not add any products which contain that term. This can be used
+    /// to turn terms on and off.
+    pub fn norm_int(&self, cache: &[Option<Complex64>]) -> Option<f64> {
+        let results = self.0.iter().map(|op| op.compute(cache));
+        iproduct!(results.clone(), results)
+            .map(|terms| match terms {
+                (None, None) | (None, Some(_)) | (Some(_), None) => None,
+                (Some(a), Some(b)) => Some(a * b.conjugate()),
+            })
+            .sum::<Option<Complex64>>()
+            .map(|val| val.re)
+    }
+
+    pub fn compute(&self, cache: &[Option<Complex64>]) -> Option<f64> {
+        self.0
+            .iter()
+            .map(|ampop| ampop.compute(cache))
+            .sum::<Option<Complex64>>()
+            .map(|val| val.norm_sqr())
+    }
+
+    pub fn walk(&self) -> Vec<Amplitude> {
+        self.0.iter().flat_map(|op| op.walk()).collect()
+    }
+
+    pub fn walk_mut(&mut self) -> Vec<&mut Amplitude> {
+        self.0.iter_mut().flat_map(|op| op.walk_mut()).collect()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Model {
-    pub root: AmpOp,
+    pub cohsums: Vec<CohSum>,
     pub amplitudes: Vec<Amplitude>,
     pub parameters: Vec<Parameter>,
 }
@@ -787,12 +832,18 @@ impl Model {
             }
         })
     }
-    pub fn new(root: AmpOp) -> Self {
+    pub fn new(cohsums: Vec<CohSum>) -> Self {
         let mut amp_names = HashSet::new();
-        let amplitudes: Vec<Amplitude> = root
-            .walk()
-            .into_iter()
-            .filter(|amp| amp_names.insert(amp.name.clone()))
+        let amplitudes: Vec<Amplitude> = cohsums
+            .iter()
+            .flat_map(|cohsum| cohsum.walk())
+            .filter_map(|amp| {
+                if amp_names.insert(amp.name.clone()) {
+                    Some(amp)
+                } else {
+                    None
+                }
+            })
             .collect();
         let parameter_tags: Vec<(String, String)> = amplitudes
             .iter()
@@ -809,7 +860,7 @@ impl Model {
             .map(|(i, (amp_name, par_name))| Parameter::new(amp_name, par_name, i))
             .collect();
         Self {
-            root,
+            cohsums: cohsums.into_iter().map(CohSum::from).collect(),
             amplitudes,
             parameters,
         }
@@ -832,18 +883,50 @@ impl Model {
                 }
             })
             .collect::<Result<Vec<Option<Complex64>>, RustitudeError>>()?;
-        Ok(self.root.compute(&cache).unwrap_or_default().re)
+        Ok(self
+            .cohsums
+            .iter()
+            .map(|cohsum| cohsum.compute(&cache))
+            .sum::<Option<f64>>()
+            .unwrap_or_default())
+    }
+    pub fn norm_int(&self, parameters: &[f64], event: &Event) -> Result<f64, RustitudeError> {
+        let pars: Vec<f64> = self
+            .parameters
+            .iter()
+            .map(|p| p.index.map_or_else(|| p.initial, |i| parameters[i]))
+            .collect();
+        // First, we calculate the values for the active amplitudes
+        let cache: Vec<Option<Complex64>> = self
+            .amplitudes
+            .iter()
+            .map(|amp| {
+                if amp.active {
+                    amp.calculate(&pars, event).map(Some)
+                } else {
+                    Ok(None)
+                }
+            })
+            .collect::<Result<Vec<Option<Complex64>>, RustitudeError>>()?;
+        Ok(self
+            .cohsums
+            .iter()
+            .map(|cohsum| cohsum.norm_int(&cache))
+            .sum::<Option<f64>>()
+            .unwrap_or_default())
     }
     pub fn load(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         let mut next_cache_pos = 0;
         let mut parameter_index = 0;
         self.amplitudes.iter_mut().try_for_each(|amp| {
             amp.register(next_cache_pos, parameter_index, dataset)?;
-            self.root.walk_mut().iter_mut().for_each(|r_amp| {
-                if r_amp.name == amp.name {
-                    r_amp.cache_position = next_cache_pos;
-                    r_amp.parameter_index_start = parameter_index;
-                }
+            self.cohsums.iter_mut().for_each(|cohsum| {
+                cohsum.walk_mut().iter_mut().for_each(|r_amp| {
+                    if r_amp.name == amp.name {
+                        r_amp.cache_position = next_cache_pos;
+                        r_amp.parameter_index_start = parameter_index;
+                    }
+                })
             });
             next_cache_pos += 1;
             parameter_index += amp.parameters().len();

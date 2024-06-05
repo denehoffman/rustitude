@@ -24,11 +24,11 @@ pub fn criterion_kmatrix(c: &mut Criterion) {
         "d2",
         Zlm::new(Wave::D2, Reflectivity::Positive, Frame::Helicity)
     );
-    let pos_real = ((&f0p + &a0p) * s0p.real() + (&f2 + &a2) * d2.real()).norm_sqr();
-    let pos_imag = ((&f0p + &a0p) * s0p.imag() + (&f2 + &a2) * d2.imag()).norm_sqr();
-    let neg_real = ((&f0n + &a0n) * s0n.real()).norm_sqr();
-    let neg_imag = ((&f0n + &a0n) * s0n.imag()).norm_sqr();
-    let mut model = Model::new(pos_real + pos_imag + neg_real + neg_imag);
+    let pos_real = (&f0p + &a0p) * s0p.real() + (&f2 + &a2) * d2.real();
+    let pos_imag = (&f0p + &a0p) * s0p.imag() + (&f2 + &a2) * d2.imag();
+    let neg_real = (&f0n + &a0n) * s0n.real();
+    let neg_imag = (&f0n + &a0n) * s0n.imag();
+    let mut model = Model::new(vec![pos_real + pos_imag + neg_real + neg_imag]);
     model.fix("f0+", "f0_500 re", 0.0).unwrap();
     model.fix("f0+", "f0_500 im", 0.0).unwrap();
     model.fix("f0+", "f0_980 im", 0.0).unwrap();
@@ -42,6 +42,24 @@ pub fn criterion_kmatrix(c: &mut Criterion) {
                 .map(|_| rand::random::<f64>() * 100.0)
                 .collect::<Vec<_>>();
             criterion::black_box(m.evaluate(&v))
+        })
+    });
+    c.bench_function("kmatrix_norm_int", |b| {
+        b.iter(|| {
+            let v = (0..model.get_n_free())
+                .map(|_| rand::random::<f64>() * 100.0)
+                .collect::<Vec<_>>();
+            criterion::black_box(m.norm_int(&v))
+        })
+    });
+    let dataset_mc = Dataset::from_parquet("benches/test_data.parquet").unwrap();
+    let nll = ExtendedLogLikelihood::new(m, Manager::new(&model, &dataset_mc).unwrap());
+    c.bench_function("kmatrix_nll", |b| {
+        b.iter(|| {
+            let v = (0..model.get_n_free())
+                .map(|_| rand::random::<f64>() * 100.0)
+                .collect::<Vec<_>>();
+            criterion::black_box(nll.evaluate(&v, num_cpus::get()))
         })
     });
 }

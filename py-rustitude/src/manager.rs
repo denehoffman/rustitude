@@ -2,7 +2,7 @@ use pyo3::prelude::*;
 use rustitude_core::manager as rust;
 
 use crate::{
-    amplitude::{AmpOp, Amplitude, Model, Parameter},
+    amplitude::{Amplitude, CohSum, Model, Parameter},
     dataset::Dataset,
 };
 
@@ -24,8 +24,14 @@ impl From<Manager> for rust::Manager {
 #[pymethods]
 impl Manager {
     #[getter]
-    fn root(&self) -> AmpOp {
-        self.0.model.root.clone().into()
+    fn cohsums(&self) -> Vec<CohSum> {
+        self.0
+            .model
+            .cohsums
+            .clone()
+            .into_iter()
+            .map(CohSum::from)
+            .collect()
     }
     #[getter]
     fn amplitudes(&self) -> Vec<Amplitude> {
@@ -71,6 +77,9 @@ impl Manager {
     #[pyo3(name = "__call__")]
     fn evaluate(&self, parameters: Vec<f64>) -> PyResult<Vec<f64>> {
         self.0.evaluate(&parameters).map_err(PyErr::from)
+    }
+    fn norm_int(&self, parameters: Vec<f64>) -> PyResult<Vec<f64>> {
+        self.0.norm_int(&parameters).map_err(PyErr::from)
     }
     fn get_amplitude(&self, amplitude_name: &str) -> PyResult<Amplitude> {
         self.0
@@ -139,9 +148,17 @@ impl From<ExtendedLogLikelihood> for rust::ExtendedLogLikelihood {
 #[pymethods]
 impl ExtendedLogLikelihood {
     #[getter]
-    fn root(&self) -> AmpOp {
-        self.0.data_manager.model.root.clone().into()
+    fn cohsums(&self) -> Vec<CohSum> {
+        self.0
+            .data_manager
+            .model
+            .cohsums
+            .clone()
+            .into_iter()
+            .map(CohSum::from)
+            .collect()
     }
+
     #[getter]
     fn amplitudes(&self) -> Vec<Amplitude> {
         self.0
@@ -179,6 +196,12 @@ impl ExtendedLogLikelihood {
     #[new]
     fn new(data_manager: Manager, mc_manager: Manager) -> Self {
         rust::ExtendedLogLikelihood::new(data_manager.into(), mc_manager.into()).into()
+    }
+    #[pyo3(signature = (parameters, *, num_threads = 1, weighted = true))]
+    fn norm_int(&self, parameters: Vec<f64>, num_threads: usize, weighted: bool) -> PyResult<f64> {
+        self.0
+            .norm_int(&parameters, num_threads, weighted)
+            .map_err(PyErr::from)
     }
     #[pyo3(name = "__call__", signature = (parameters, *, num_threads = 1))]
     fn evaluate(&self, parameters: Vec<f64>, num_threads: usize) -> PyResult<f64> {

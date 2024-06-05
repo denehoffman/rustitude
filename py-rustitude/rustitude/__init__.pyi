@@ -3,6 +3,7 @@ from typing import Self
 
 __version__: str
 
+
 class Parameter:
     amplitude: str
     name: str
@@ -13,6 +14,7 @@ class Parameter:
 
     def __init__(self, amplitude: str, name: str, index: int) -> None: ...
 
+
 class AmpOp:
     def print_tree(self): ...
     def real(self) -> Self: ...
@@ -21,16 +23,23 @@ class AmpOp:
     def __add__(self, other: Self) -> Self: ...
     def __mul__(self, other: Self) -> Self: ...
 
+
 def Scalar(name: str) -> AmpOp: ...
 def CScalar(name: str) -> AmpOp: ...
 def PCScalar(name: str) -> AmpOp: ...
 def PiecewiseM(name: str, bins: int, range: tuple[float, float]) -> AmpOp: ...
+
 
 class Amplitude:
     name: str
     active: bool
     cache_position: int
     parameter_index_start: int
+
+
+class CohSum:
+    def __init__(self, terms: list[AmpOp]) -> None: ...
+
 
 class Model:
     root: AmpOp
@@ -55,6 +64,7 @@ class Model:
     def activate(self, amplitude: str) -> None: ...
     def deactivate(self, amplitude: str) -> None: ...
 
+
 class FourMomentum:
     e: float
     px: float
@@ -72,6 +82,7 @@ class FourMomentum:
     def __add__(self, other: FourMomentum) -> FourMomentum: ...
     def __sub__(self, other: FourMomentum) -> FourMomentum: ...
 
+
 class Event:
     index: int
     weight: float
@@ -79,6 +90,7 @@ class Event:
     recoil_p4: FourMomentum
     daughter_p4s: list[FourMomentum]
     eps: list[float]
+
 
 class Dataset:
     events: list[Event]
@@ -108,9 +120,11 @@ class Dataset:
     @staticmethod
     def from_root(path: str) -> Dataset: ...
 
+
 def open(
     file_name: str | Path, tree_name: str | None = None, *, pol_in_beam: bool = False
 ) -> Dataset: ...  # noqa: A001
+
 
 class Manager:
     root: AmpOp
@@ -122,6 +136,7 @@ class Manager:
 
     def __init__(self, model: Model, dataset: Dataset) -> None: ...
     def __call__(self, parameters: list[float]) -> list[float]: ...
+    def norm_int(self, parameters: list[float]) -> list[float]: ...
     def fix(self, amplitude_1: str, parameter_1: str, value: float) -> None: ...
     def free(self, amplitude_1: str, parameter_1: str) -> None: ...
     def set_bounds(
@@ -130,6 +145,7 @@ class Manager:
     def set_initial(self, amplitude_1: str, parameter_1: str, initial: float) -> None: ...
     def activate(self, amplitude: str) -> None: ...
     def deactivate(self, amplitude: str) -> None: ...
+
 
 class ExtendedLogLikelihood:
     root: AmpOp
@@ -141,6 +157,9 @@ class ExtendedLogLikelihood:
 
     def __init__(self, data_manager: Manager, mc_manager: Manager) -> None: ...
     def __call__(self, parameters: list[float], *, num_threads: int = 1) -> float: ...
+    def norm_int(
+        self, parameters: list[float], *, num_threads: int = 1, weighted: bool = True
+    ) -> float: ...
     def fix(self, amplitude_1: str, parameter_1: str, value: float) -> None: ...
     def free(self, amplitude_1: str, parameter_1: str) -> None: ...
     def set_bounds(
