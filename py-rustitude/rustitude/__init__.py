@@ -6,7 +6,17 @@ import numpy as np
 import uproot
 
 from ._rustitude import amplitude, dataset, four_momentum, gluex, manager, __version__
-from .amplitude import CScalar, PCScalar, Scalar, PiecewiseM, AmpOp, Parameter, Model, Amplitude
+from .amplitude import (
+    CScalar,
+    PCScalar,
+    Scalar,
+    PiecewiseM,
+    AmpOp,
+    Parameter,
+    Model,
+    Amplitude,
+    CohSum,
+)
 from .dataset import Event, Dataset
 from .manager import ExtendedLogLikelihood, Manager
 
@@ -29,6 +39,7 @@ __all__ = [
     'PiecewiseM',
     'AmpOp',
     'Parameter',
+    'CohSum',
     'Model',
     'gluex',
     'open',

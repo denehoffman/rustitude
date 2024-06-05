@@ -15,6 +15,10 @@ need_stdout = false
 command = ["cargo", "check", "--all-targets", "--color", "always"]
 need_stdout = false
 
+[jobs.benchmark]
+command = ["cargo", "bench"]
+need_stdout = false
+
 [jobs.clippy]
 command = [
     "cargo",
@@ -40,6 +44,7 @@ need_stdout = false
 command = [
     "cargo",
     "test",
+    "--release",
     "--color",
     "always",
     "--",
