@@ -257,6 +257,67 @@ pub trait Node: Sync + Send {
     fn parameters(&self) -> Vec<String> {
         vec![]
     }
+
+    /// A method for computing the gradient at a point in parameter space.
+    ///
+    /// This method will use a finite difference approximation if not overwritten by the user.
+    /// If analytical derivatives are available for the amplitude, they should be used here.
+    ///
+    /// # Errors
+    ///
+    /// This method will yield a [`RustitudeError`] if the [`Node::calculate`] step fails.
+    fn gradient(
+        &self,
+        parameters: &[f64],
+        event: &Event,
+        epsilon: f64,
+    ) -> Result<Vec<Complex64>, RustitudeError> {
+        (0..parameters.len())
+            .map(|i| {
+                let mut dparameters: Vec<f64> = parameters.to_vec();
+                dparameters[i] += epsilon;
+                let f = self.calculate(parameters, event)?;
+                let df = self.calculate(&dparameters, event)?;
+                Ok((df - f) / epsilon)
+            })
+            .collect()
+    }
+
+    /// A method for computing the Hessian at a point in parameter space.
+    ///
+    /// This method will use a finite difference approximation if not overwritten by the user.
+    /// If analytical derivatives are available for the amplitude, they should be used here.
+    ///
+    /// # Errors
+    ///
+    /// This method will yield a [`RustitudeError`] if the [`Node::calculate`] step fails.
+    fn hessian(
+        &self,
+        parameters: &[f64],
+        event: &Event,
+        epsilon: f64,
+    ) -> Result<Vec<Vec<Complex64>>, RustitudeError> {
+        (0..parameters.len())
+            .map(|i| {
+                (0..parameters.len())
+                    .map(|j| {
+                        let mut p_ij: Vec<f64> = parameters.to_vec();
+                        p_ij[i] += epsilon;
+                        p_ij[j] += epsilon;
+                        let mut p_i: Vec<f64> = parameters.to_vec();
+                        p_i[i] += epsilon;
+                        let mut p_j: Vec<f64> = parameters.to_vec();
+                        p_j[j] += epsilon;
+                        let f_ij = self.calculate(&p_ij, event)?;
+                        let f_i = self.calculate(&p_i, event)?;
+                        let f_j = self.calculate(&p_j, event)?;
+                        let f = self.calculate(parameters, event)?;
+                        Ok((f_ij - f_i - f_j + f) / (epsilon.powi(2)))
+                    })
+                    .collect()
+            })
+            .collect()
+    }
 }
 
 /// An enum for storing individual [`Amplitude`]s as well as products of [`AmpOp`]s or the real or
@@ -423,6 +484,99 @@ impl AmpOp {
             Self::Imag(op) => op.compute(cache).map(|r| r.im.into()),
         }
     }
+    /// Shortcut for gradient computation using a cache of precomputed values and gradients. This
+    /// method will return [`None`] if the cache value at the corresponding [`Amplitude`]'s
+    /// [`Amplitude::cache_position`] is also [`None`], otherwise it just returns the corresponding
+    /// cached value. Other branches of the enum will perform various operations, such as getting
+    /// the product, real part, or imaginary part, and these will also have [`None`] values passed
+    /// through.
+    pub fn compute_gradient(
+        &self,
+        cache: &[Option<Complex64>],
+        dcache: &[Option<Vec<Complex64>>],
+    ) -> Option<Vec<Complex64>> {
+        match self {
+            Self::Amplitude(amp) => dcache[amp.cache_position].clone(),
+            Self::Product(ops) => Some(
+                (0..ops.len())
+                    .filter_map(|i| {
+                        let res: Complex64 = (0..ops.len())
+                            .filter_map(|j| if i != j { ops[j].compute(cache) } else { None })
+                            .product();
+                        let grad = ops[i].compute_gradient(cache, dcache);
+                        grad.and_then(|gr| {
+                            gr.into_iter()
+                                .map(|g| Some(res * g))
+                                .collect::<Option<Vec<Complex64>>>()
+                        })
+                    })
+                    .fold(Vec::default(), |acc, ve| {
+                        acc.iter().zip(ve).map(|(a, v)| a + v).collect()
+                    }),
+            ),
+            Self::Real(op) => op
+                .compute_gradient(cache, dcache)
+                .map(|r_vec| r_vec.iter().map(|r| r.re.into()).collect()),
+            Self::Imag(op) => op
+                .compute_gradient(cache, dcache)
+                .map(|r_vec| r_vec.iter().map(|r| r.im.into()).collect()),
+        }
+    }
+    // TODO: This Hessian function is more complicated because it requires the computation of a
+    // generalized product rule for the second derivative. I need to work out what this will be.
+    //
+    /// Shortcut for Hessian computation using a cache of precomputed values and gradients. This
+    /// method will return [`None`] if the cache value at the corresponding [`Amplitude`]'s
+    /// [`Amplitude::cache_position`] is also [`None`], otherwise it just returns the corresponding
+    /// cached value. Other branches of the enum will perform various operations, such as getting
+    /// the product, real part, or imaginary part, and these will also have [`None`] values passed
+    /// through.
+    // pub fn hessian(
+    //     &self,
+    //     cache: &[Option<Complex64>],
+    //     dcache: &[Option<Vec<Vec<Complex64>>>],
+    // ) -> Option<Vec<Vec<Complex64>>> {
+    //     match self {
+    //         Self::Amplitude(amp) => dcache[amp.cache_position].clone(),
+    //         Self::Product(ops) => Some(
+    //             (0..ops.len())
+    //                 .filter_map(|i| {
+    //                     let res: Complex64 = (0..ops.len())
+    //                         .filter_map(|j| if i != j { ops[j].compute(cache) } else { None })
+    //                         .product();
+    //                     let hess = ops[i].hessian(cache, dcache);
+    //                     hess.and_then(|hess_mat| {
+    //                         hess_mat
+    //                             .iter()
+    //                             .map(|hess_vec| hess_vec.iter().map(|h| Some(res * h)).collect())
+    //                             .collect::<Option<Vec<Vec<Complex64>>>>()
+    //                     })
+    //                 })
+    //                 .fold(Vec::default(), |acc_mat, i_mat| {
+    //                     acc_mat
+    //                         .iter()
+    //                         .zip(i_mat)
+    //                         .map(|(acc_vec, i_vec)| {
+    //                             acc_vec.iter().zip(i_vec).map(|(a, i)| a + i).collect()
+    //                         })
+    //                         .collect()
+    //                 }),
+    //         ),
+    //         Self::Real(op) => op.hessian(cache, dcache).map(|r_mat| {
+    //             r_mat
+    //                 .iter()
+    //                 .map(|r_vec| r_vec.iter().map(|r| r.re.into()).collect())
+    //                 .collect()
+    //         }),
+    //         Self::Imag(op) => op.hessian(cache, dcache).map(|r_mat| {
+    //             r_mat
+    //                 .iter()
+    //                 .map(|r_vec| r_vec.iter().map(|r| r.im.into()).collect())
+    //                 .collect()
+    //         }),
+    //     }
+    // }
+
     /// Converts an [`AmpOp`] into a [`AmpOp::Real`] containing that [`AmpOp`].
     pub fn real(&self) -> Self {
         Self::Real(Box::new(self.clone()))
@@ -636,6 +790,19 @@ impl Node for Amplitude {
     fn parameters(&self) -> Vec<String> {
         self.node.read().parameters()
     }
+    fn gradient(
+        &self,
+        parameters: &[f64],
+        event: &Event,
+        epsilon: f64,
+    ) -> Result<Vec<Complex64>, RustitudeError> {
+        self.node.read().gradient(
+            &parameters
+                [self.parameter_index_start..self.parameter_index_start + self.parameters().len()],
+            event,
+            epsilon,
+        )
+    }
 }
 
 /// Struct to hold a coherent sum of [`AmpOp`]s
@@ -705,6 +872,30 @@ impl CohSum {
             .map(|ampop| ampop.compute(cache))
             .sum::<Option<Complex64>>()
             .map(|val| val.norm_sqr())
+    }
+
+    /// Shortcut for gradient computation using a cache of precomputed values and gradients. This
+    /// method will return [`None`] if the cache value at the corresponding [`Amplitude`]'s
+    /// [`Amplitude::cache_position`] is also [`None`], otherwise it just returns the corresponding
+    /// cached value. Other branches of the enum will perform various operations, such as getting
+    /// the product, real part, or imaginary part, and these will also have [`None`] values passed
+    /// through.
+    pub fn compute_gradient(
+        &self,
+        cache: &[Option<Complex64>],
+        dcache: &[Option<Vec<Complex64>>],
+    ) -> Option<Vec<f64>> {
+        Some(
+            self.0
+                .iter()
+                .filter_map(|ampop| ampop.compute_gradient(cache, dcache))
+                .fold(Vec::default(), |acc, res| {
+                    acc.iter()
+                        .zip(res)
+                        .map(|(a, r)| a + 2.0 * (r.re + r.im))
+                        .collect()
+                }),
+        )
     }
 
     /// Walks through a [`CohSum`] and collects all the contained [`Amplitude`]s recursively.
