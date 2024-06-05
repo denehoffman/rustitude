@@ -69,10 +69,7 @@ impl AmpOp {
     fn imag(&self) -> Self {
         self.0.imag().into()
     }
-    fn norm_sqr(&self) -> Self {
-        self.0.norm_sqr().into()
-    }
-    fn __add__(&self, other: Self) -> Self {
+    fn __add__(&self, other: Self) -> CohSum {
         (self.0.clone() + other.0).into()
     }
     fn __mul__(&self, other: Self) -> Self {
@@ -88,6 +85,40 @@ impl From<rust::AmpOp> for AmpOp {
 impl From<AmpOp> for rust::AmpOp {
     fn from(ampop: AmpOp) -> Self {
         ampop.0
+    }
+}
+
+#[pyclass]
+#[derive(Clone)]
+pub struct CohSum(rust::CohSum);
+
+#[pymethods]
+impl CohSum {
+    #[new]
+    pub fn new(terms: Vec<AmpOp>) -> Self {
+        Self(rust::CohSum::new(
+            terms.into_iter().map(rust::AmpOp::from).collect(),
+        ))
+    }
+    fn print_tree(&self) {
+        self.0.print_tree()
+    }
+    fn __add__(&self, other: Self) -> CohSum {
+        (self.0.clone() + other.0).into()
+    }
+    fn __mul__(&self, other: AmpOp) -> Self {
+        (self.0.clone() * other.0).into()
+    }
+}
+
+impl From<rust::CohSum> for CohSum {
+    fn from(cohsum: rust::CohSum) -> Self {
+        CohSum(cohsum)
+    }
+}
+impl From<CohSum> for rust::CohSum {
+    fn from(cohsum: CohSum) -> Self {
+        cohsum.0
     }
 }
 
@@ -161,9 +192,17 @@ impl From<Model> for rust::Model {
 
 #[pymethods]
 impl Model {
+    fn print_tree(&self) {
+        self.0.print_tree()
+    }
     #[getter]
-    fn root(&self) -> AmpOp {
-        self.0.root.clone().into()
+    fn cohsums(&self) -> Vec<CohSum> {
+        self.0
+            .clone()
+            .cohsums
+            .into_iter()
+            .map(CohSum::from)
+            .collect()
     }
     #[getter]
     fn amplitudes(&self) -> Vec<Amplitude> {
@@ -196,8 +235,10 @@ impl Model {
         self.0.get_n_free()
     }
     #[new]
-    fn new(root: AmpOp) -> Self {
-        Self(rust::Model::new(root.into()))
+    fn new(cohsums: Vec<CohSum>) -> Self {
+        Self(rust::Model::new(
+            cohsums.into_iter().map(rust::CohSum::from).collect(),
+        ))
     }
     fn get_amplitude(&self, amplitude_name: &str) -> PyResult<Amplitude> {
         self.0
@@ -270,6 +311,7 @@ pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<AmpOp>()?;
     m.add_class::<Parameter>()?;
     m.add_class::<Amplitude>()?;
+    m.add_class::<CohSum>()?;
     m.add_class::<Model>()?;
     m.add_function(wrap_pyfunction!(scalar, m)?)?;
     m.add_function(wrap_pyfunction!(cscalar, m)?)?;

@@ -50,6 +50,22 @@ impl Manager {
             .collect()
     }
 
+    /// Find the normalization integral for the [`Model`] over the [`Dataset`] with the given
+    /// free parameters.
+    ///
+    /// # Errors
+    ///
+    /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
+    /// [`Model::norm_int`] for more information.
+    pub fn norm_int(&self, parameters: &[f64]) -> Result<Vec<f64>, RustitudeError> {
+        self.dataset
+            .events
+            .read()
+            .par_iter()
+            .map(|event: &Event| self.model.norm_int(parameters, event))
+            .collect()
+    }
+
     /// Get a copy of an [`Amplitude`] in the [`Model`] by name.
     ///
     /// # Errors
@@ -202,6 +218,30 @@ impl ExtendedLogLikelihood {
         }
     }
 
+    /// Find the normalization integral for the [`Model`] over the [`Dataset`] with the given
+    /// free parameters.
+    ///
+    /// # Errors
+    ///
+    /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
+    /// [`Model::norm_int`] for more information.
+    pub fn norm_int(
+        &self,
+        parameters: &[f64],
+        num_threads: usize,
+        weighted: bool,
+    ) -> Result<f64, RustitudeError> {
+        create_pool(num_threads)?.install(|| {
+            let mc_norm_int = self.mc_manager.norm_int(parameters)?;
+            if weighted {
+                let mc_weights = self.mc_manager.dataset.weights();
+                Ok(mc_norm_int.iter().zip(mc_weights).map(|(r, w)| r * w).sum())
+            } else {
+                Ok(mc_norm_int.iter().sum())
+            }
+        })
+    }
+
     /// Evaluate the [`ExtendedLogLikelihood`] over the [`Dataset`] with the given free parameters
     /// This method also allows the user to input a maximum number of threads to use in the
     /// calculation.
@@ -216,7 +256,7 @@ impl ExtendedLogLikelihood {
             let data_res = self.data_manager.evaluate(parameters)?;
             let data_weights = self.data_manager.dataset.weights();
             let n_data = self.data_manager.dataset.len() as f64;
-            let mc_res = self.mc_manager.evaluate(parameters)?;
+            let mc_norm_int = self.mc_manager.norm_int(parameters)?;
             let mc_weights = self.mc_manager.dataset.weights();
             let n_mc = self.mc_manager.dataset.len() as f64;
             let ln_l = (data_res
@@ -225,7 +265,7 @@ impl ExtendedLogLikelihood {
                 .map(|(l, w)| w * l.ln())
                 .sum::<f64>())
                 - (n_data / n_mc)
-                    * (mc_res
+                    * (mc_norm_int
                         .iter()
                         .zip(mc_weights)
                         .map(|(l, w)| w * l)
