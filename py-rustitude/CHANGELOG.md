@@ -7,11 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.6.0 (2024-06-05)
 
+<csr-id-ce74dd1ee4867a2ca5a34d316b15dfb465a634c6/>
+<csr-id-800db450c6743d409c44b1dff74263288d63d8c1/>
+<csr-id-9d854af5046ac30aacc6c369716337a863b4279a/>
+<csr-id-9089c84e481124ff764b24f42507ab14913fef07/>
+
 ### Chore
 
  - <csr-id-ce74dd1ee4867a2ca5a34d316b15dfb465a634c6/> bump python versions
  - <csr-id-800db450c6743d409c44b1dff74263288d63d8c1/> bump python library version
  - <csr-id-9d854af5046ac30aacc6c369716337a863b4279a/> bump python library version
+
+### Chore
+
+ - <csr-id-1e70cf35b4a7d5f3ffbcf7c316fcafb0381fa933/> add description to py-rustitude
 
 ### New Features
 
@@ -47,8 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 23 commits contributed to the release over the course of 20 calendar days.
- - 17 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 25 commits contributed to the release over the course of 20 calendar days.
+ - 18 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
 ### Commit Details
@@ -58,6 +67,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Add description to py-rustitude ([`1e70cf3`](https://github.com/denehoffman/rustitude/commit/1e70cf35b4a7d5f3ffbcf7c316fcafb0381fa933))
+    - Release py-rustitude v0.6.0 ([`48ae335`](https://github.com/denehoffman/rustitude/commit/48ae3350667f4c420815a7f11b82a98d93a3e0aa))
     - Bump python versions ([`ce74dd1`](https://github.com/denehoffman/rustitude/commit/ce74dd1ee4867a2ca5a34d316b15dfb465a634c6))
     - Added + and * overload type hints ([`d3dda39`](https://github.com/denehoffman/rustitude/commit/d3dda39330173a88a427e72f50b4e6b25e39b001))
     - Register the proper methods for creating new Models and CohSums in PyO3 ([`bc47cf1`](https://github.com/denehoffman/rustitude/commit/bc47cf13671fd1fd6bb99610746766fce09da517))
