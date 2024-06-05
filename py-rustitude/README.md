@@ -82,7 +82,7 @@ pos_im_sum = (f0p + a0p) * s0p.imag() + (f2 + a2) * d2p.imag()
 neg_re_sum = (f0n + a0n) * s0n.real()
 neg_im_sum = (f0n + a0n) * s0n.imag()
 
-mod = rt.Model(pos_re_sum.norm_sqr() + pos_im_sum.norm_sqr() + neg_re_sum.norm_sqr() + neg_im_sum.norm_sqr())
+mod = rt.Model([pos_re_sum, pos_im_sum, neg_re_sum, neg_im_sum])
 
 # There is no need to constrain amplitudes, since each named amplitude is only ever evaluated once and a cached value gets pulled if we run across an amplitude by the same name!
 # We should, however, fix some of the values to make the fit less ambiguous. For instance, suppose we are above the threshold for the f_0(500) which is included in the F0 K-Matrix:
