@@ -263,15 +263,18 @@ pub trait Node: Sync + Send {
 /// imaginary part of a single [`AmpOp`]. Sums of [`AmpOp`]s are handeled by the [`CohSum`] struct.
 ///
 /// These structs follow some rules for addition and multiplication:
-/// ```
-/// AmpOp + AmpOp = CohSum
-/// AmpOp + CohSum = CohSum // (appending)
-/// CohSum + CohSum = CohSum // (concatenating)
 ///
-/// AmpOp * AmpOp = AmpOp
-/// AmpOp * CohSum = CohSum // AmpOp is distributed over terms of CohSum
-/// CohSum * CohSum = UNDEFINED
-/// ```
+/// > `AmpOp + AmpOp = CohSum`
+/// >
+/// > `AmpOp + CohSum = CohSum` (appending)
+/// >
+/// > `CohSum + CohSum = CohSum` (concatenating)
+///
+/// > `AmpOp * AmpOp = AmpOp`
+/// >
+/// > `AmpOp * CohSum = CohSum` (`AmpOp` is distributed over terms of `CohSum`)
+/// >
+/// > `CohSum * CohSum = UNDEFINED`
 ///
 /// This format should be able to handle any generalized intensity equation based on amplitude
 /// nodes. For instance, if an incoherent sum is needed, two separate [`CohSum`]s can be created
