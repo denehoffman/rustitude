@@ -418,7 +418,7 @@ impl AmpOp {
     pub fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
         match self {
             Self::Amplitude(amp) => cache[amp.cache_position],
-            Self::Product(ops) => Some(ops.iter().filter_map(|op| op.compute(cache)).product()),
+            Self::Product(ops) => ops.iter().map(|op| op.compute(cache)).product(),
             Self::Real(op) => op.compute(cache).map(|r| r.re.into()),
             Self::Imag(op) => op.compute(cache).map(|r| r.im.into()),
         }
@@ -686,10 +686,7 @@ impl CohSum {
     pub fn norm_int(&self, cache: &[Option<Complex64>]) -> Option<f64> {
         let results = self.0.iter().map(|op| op.compute(cache));
         iproduct!(results.clone(), results)
-            .map(|terms| match terms {
-                (None, None) | (None, Some(_)) | (Some(_), None) => None,
-                (Some(a), Some(b)) => Some(a * b.conjugate()),
-            })
+            .map(|(a, b)| Some(a? * b?.conjugate()))
             .sum::<Option<Complex64>>()
             .map(|val| val.re)
     }
