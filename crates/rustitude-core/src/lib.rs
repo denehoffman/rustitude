@@ -258,6 +258,8 @@
     clippy::missing_safety_doc,
     clippy::missing_panics_doc,
     clippy::missing_errors_doc,
+    clippy::perf,
+    clippy::style,
     missing_docs
 )]
 #![cfg_attr(feature = "simd", feature(portable_simd))]
