@@ -42,12 +42,14 @@ impl Manager {
     /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
     /// [`Model::compute`] for more information.
     pub fn evaluate(&self, parameters: &[f64]) -> Result<Vec<f64>, RustitudeError> {
+        let mut output = Vec::with_capacity(self.dataset.len());
         self.dataset
             .events
             .read()
             .par_iter()
             .map(|event: &Event| self.model.compute(parameters, event))
-            .collect()
+            .collect_into_vec(&mut output);
+        output.into_iter().collect()
     }
 
     /// Find the normalization integral for the [`Model`] over the [`Dataset`] with the given
@@ -58,12 +60,14 @@ impl Manager {
     /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
     /// [`Model::norm_int`] for more information.
     pub fn norm_int(&self, parameters: &[f64]) -> Result<Vec<f64>, RustitudeError> {
+        let mut output = Vec::with_capacity(self.dataset.len());
         self.dataset
             .events
             .read()
             .par_iter()
             .map(|event: &Event| self.model.norm_int(parameters, event))
-            .collect()
+            .collect_into_vec(&mut output);
+        output.into_iter().collect()
     }
 
     /// Get a copy of an [`Amplitude`] in the [`Model`] by name.
