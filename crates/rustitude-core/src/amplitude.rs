@@ -11,16 +11,15 @@
 //!
 //! We can then use [`Manager`](crate::manager::Manager)-like structs to handle computataion
 //! over [`Dataset`]s.
+use dyn_clone::DynClone;
 use itertools::{iproduct, Itertools};
 use nalgebra::ComplexField;
 use num::complex::Complex64;
-use parking_lot::RwLock;
 use rayon::prelude::*;
 use std::{
     collections::HashSet,
     fmt::{Debug, Display},
     ops::{Add, Mul},
-    sync::Arc,
 };
 
 use crate::{
@@ -217,7 +216,7 @@ macro_rules! amplitude {
 ///     }
 /// }
 /// ```
-pub trait Node: Sync + Send {
+pub trait Node: Sync + Send + DynClone {
     /// A method that is run once and stores some precalculated values given a [`Dataset`] input.
     ///
     /// This method is intended to run expensive calculations which don't actually depend on the
@@ -553,22 +552,36 @@ impl From<AmpOp> for CohSum {
 /// in an analysis, and makes each [`Node`]'s parameters unique.
 ///
 /// This is mostly used interally as an intermediate step to an [`AmpOp`].
-#[derive(Clone)]
 pub struct Amplitude {
     /// A name which uniquely identifies an [`Amplitude`] within a sum and group.
     pub name: String,
     /// A [`Node`] which contains all of the operations needed to compute a [`Complex64`] from an
     /// [`Event`] in a [`Dataset`], a [`Vec<f64>`] of parameter values, and possibly some
     /// precomputed values.
-    pub node: Arc<RwLock<Box<dyn Node>>>,
+    pub node: Box<dyn Node>,
     /// Indicates whether the amplitude should be included in calculations or skipped.
     pub active: bool,
+    /// Contains the parameter names associated with this amplitude.
+    pub parameters: Vec<String>,
     /// Indicates the reserved position in the cache for shortcutting computation with a
     /// precomputed cache.
     pub cache_position: usize,
     /// Indicates the position in the final parameter vector that coincides with the starting index
     /// for parameters in this [`Amplitude`]
     pub parameter_index_start: usize,
+}
+
+impl Clone for Amplitude {
+    fn clone(&self) -> Self {
+        Self {
+            name: self.name.clone(),
+            node: dyn_clone::clone_box(&*self.node),
+            parameters: self.parameters.clone(),
+            active: self.active,
+            cache_position: self.cache_position,
+            parameter_index_start: self.parameter_index_start,
+        }
+    }
 }
 
 impl Debug for Amplitude {
@@ -598,9 +611,11 @@ impl From<Amplitude> for AmpOp {
 impl Amplitude {
     /// Creates a new [`Amplitude`] from a name and a [`Node`]-implementing struct.
     pub fn new(name: &str, node: impl Node + 'static) -> Self {
+        let parameters = node.parameters();
         Self {
             name: name.to_string(),
-            node: Arc::new(RwLock::new(Box::new(node))),
+            node: Box::new(node),
+            parameters,
             active: true,
             cache_position: 0,
             parameter_index_start: 0,
@@ -624,17 +639,17 @@ impl Amplitude {
 }
 impl Node for Amplitude {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
-        self.node.write().precalculate(dataset)
+        self.node.precalculate(dataset)
     }
     fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
-        self.node.read().calculate(
+        self.node.calculate(
             &parameters
-                [self.parameter_index_start..self.parameter_index_start + self.parameters().len()],
+                [self.parameter_index_start..self.parameter_index_start + self.parameters.len()],
             event,
         )
     }
     fn parameters(&self) -> Vec<String> {
-        self.node.read().parameters()
+        self.node.parameters()
     }
 }
 
@@ -1137,6 +1152,7 @@ impl Model {
 /// # Parameters:
 ///
 /// - `value`: The value of the scalar.
+#[derive(Clone)]
 pub struct Scalar;
 impl Node for Scalar {
     fn parameters(&self) -> Vec<String> {
@@ -1175,6 +1191,7 @@ pub fn scalar(name: &str) -> AmpOp {
 ///
 /// - `real`: The real part of the complex scalar.
 /// - `imag`: The imaginary part of the complex scalar.
+#[derive(Clone)]
 pub struct ComplexScalar;
 impl Node for ComplexScalar {
     fn calculate(&self, parameters: &[f64], _event: &Event) -> Result<Complex64, RustitudeError> {
@@ -1215,6 +1232,7 @@ pub fn cscalar(name: &str) -> AmpOp {
 ///
 /// - `mag`: The magnitude of the complex scalar.
 /// - `phi`: The phase of the complex scalar.
+#[derive(Clone)]
 pub struct PolarComplexScalar;
 impl Node for PolarComplexScalar {
     fn calculate(&self, parameters: &[f64], _event: &Event) -> Result<Complex64, RustitudeError> {
@@ -1247,6 +1265,7 @@ pub fn pcscalar(name: &str) -> AmpOp {
 }
 
 /// A generic struct which can be used to create any kind of piecewise function.
+#[derive(Clone)]
 pub struct Piecewise<F>
 where
     F: Fn(&Event) -> f64 + Send + Sync + Copy,

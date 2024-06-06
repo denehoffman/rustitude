@@ -41,7 +41,7 @@ pub fn criterion_kmatrix(c: &mut Criterion) {
             let v = (0..model.get_n_free())
                 .map(|_| rand::random::<f64>() * 100.0)
                 .collect::<Vec<_>>();
-            criterion::black_box(m.evaluate(&v))
+            criterion::black_box(m.par_evaluate(&v))
         })
     });
     c.bench_function("kmatrix_norm_int", |b| {
@@ -49,7 +49,7 @@ pub fn criterion_kmatrix(c: &mut Criterion) {
             let v = (0..model.get_n_free())
                 .map(|_| rand::random::<f64>() * 100.0)
                 .collect::<Vec<_>>();
-            criterion::black_box(m.norm_int(&v))
+            criterion::black_box(m.par_norm_int(&v))
         })
     });
     let dataset_mc = Dataset::from_parquet("benches/test_data.parquet").unwrap();
@@ -59,7 +59,7 @@ pub fn criterion_kmatrix(c: &mut Criterion) {
             let v = (0..model.get_n_free())
                 .map(|_| rand::random::<f64>() * 100.0)
                 .collect::<Vec<_>>();
-            criterion::black_box(nll.evaluate(&v, num_cpus::get()))
+            criterion::black_box(nll.par_evaluate(&v, num_cpus::get()))
         })
     });
 }

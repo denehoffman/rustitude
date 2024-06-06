@@ -145,6 +145,7 @@ impl Display for Wave {
     }
 }
 
+#[derive(Clone)]
 pub enum Frame {
     Helicity,
     GottfriedJackson,
