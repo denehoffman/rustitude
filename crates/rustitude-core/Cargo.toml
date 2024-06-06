@@ -22,6 +22,7 @@ oxyroot = { workspace = true }
 itertools = { workspace = true }
 pyo3 = { workspace = true }
 thiserror = { workspace = true }
+dyn-clone = { workspace = true }
 
 [dev-dependencies]
 sphrs = { workspace = true }
