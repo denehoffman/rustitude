@@ -100,16 +100,6 @@ impl Display for Parameter {
     }
 }
 
-/// Creates a wrapped [`AmpOp`] which can be registered by a [`crate::amplitude::Model`].
-///
-/// This macro is a convenience method which takes a name and a [`Node`] and generates a new [`AmpOp`].
-#[macro_export]
-macro_rules! amplitude {
-    ($name:expr, $node:expr) => {{
-        Amplitude::new($name, $node).into()
-    }};
-}
-
 /// A trait which contains all the required methods for a functioning [`Amplitude`].
 ///
 /// The [`Node`] trait represents any mathematical structure which takes in some parameters and some
@@ -257,293 +247,64 @@ pub trait Node: Sync + Send + DynClone {
         vec![]
     }
 }
+dyn_clone::clone_trait_object!(Node);
 
-/// An enum for storing individual [`Amplitude`]s as well as products of [`AmpOp`]s or the real or
-/// imaginary part of a single [`AmpOp`]. Sums of [`AmpOp`]s are handeled by the [`CohSum`] struct.
-///
-/// These structs follow some rules for addition and multiplication:
-///
-/// > `AmpOp + AmpOp = CohSum`
-/// >
-/// > `AmpOp + CohSum = CohSum` (appending)
-/// >
-/// > `CohSum + CohSum = CohSum` (concatenating)
-///
-/// > `AmpOp * AmpOp = AmpOp`
-/// >
-/// > `AmpOp * CohSum = CohSum` (`AmpOp` is distributed over terms of `CohSum`)
-/// >
-/// > `CohSum * CohSum = UNDEFINED`
-///
-/// This format should be able to handle any generalized intensity equation based on amplitude
-/// nodes. For instance, if an incoherent sum is needed, two separate [`CohSum`]s can be created
-/// and input as terns in the same [`Model`], since the results are summed normally there.
-#[derive(Clone)]
-pub enum AmpOp {
-    /// An [`Amplitude`] defined by the user.
-    Amplitude(Amplitude),
-    /// The product of a set of [`AmpOp`]s.
-    Product(Vec<AmpOp>),
-    /// The real part of an [`AmpOp`].
-    Real(Box<AmpOp>),
-    /// The imag part of an [`AmpOp`].
-    Imag(Box<AmpOp>),
-}
+pub trait AmpLike: DynClone + Send + Sync + Debug + Display {
+    fn walk(&self) -> Vec<Amplitude>;
+    fn walk_mut(&mut self) -> Vec<&mut Amplitude>;
+    fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64>;
+    fn get_cloned_terms(&self) -> Option<Vec<Box<dyn AmpLike>>> {
+        None
+    }
+    fn real(&self) -> Real
+    where
+        Self: std::marker::Sized + 'static,
+    {
+        Real(dyn_clone::clone_box(self))
+    }
+    fn imag(&self) -> Imag
+    where
+        Self: Sized + 'static,
+    {
+        Imag(dyn_clone::clone_box(self))
+    }
 
-impl Debug for AmpOp {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Amplitude(amp) => writeln!(f, "{:?}", amp),
-            Self::Product(ops) => {
-                write!(f, "Prod [ ")?;
-                for op in ops {
-                    write!(f, "{:?} ", op)?;
-                }
-                write!(f, "]")
-            }
-            Self::Real(op) => write!(f, "Re[{:?}]", op),
-            Self::Imag(op) => write!(f, "Im[{:?}]", op),
-        }
+    fn prod(als: &Vec<Box<dyn AmpLike>>) -> Product
+    where
+        Self: Sized + 'static,
+    {
+        Product(*dyn_clone::clone_box(als))
     }
-}
-impl Display for AmpOp {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Amplitude(amp) => writeln!(f, "{}", amp),
-            Self::Product(ops) => {
-                write!(f, "Prod [ ")?;
-                for op in ops {
-                    write!(f, "{} ", op)?;
-                }
-                write!(f, "]")
-            }
-            Self::Real(op) => write!(f, "Re[{:?}]", op),
-            Self::Imag(op) => write!(f, "Im[{:?}]", op),
-        }
+
+    fn sum(als: &Vec<Box<dyn AmpLike>>) -> CohSum
+    where
+        Self: Sized + 'static,
+    {
+        CohSum(*dyn_clone::clone_box(als))
     }
-}
-impl AmpOp {
-    /// Pretty prints a tree diagram to show the node structure of the [`AmpOp`].
-    pub fn print_tree(&self) {
-        self._print_tree(vec![]);
+
+    fn as_cohsum(&self) -> CohSum
+    where
+        Self: Sized + 'static,
+    {
+        CohSum(vec![dyn_clone::clone_box(self)])
     }
-    fn _print_indent(bits: &[bool]) {
+    fn print_tree(&self) {
+        self._print_tree(&mut vec![]);
+    }
+    fn _print_indent(&self, bits: Vec<bool>) {
         bits.iter()
             .for_each(|b| if *b { print!("  ┃ ") } else { print!("    ") });
     }
-    fn _print_intermediate() {
+    fn _print_intermediate(&self) {
         print!("  ┣━");
     }
-    fn _print_end() {
+    fn _print_end(&self) {
         print!("  ┗━");
     }
-    fn _print_tree(&self, mut bits: Vec<bool>) {
-        match self {
-            Self::Amplitude(amp) => {
-                if amp.parameters().len() > 7 {
-                    println!(
-                        " {}{}({},...)",
-                        if amp.active { "!" } else { "" },
-                        amp.name,
-                        amp.parameters()[0..7].join(", ")
-                    );
-                } else {
-                    println!(
-                        " {}{}({})",
-                        if amp.active { "!" } else { "" },
-                        amp.name,
-                        amp.parameters().join(", ")
-                    );
-                }
-            }
-            Self::Product(ops) => {
-                println!("[ * ]");
-                for (i, op) in ops.iter().enumerate() {
-                    Self::_print_indent(&bits);
-                    if i == ops.len() - 1 {
-                        Self::_print_end();
-                        bits.push(false);
-                    } else {
-                        Self::_print_intermediate();
-                        bits.push(true);
-                    }
-                    op._print_tree(bits.clone());
-                    bits.pop();
-                }
-            }
-            Self::Real(op) => {
-                println!("[ real ]");
-                Self::_print_indent(&bits);
-                Self::_print_end();
-                bits.push(false);
-                op._print_tree(bits.clone());
-                bits.pop();
-            }
-            Self::Imag(op) => {
-                println!("[ imag ]");
-                Self::_print_indent(&bits);
-                Self::_print_end();
-                bits.push(false);
-                op._print_tree(bits.clone());
-                bits.pop();
-            }
-        }
-    }
-    /// Walks through an [`AmpOp`] and collects all the contained [`Amplitude`]s recursively.
-    pub fn walk(&self) -> Vec<Amplitude> {
-        match self {
-            Self::Amplitude(amp) => vec![amp.clone()],
-            Self::Product(ops) => ops.iter().flat_map(|op| op.walk()).collect(),
-            Self::Real(op) => op.walk(),
-            Self::Imag(op) => op.walk(),
-        }
-    }
-    /// Walks through an [`AmpOp`] and collects all the contained [`Amplitude`]s recursively. This
-    /// method gives mutable access to said [`Amplitude`]s.
-    pub fn walk_mut(&mut self) -> Vec<&mut Amplitude> {
-        match self {
-            Self::Amplitude(amp) => vec![amp],
-            Self::Product(ops) => ops.iter_mut().flat_map(|op| op.walk_mut()).collect(),
-            Self::Real(op) => op.walk_mut(),
-            Self::Imag(op) => op.walk_mut(),
-        }
-    }
-    /// Shortcut for computation using a cache of precomputed values. This method will return
-    /// [`None`] if the cache value at the corresponding [`Amplitude`]'s
-    /// [`Amplitude::cache_position`] is also [`None`], otherwise it just returns the corresponding
-    /// cached value. Other branches of the enum will perform various operations, such as getting
-    /// the product, real part, or imaginary part, and these will also have [`None`] values passed
-    /// through.
-    pub fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
-        match self {
-            Self::Amplitude(amp) => cache[amp.cache_position],
-            Self::Product(ops) => ops.iter().map(|op| op.compute(cache)).product(),
-            Self::Real(op) => op.compute(cache).map(|r| r.re.into()),
-            Self::Imag(op) => op.compute(cache).map(|r| r.im.into()),
-        }
-    }
-    /// Converts an [`AmpOp`] into a [`AmpOp::Real`] containing that [`AmpOp`].
-    pub fn real(&self) -> Self {
-        Self::Real(Box::new(self.clone()))
-    }
-    /// Converts an [`AmpOp`] into a [`AmpOp::Imag`] containing that [`AmpOp`].
-    pub fn imag(&self) -> Self {
-        Self::Imag(Box::new(self.clone()))
-    }
+    fn _print_tree(&self, bits: &mut Vec<bool>);
 }
-impl Add for AmpOp {
-    type Output = CohSum;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        CohSum(vec![self, rhs])
-    }
-}
-impl Add<AmpOp> for &AmpOp {
-    type Output = <AmpOp as Add>::Output;
-
-    fn add(self, rhs: AmpOp) -> Self::Output {
-        AmpOp::add(self.clone(), rhs)
-    }
-}
-impl Add<&Self> for AmpOp {
-    type Output = <Self as Add>::Output;
-
-    fn add(self, rhs: &Self) -> Self::Output {
-        Self::add(self, rhs.clone())
-    }
-}
-impl Add for &AmpOp {
-    type Output = <AmpOp as Add>::Output;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        AmpOp::add(self.clone(), rhs.clone())
-    }
-}
-
-impl Add<CohSum> for AmpOp {
-    type Output = CohSum;
-
-    fn add(self, rhs: CohSum) -> Self::Output {
-        CohSum([vec![self], rhs.0].concat())
-    }
-}
-impl Add<AmpOp> for CohSum {
-    type Output = Self;
-
-    fn add(self, rhs: AmpOp) -> Self::Output {
-        Self([self.0, vec![rhs]].concat())
-    }
-}
-impl Add<Self> for CohSum {
-    type Output = Self;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        Self([self.0, rhs.0].concat())
-    }
-}
-
-impl Mul for AmpOp {
-    type Output = Self;
-
-    fn mul(self, rhs: Self) -> Self::Output {
-        match (self.clone(), rhs.clone()) {
-            (Self::Product(ops_l), Self::Product(ops_r)) => Self::Product([ops_l, ops_r].concat()),
-            (Self::Product(ops), _) => {
-                let mut sum_ops = ops;
-                sum_ops.push(rhs);
-                Self::Product(sum_ops)
-            }
-            (_, Self::Product(ops)) => {
-                let mut sum_ops = ops;
-                sum_ops.push(self);
-                Self::Product(sum_ops)
-            }
-            (_, _) => Self::Product(vec![self, rhs]),
-        }
-    }
-}
-impl Mul<AmpOp> for &AmpOp {
-    type Output = <AmpOp as Mul>::Output;
-
-    fn mul(self, rhs: AmpOp) -> Self::Output {
-        AmpOp::mul(self.clone(), rhs)
-    }
-}
-impl Mul<&Self> for AmpOp {
-    type Output = <Self as Mul>::Output;
-
-    fn mul(self, rhs: &Self) -> Self::Output {
-        Self::mul(self, rhs.clone())
-    }
-}
-impl Mul for &AmpOp {
-    type Output = <AmpOp as Mul>::Output;
-
-    fn mul(self, rhs: Self) -> Self::Output {
-        AmpOp::mul(self.clone(), rhs.clone())
-    }
-}
-
-impl Mul<CohSum> for AmpOp {
-    type Output = CohSum;
-
-    fn mul(self, rhs: CohSum) -> Self::Output {
-        CohSum(rhs.0.iter().map(|term| self.clone() * term).collect())
-    }
-}
-impl Mul<AmpOp> for CohSum {
-    type Output = Self;
-
-    fn mul(self, rhs: AmpOp) -> Self::Output {
-        Self(self.0.iter().map(|term| term * rhs.clone()).collect())
-    }
-}
-
-impl From<AmpOp> for CohSum {
-    fn from(op: AmpOp) -> Self {
-        Self(vec![op])
-    }
-}
+dyn_clone::clone_trait_object!(AmpLike);
 
 /// A struct which stores a named [`Node`].
 ///
@@ -552,6 +313,7 @@ impl From<AmpOp> for CohSum {
 /// in an analysis, and makes each [`Node`]'s parameters unique.
 ///
 /// This is mostly used interally as an intermediate step to an [`AmpOp`].
+#[derive(Clone)]
 pub struct Amplitude {
     /// A name which uniquely identifies an [`Amplitude`] within a sum and group.
     pub name: String,
@@ -569,19 +331,6 @@ pub struct Amplitude {
     /// Indicates the position in the final parameter vector that coincides with the starting index
     /// for parameters in this [`Amplitude`]
     pub parameter_index_start: usize,
-}
-
-impl Clone for Amplitude {
-    fn clone(&self) -> Self {
-        Self {
-            name: self.name.clone(),
-            node: dyn_clone::clone_box(&*self.node),
-            parameters: self.parameters.clone(),
-            active: self.active,
-            cache_position: self.cache_position,
-            parameter_index_start: self.parameter_index_start,
-        }
-    }
 }
 
 impl Debug for Amplitude {
@@ -603,11 +352,7 @@ impl Display for Amplitude {
         }
     }
 }
-impl From<Amplitude> for AmpOp {
-    fn from(amp: Amplitude) -> Self {
-        Self::Amplitude(amp)
-    }
-}
+
 impl Amplitude {
     /// Creates a new [`Amplitude`] from a name and a [`Node`]-implementing struct.
     pub fn new(name: &str, node: impl Node + 'static) -> Self {
@@ -652,12 +397,147 @@ impl Node for Amplitude {
         self.node.parameters()
     }
 }
+impl AmpLike for Amplitude {
+    fn walk(&self) -> Vec<Amplitude> {
+        vec![self.clone()]
+    }
+
+    fn walk_mut(&mut self) -> Vec<&mut Amplitude> {
+        vec![self]
+    }
+
+    fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
+        cache[self.cache_position]
+    }
+
+    fn _print_tree(&self, _bits: &mut Vec<bool>) {
+        if self.parameters().len() > 7 {
+            println!(
+                " {}{}({},...)",
+                if self.active { "!" } else { "" },
+                self.name,
+                self.parameters()[0..7].join(", ")
+            );
+        } else {
+            println!(
+                " {}{}({})",
+                if self.active { "!" } else { "" },
+                self.name,
+                self.parameters().join(", ")
+            );
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Real(Box<dyn AmpLike>);
+impl Display for Real {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Real [ {} ]", self.0)
+    }
+}
+impl AmpLike for Real {
+    fn walk(&self) -> Vec<Amplitude> {
+        self.0.walk()
+    }
+
+    fn walk_mut(&mut self) -> Vec<&mut Amplitude> {
+        self.0.walk_mut()
+    }
+
+    fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
+        self.0.compute(cache).map(|r| r.re.into())
+    }
+
+    fn _print_tree(&self, bits: &mut Vec<bool>) {
+        println!("[ imag ]");
+        self._print_indent(bits.to_vec());
+        self._print_end();
+        bits.push(false);
+        self.0._print_tree(&mut bits.clone());
+        bits.pop();
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Imag(Box<dyn AmpLike>);
+impl Display for Imag {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Imag [ {} ]", self.0)
+    }
+}
+impl AmpLike for Imag {
+    fn walk(&self) -> Vec<Amplitude> {
+        self.0.walk()
+    }
+
+    fn walk_mut(&mut self) -> Vec<&mut Amplitude> {
+        self.0.walk_mut()
+    }
+
+    fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
+        self.0.compute(cache).map(|r| r.im.into())
+    }
+
+    fn _print_tree(&self, bits: &mut Vec<bool>) {
+        println!("[ imag ]");
+        self._print_indent(bits.to_vec());
+        self._print_end();
+        bits.push(false);
+        self.0._print_tree(&mut bits.clone());
+        bits.pop();
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Product(Vec<Box<dyn AmpLike>>);
+impl Display for Product {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Product [ ")?;
+        for op in &self.0 {
+            write!(f, "{:?} ", op)?;
+        }
+        write!(f, "]")
+    }
+}
+impl AmpLike for Product {
+    fn get_cloned_terms(&self) -> Option<Vec<Box<dyn AmpLike>>> {
+        Some(self.0.clone())
+    }
+    fn walk(&self) -> Vec<Amplitude> {
+        self.0.iter().flat_map(|op| op.walk()).collect()
+    }
+
+    fn walk_mut(&mut self) -> Vec<&mut Amplitude> {
+        self.0.iter_mut().flat_map(|op| op.walk_mut()).collect()
+    }
+
+    fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
+        self.0.iter().map(|op| op.compute(cache)).product()
+    }
+
+    fn _print_tree(&self, bits: &mut Vec<bool>) {
+        println!("[ * ]");
+        for (i, op) in self.0.iter().enumerate() {
+            self._print_indent(bits.to_vec());
+            if i == self.0.len() - 1 {
+                self._print_end();
+                bits.push(false);
+            } else {
+                self._print_intermediate();
+                bits.push(true);
+            }
+            op._print_tree(&mut bits.clone());
+            bits.pop();
+        }
+    }
+}
 
 /// Struct to hold a coherent sum of [`AmpOp`]s
-#[derive(Clone)]
-pub struct CohSum(Vec<AmpOp>);
+#[derive(Clone, Debug)]
+pub struct CohSum(pub Vec<Box<dyn AmpLike>>);
 
-impl Debug for CohSum {
+impl Display for CohSum {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Sum [ ")?;
         for op in &self.0 {
@@ -667,17 +547,12 @@ impl Debug for CohSum {
     }
 }
 impl CohSum {
-    /// Create a new [`CohSum`] from a [`Vec`] of terms ([`AmpOp`]s).
-    pub fn new(terms: Vec<AmpOp>) -> Self {
-        Self(terms)
-    }
-
     /// Pretty prints a tree diagram to show the node structure of the [`CohSum`].
     pub fn print_tree(&self) {
-        let bits = vec![true];
+        let mut bits = vec![true];
         println!("[ CohSum ]");
         for term in self.0.iter() {
-            term._print_tree(bits.clone())
+            term._print_tree(&mut bits)
         }
     }
     /// Function which returns a sum of all cross terms inside a coherent sum.
@@ -699,7 +574,7 @@ impl CohSum {
     /// [`None`], this function will not add any products which contain that term. This can be used
     /// to turn terms on and off.
     pub fn norm_int(&self, cache: &[Option<Complex64>]) -> Option<f64> {
-        let results = self.0.iter().map(|op| op.compute(cache));
+        let results = self.0.iter().map(|al| al.compute(cache));
         iproduct!(results.clone(), results)
             .map(|(a, b)| Some(a? * b?.conjugate()))
             .sum::<Option<Complex64>>()
@@ -714,7 +589,7 @@ impl CohSum {
     pub fn compute(&self, cache: &[Option<Complex64>]) -> Option<f64> {
         self.0
             .iter()
-            .map(|ampop| ampop.compute(cache))
+            .map(|al| al.compute(cache))
             .sum::<Option<Complex64>>()
             .map(|val| val.norm_sqr())
     }
@@ -1163,10 +1038,10 @@ impl Node for Scalar {
     }
 }
 
-pub fn scalar(name: &str) -> AmpOp {
+pub fn scalar(name: &str) -> Amplitude {
     //! Creates a named [`Scalar`].
     //!
-    //! This is a convenience method to generate an [`AmpOp`] which is just a single free
+    //! This is a convenience method to generate an [`Amplitude`] which is just a single free
     //! parameter called `value`.
     //!
     //! # Examples
@@ -1176,11 +1051,9 @@ pub fn scalar(name: &str) -> AmpOp {
     //! ```
     //! use rustitude_core::prelude::*;
     //! let my_scalar = scalar("MyScalar");
-    //! if let AmpOp::Amplitude(amp) = my_scalar {
-    //!     assert_eq!(amp.node.read().parameters(), vec!["value".to_string()]);
-    //! }
+    //! assert_eq!(my_scalar.node.parameters, vec!["value".to_string()]);
     //! ```
-    Amplitude::new(name, Scalar).into()
+    Amplitude::new(name, Scalar)
 }
 /// A [`Node`] for computing a single complex value from two input parameters.
 ///
@@ -1203,10 +1076,10 @@ impl Node for ComplexScalar {
     }
 }
 
-pub fn cscalar(name: &str) -> AmpOp {
+pub fn cscalar(name: &str) -> Amplitude {
     //! Creates a named [`ComplexScalar`].
     //!
-    //! This is a convenience method to generate an [`AmpOp`] which represents a complex
+    //! This is a convenience method to generate an [`Amplitude`] which represents a complex
     //! value determined by two parameters, `real` and `imag`.
     //!
     //! # Examples
@@ -1216,11 +1089,9 @@ pub fn cscalar(name: &str) -> AmpOp {
     //! ```
     //! use rustitude_core::prelude::*;
     //! let my_cscalar = cscalar("MyComplexScalar");
-    //! if let AmpOp::Amplitude(amp) = my_cscalar {
-    //!     assert_eq!(amp.node.read().parameters(), vec!["real".to_string(), "imag".to_string()]);
-    //! }
+    //! assert_eq!(amp.node.parameters, vec!["real".to_string(), "imag".to_string()]);
     //! ```
-    Amplitude::new(name, ComplexScalar).into()
+    Amplitude::new(name, ComplexScalar)
 }
 
 /// A [`Node`] for computing a single complex value from two input parameters in polar form.
@@ -1244,10 +1115,10 @@ impl Node for PolarComplexScalar {
     }
 }
 
-pub fn pcscalar(name: &str) -> AmpOp {
+pub fn pcscalar(name: &str) -> Amplitude {
     //! Creates a named [`PolarComplexScalar`].
     //!
-    //! This is a convenience method to generate an [`AmpOp`] which represents a complex
+    //! This is a convenience method to generate an [`Amplitude `] which represents a complex
     //! value determined by two parameters, `real` and `imag`.
     //!
     //! # Examples
@@ -1257,11 +1128,9 @@ pub fn pcscalar(name: &str) -> AmpOp {
     //! ```
     //! use rustitude_core::prelude::*;
     //! let my_pcscalar = pcscalar("MyPolarComplexScalar");
-    //! if let AmpOp::Amplitude(amp) = my_pcscalar {
-    //!     assert_eq!(amp.node.read().parameters(), vec!["mag".to_string(), "phi".to_string()]);
-    //! }
+    //! assert_eq!(amp.node.parameters, vec!["mag".to_string(), "phi".to_string()]);
     //! ```
-    Amplitude::new(name, PolarComplexScalar).into()
+    Amplitude::new(name, PolarComplexScalar)
 }
 
 /// A generic struct which can be used to create any kind of piecewise function.
@@ -1334,7 +1203,7 @@ where
     }
 }
 
-pub fn piecewise_m(name: &str, bins: usize, range: (f64, f64)) -> AmpOp {
+pub fn piecewise_m(name: &str, bins: usize, range: (f64, f64)) -> Amplitude {
     //! Creates a named [`Piecewise`] amplitude with the resonance mass as the binning variable.
     Amplitude::new(
         name,
@@ -1342,5 +1211,271 @@ pub fn piecewise_m(name: &str, bins: usize, range: (f64, f64)) -> AmpOp {
             (e.daughter_p4s[0] + e.daughter_p4s[1]).m()
         }),
     )
-    .into()
+}
+
+macro_rules! impl_add {
+    ($a:ty, $b:ty) => {
+        impl Add<$b> for $a {
+            type Output = CohSum;
+
+            fn add(self, rhs: $b) -> Self::Output {
+                CohSum(vec![Box::new(self), Box::new(rhs)])
+            }
+        }
+
+        impl Add<&$b> for &$a {
+            type Output = <$a as Add<$b>>::Output;
+
+            fn add(self, rhs: &$b) -> Self::Output {
+                <$a as Add<$b>>::add(self.clone(), rhs.clone())
+            }
+        }
+
+        impl Add<&$b> for $a {
+            type Output = <$a as Add<$b>>::Output;
+
+            fn add(self, rhs: &$b) -> Self::Output {
+                <$a as Add<$b>>::add(self, rhs.clone())
+            }
+        }
+    };
+}
+macro_rules! impl_cohsum {
+    ($a:ty) => {
+        impl Mul<Box<dyn AmpLike>> for $a {
+            type Output = Product;
+
+            fn mul(self, rhs: Box<dyn AmpLike>) -> Self::Output {
+                match (self.get_cloned_terms(), rhs.get_cloned_terms()) {
+                    (Some(terms_a), Some(terms_b)) => Product([terms_a, terms_b].concat()),
+                    (None, Some(terms)) => {
+                        let mut terms = terms;
+                        terms.insert(0, Box::new(self));
+                        Product(terms)
+                    }
+                    (Some(terms), None) => {
+                        let mut terms = terms;
+                        terms.push(Box::new(self));
+                        Product(terms)
+                    }
+                    (None, None) => Product(vec![Box::new(self), rhs]),
+                }
+            }
+        }
+        impl Mul<$a> for Box<dyn AmpLike> {
+            type Output = Product;
+
+            fn mul(self, rhs: $a) -> Self::Output {
+                match (self.get_cloned_terms(), rhs.get_cloned_terms()) {
+                    (Some(terms_a), Some(terms_b)) => Product([terms_a, terms_b].concat()),
+                    (None, Some(terms)) => {
+                        let mut terms = terms;
+                        terms.insert(0, self);
+                        Product(terms)
+                    }
+                    (Some(terms), None) => {
+                        let mut terms = terms;
+                        terms.push(self);
+                        Product(terms)
+                    }
+                    (None, None) => Product(vec![self, Box::new(rhs)]),
+                }
+            }
+        }
+        impl Mul<$a> for CohSum {
+            type Output = CohSum;
+
+            fn mul(self, rhs: $a) -> Self::Output {
+                let mut terms: Vec<Box<dyn AmpLike>> = Vec::default();
+                for term in self.0.clone() {
+                    terms.push(Box::new(term * rhs.clone()))
+                }
+                CohSum(terms)
+            }
+        }
+        impl Mul<CohSum> for $a {
+            type Output = CohSum;
+
+            fn mul(self, rhs: CohSum) -> Self::Output {
+                let mut terms: Vec<Box<dyn AmpLike>> = Vec::default();
+                for term in rhs.0.clone() {
+                    terms.push(Box::new(self.clone() * term))
+                }
+                CohSum(terms)
+            }
+        }
+        impl Mul<&$a> for &CohSum {
+            type Output = CohSum;
+
+            fn mul(self, rhs: &$a) -> Self::Output {
+                <CohSum as Mul<$a>>::mul(self.clone(), rhs.clone())
+            }
+        }
+        impl Mul<&$a> for CohSum {
+            type Output = CohSum;
+
+            fn mul(self, rhs: &$a) -> Self::Output {
+                <CohSum as Mul<$a>>::mul(self, rhs.clone())
+            }
+        }
+        impl Mul<$a> for &CohSum {
+            type Output = CohSum;
+
+            fn mul(self, rhs: $a) -> Self::Output {
+                <CohSum as Mul<$a>>::mul(self.clone(), rhs)
+            }
+        }
+        impl Add<Box<dyn AmpLike>> for $a {
+            type Output = CohSum;
+
+            fn add(self, rhs: Box<dyn AmpLike>) -> Self::Output {
+                CohSum(vec![Box::new(self), rhs])
+            }
+        }
+        impl Add<$a> for Box<dyn AmpLike> {
+            type Output = CohSum;
+
+            fn add(self, rhs: $a) -> Self::Output {
+                CohSum(vec![self, Box::new(rhs)])
+            }
+        }
+        impl Add<$a> for CohSum {
+            type Output = CohSum;
+
+            fn add(self, rhs: $a) -> Self::Output {
+                let mut terms = self.0;
+                terms.push(Box::new(rhs));
+                CohSum(terms)
+            }
+        }
+        impl Add<CohSum> for $a {
+            type Output = CohSum;
+
+            fn add(self, rhs: CohSum) -> Self::Output {
+                let mut terms = rhs.0;
+                terms.push(Box::new(self));
+                CohSum(terms)
+            }
+        }
+        impl Add<&$a> for &CohSum {
+            type Output = CohSum;
+
+            fn add(self, rhs: &$a) -> Self::Output {
+                <CohSum as Add<$a>>::add(self.clone(), rhs.clone())
+            }
+        }
+        impl Add<&$a> for CohSum {
+            type Output = CohSum;
+
+            fn add(self, rhs: &$a) -> Self::Output {
+                <CohSum as Add<$a>>::add(self, rhs.clone())
+            }
+        }
+        impl Add<$a> for &CohSum {
+            type Output = CohSum;
+
+            fn add(self, rhs: $a) -> Self::Output {
+                <CohSum as Add<$a>>::add(self.clone(), rhs)
+            }
+        }
+    };
+}
+macro_rules! impl_mul {
+    ($a:ty, $b:ty) => {
+        impl Mul<$b> for $a {
+            type Output = Product;
+
+            fn mul(self, rhs: $b) -> Self::Output {
+                match (self.get_cloned_terms(), rhs.get_cloned_terms()) {
+                    (Some(terms_a), Some(terms_b)) => Product([terms_a, terms_b].concat()),
+                    (None, Some(terms)) => {
+                        let mut terms = terms;
+                        terms.insert(0, Box::new(self));
+                        Product(terms)
+                    }
+                    (Some(terms), None) => {
+                        let mut terms = terms;
+                        terms.push(Box::new(self));
+                        Product(terms)
+                    }
+                    (None, None) => Product(vec![Box::new(self), Box::new(rhs)]),
+                }
+            }
+        }
+
+        impl Mul<&$b> for &$a {
+            type Output = <$a as Mul<$b>>::Output;
+
+            fn mul(self, rhs: &$b) -> Self::Output {
+                <$a as Mul<$b>>::mul(self.clone(), rhs.clone())
+            }
+        }
+
+        impl Mul<&$b> for $a {
+            type Output = <$a as Mul<$b>>::Output;
+
+            fn mul(self, rhs: &$b) -> Self::Output {
+                <$a as Mul<$b>>::mul(self, rhs.clone())
+            }
+        }
+    };
+}
+
+impl_cohsum!(Amplitude);
+impl_add!(Amplitude, Amplitude);
+impl_add!(Amplitude, Real);
+impl_add!(Amplitude, Imag);
+impl_add!(Amplitude, Product);
+impl_mul!(Amplitude, Amplitude);
+impl_mul!(Amplitude, Real);
+impl_mul!(Amplitude, Imag);
+impl_mul!(Amplitude, Product);
+impl_cohsum!(Real);
+impl_add!(Real, Amplitude);
+impl_add!(Real, Real);
+impl_add!(Real, Imag);
+impl_add!(Real, Product);
+impl_mul!(Real, Amplitude);
+impl_mul!(Real, Real);
+impl_mul!(Real, Imag);
+impl_mul!(Real, Product);
+impl_cohsum!(Imag);
+impl_add!(Imag, Amplitude);
+impl_add!(Imag, Real);
+impl_add!(Imag, Imag);
+impl_add!(Imag, Product);
+impl_mul!(Imag, Amplitude);
+impl_mul!(Imag, Real);
+impl_mul!(Imag, Imag);
+impl_mul!(Imag, Product);
+impl_cohsum!(Product);
+impl_add!(Product, Amplitude);
+impl_add!(Product, Real);
+impl_add!(Product, Imag);
+impl_add!(Product, Product);
+impl_mul!(Product, Amplitude);
+impl_mul!(Product, Real);
+impl_mul!(Product, Imag);
+impl_mul!(Product, Product);
+
+impl Add<Self> for CohSum {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self([self.0, rhs.0].concat())
+    }
+}
+impl Add<&Self> for &CohSum {
+    type Output = <CohSum as Add>::Output;
+
+    fn add(self, rhs: &Self) -> Self::Output {
+        <CohSum as Add>::add(self.clone(), (*rhs).clone())
+    }
+}
+impl Add<Self> for &CohSum {
+    type Output = <CohSum as Add>::Output;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        <CohSum as Add>::add(self.clone(), rhs.clone())
+    }
 }

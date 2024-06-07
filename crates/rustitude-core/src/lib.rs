@@ -269,9 +269,9 @@ pub mod four_momentum;
 pub mod manager;
 /// Recommended namespace for use and development.
 pub mod prelude {
-    pub use crate::amplitude;
     pub use crate::amplitude::{
-        cscalar, pcscalar, scalar, AmpOp, Amplitude, Model, Node, Parameter, Piecewise,
+        cscalar, pcscalar, scalar, AmpLike, Amplitude, CohSum, Imag, Model, Node, Parameter,
+        Piecewise, Product, Real,
     };
     pub use crate::dataset::{Dataset, Event};
     pub use crate::errors::RustitudeError;
