@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0](https://github.com/denehoffman/rustitude/compare/py-rustitude-v0.6.0...py-rustitude-v0.7.0) - 2024-06-10
+
+### Added
+- [**breaking**] Restructures AmpOp into concrete types
+- add par_ versions for all compute and norm_int methods and refactor python accordingly. Also remove RwLocks and extra allocations in the Amplitude struct, which is a huge speedup
+
+### Other
+- bump python package version
+- Merge branch 'main' of https://github.com/denehoffman/rustitude
+- fix README.md on python crate
+
 ## 0.4.3 (2024-05-24)
 
 <csr-id-800db450c6743d409c44b1dff74263288d63d8c1/>
