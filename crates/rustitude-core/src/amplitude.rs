@@ -2,12 +2,12 @@
 //! and [`Model`]s
 //!
 //! To create a new [`Amplitude`] in Rust, we simply need to implement the [`Node`] trait on a
-//! struct. You can provide a convenience method for creating a new implementation of your
-//! [`Amplitude`], or you can use the [`crate::amplitude!`] macro as a shortcut.
+//! struct. You can then provide a convenience method for creating a new implementation of your
+//! [`Amplitude`].
 //!
 //! Amplitudes are typically defined first, and then [`Model`]s are built by multiplying and
-//! operating on [`Amplitude`]s as [`AmpOp`]s. These [`AmpOp`]s are summed into [`CohSum`]s
-//! (coherent sums), and these are then summed by a [`Model`].
+//! operating on [`Amplitude`]s. Any sums represent coherent sums ([`CohSum`]) which are then
+//! added incoherently by the [`Model`].
 //!
 //! We can then use [`Manager`](crate::manager::Manager)-like structs to handle computataion
 //! over [`Dataset`]s.
@@ -155,6 +155,7 @@ impl Display for Parameter {
 ///     }
 /// }
 ///
+/// #[derive(Clone)]
 /// struct Ylm(Wave, Vec<Complex64>);
 /// impl Ylm {
 ///     fn new(wave: Wave) -> Self {
@@ -195,6 +196,7 @@ impl Display for Parameter {
 ///
 /// ```
 /// use rustitude_core::prelude::*;
+/// #[derive(Clone)]
 /// struct ComplexScalar;
 /// impl Node for ComplexScalar {
 ///     fn calculate(&self, parameters: &[f64], _event: &Event) -> Result<Complex64, RustitudeError> {
@@ -249,19 +251,35 @@ pub trait Node: Sync + Send + DynClone {
 }
 dyn_clone::clone_trait_object!(Node);
 
+/// This trait is used to implement operations which can be performed on [`Amplitude`]s (and other
+/// operations themselves). Currently, there are only a limited number of defined operations,
+/// namely [`Real`], [`Imag`], and [`Product`]. Others may be added in the future, but they
+/// should probably only be added through this crate and not externally, since they require several
+/// operator overloads to be implemented for nice syntax.
 pub trait AmpLike: DynClone + Send + Sync + Debug + Display {
+    /// This method walks through an [`AmpLike`] struct and recursively amalgamates a list of
+    /// [`Amplitude`]s contained within. Note that these [`Amplitude`]s are owned clones of the
+    /// interior structures.
     fn walk(&self) -> Vec<Amplitude>;
+    /// This method is similar to [`AmpLike::walk`], but returns mutable references rather than
+    /// clones.
     fn walk_mut(&mut self) -> Vec<&mut Amplitude>;
+    /// Given a cache of complex values calculated from a list of amplitudes, this method will
+    /// calculate the desired mathematical structure given by the [`AmpLike`] and any
+    /// [`AmpLike`]s it contains.
     fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64>;
+    /// This method returns clones of any [`AmpLike`]s wrapped by the given [`AmpLike`].
     fn get_cloned_terms(&self) -> Option<Vec<Box<dyn AmpLike>>> {
         None
     }
+    /// Take the real part of an [`Amplitude`] or [`Amplitude-like`](`AmpLike`) struct.
     fn real(&self) -> Real
     where
         Self: std::marker::Sized + 'static,
     {
         Real(dyn_clone::clone_box(self))
     }
+    /// Take the imaginary part of an [`Amplitude`] or [`Amplitude-like`](`AmpLike`) struct.
     fn imag(&self) -> Imag
     where
         Self: Sized + 'static,
@@ -269,6 +287,7 @@ pub trait AmpLike: DynClone + Send + Sync + Debug + Display {
         Imag(dyn_clone::clone_box(self))
     }
 
+    /// Take the product of a [`Vec`] of [`Amplitude-like`](`AmpLike`) structs.
     fn prod(als: &Vec<Box<dyn AmpLike>>) -> Product
     where
         Self: Sized + 'static,
@@ -276,6 +295,7 @@ pub trait AmpLike: DynClone + Send + Sync + Debug + Display {
         Product(*dyn_clone::clone_box(als))
     }
 
+    /// Take the coherent sum (absolute square of the sum) of a [`Vec`] of [`Amplitude-like`](`AmpLike`) structs.
     fn sum(als: &Vec<Box<dyn AmpLike>>) -> CohSum
     where
         Self: Sized + 'static,
@@ -283,25 +303,36 @@ pub trait AmpLike: DynClone + Send + Sync + Debug + Display {
         CohSum(*dyn_clone::clone_box(als))
     }
 
+    /// Returns the given [`AmpLike`] as a coherent sum containing only itself.
     fn as_cohsum(&self) -> CohSum
     where
         Self: Sized + 'static,
     {
         CohSum(vec![dyn_clone::clone_box(self)])
     }
+
+    /// Pretty-prints the structure of [`AmpLike`] structs starting at the current node.
     fn print_tree(&self) {
         self._print_tree(&mut vec![]);
     }
+
+    /// Prints the proper indents for a given entry in [`AmpLike::print_tree`]. A `true` bit will print a vertical line, while a `false` bit
+    /// will not.
     fn _print_indent(&self, bits: Vec<bool>) {
         bits.iter()
             .for_each(|b| if *b { print!("  ┃ ") } else { print!("    ") });
     }
+    /// Prints the an intermediate branch for a given entry in [`AmpLike::print_tree`].
     fn _print_intermediate(&self) {
         print!("  ┣━");
     }
+    /// Prints the a final branch for a given entry in [`AmpLike::print_tree`].
     fn _print_end(&self) {
         print!("  ┗━");
     }
+    /// Prints the tree of [`AmpLike`]s starting with a particular indentation structure
+    /// defined by `bits`. A `true` bit will print a vertical line, while a `false` bit
+    /// will not.
     fn _print_tree(&self, bits: &mut Vec<bool>);
 }
 dyn_clone::clone_trait_object!(AmpLike);
@@ -311,8 +342,6 @@ dyn_clone::clone_trait_object!(AmpLike);
 /// The [`Amplitude`] struct turns a [`Node`] trait into a concrete type and also stores a name
 /// associated with the [`Node`]. This allows us to distinguish multiple uses of the same [`Node`]
 /// in an analysis, and makes each [`Node`]'s parameters unique.
-///
-/// This is mostly used interally as an intermediate step to an [`AmpOp`].
 #[derive(Clone)]
 pub struct Amplitude {
     /// A name which uniquely identifies an [`Amplitude`] within a sum and group.
@@ -429,6 +458,7 @@ impl AmpLike for Amplitude {
     }
 }
 
+/// An [`AmpLike`] representing the real part of the [`AmpLike`] it contains.
 #[derive(Clone, Debug)]
 pub struct Real(Box<dyn AmpLike>);
 impl Display for Real {
@@ -459,6 +489,7 @@ impl AmpLike for Real {
     }
 }
 
+/// An [`AmpLike`] representing the imaginary part of the [`AmpLike`] it contains.
 #[derive(Clone, Debug)]
 pub struct Imag(Box<dyn AmpLike>);
 impl Display for Imag {
@@ -489,6 +520,7 @@ impl AmpLike for Imag {
     }
 }
 
+/// An [`AmpLike`] representing the product of the [`AmpLike`]s it contains.
 #[derive(Clone, Debug)]
 pub struct Product(Vec<Box<dyn AmpLike>>);
 impl Display for Product {
@@ -533,7 +565,7 @@ impl AmpLike for Product {
     }
 }
 
-/// Struct to hold a coherent sum of [`AmpOp`]s
+/// Struct to hold a coherent sum of [`AmpLike`]s
 #[derive(Clone, Debug)]
 pub struct CohSum(pub Vec<Box<dyn AmpLike>>);
 
@@ -1038,21 +1070,21 @@ impl Node for Scalar {
     }
 }
 
+/// Creates a named [`Scalar`].
+///
+/// This is a convenience method to generate an [`Amplitude`] which is just a single free
+/// parameter called `value`.
+///
+/// # Examples
+///
+/// Basic usage:
+///
+/// ```
+/// use rustitude_core::prelude::*;
+/// let my_scalar = scalar("MyScalar");
+/// assert_eq!(my_scalar.parameters, vec!["value".to_string()]);
+/// ```
 pub fn scalar(name: &str) -> Amplitude {
-    //! Creates a named [`Scalar`].
-    //!
-    //! This is a convenience method to generate an [`Amplitude`] which is just a single free
-    //! parameter called `value`.
-    //!
-    //! # Examples
-    //!
-    //! Basic usage:
-    //!
-    //! ```
-    //! use rustitude_core::prelude::*;
-    //! let my_scalar = scalar("MyScalar");
-    //! assert_eq!(my_scalar.node.parameters, vec!["value".to_string()]);
-    //! ```
     Amplitude::new(name, Scalar)
 }
 /// A [`Node`] for computing a single complex value from two input parameters.
@@ -1075,22 +1107,21 @@ impl Node for ComplexScalar {
         vec!["real".to_string(), "imag".to_string()]
     }
 }
-
+/// Creates a named [`ComplexScalar`].
+///
+/// This is a convenience method to generate an [`Amplitude`] which represents a complex
+/// value determined by two parameters, `real` and `imag`.
+///
+/// # Examples
+///
+/// Basic usage:
+///
+/// ```
+/// use rustitude_core::prelude::*;
+/// let my_cscalar = cscalar("MyComplexScalar");
+/// assert_eq!(my_cscalar.parameters, vec!["real".to_string(), "imag".to_string()]);
+/// ```
 pub fn cscalar(name: &str) -> Amplitude {
-    //! Creates a named [`ComplexScalar`].
-    //!
-    //! This is a convenience method to generate an [`Amplitude`] which represents a complex
-    //! value determined by two parameters, `real` and `imag`.
-    //!
-    //! # Examples
-    //!
-    //! Basic usage:
-    //!
-    //! ```
-    //! use rustitude_core::prelude::*;
-    //! let my_cscalar = cscalar("MyComplexScalar");
-    //! assert_eq!(amp.node.parameters, vec!["real".to_string(), "imag".to_string()]);
-    //! ```
     Amplitude::new(name, ComplexScalar)
 }
 
@@ -1115,21 +1146,21 @@ impl Node for PolarComplexScalar {
     }
 }
 
+/// Creates a named [`PolarComplexScalar`].
+///
+/// This is a convenience method to generate an [`Amplitude `] which represents a complex
+/// value determined by two parameters, `real` and `imag`.
+///
+/// # Examples
+///
+/// Basic usage:
+///
+/// ```
+/// use rustitude_core::prelude::*;
+/// let my_pcscalar = pcscalar("MyPolarComplexScalar");
+/// assert_eq!(my_pcscalar.parameters, vec!["mag".to_string(), "phi".to_string()]);
+/// ```
 pub fn pcscalar(name: &str) -> Amplitude {
-    //! Creates a named [`PolarComplexScalar`].
-    //!
-    //! This is a convenience method to generate an [`Amplitude `] which represents a complex
-    //! value determined by two parameters, `real` and `imag`.
-    //!
-    //! # Examples
-    //!
-    //! Basic usage:
-    //!
-    //! ```
-    //! use rustitude_core::prelude::*;
-    //! let my_pcscalar = pcscalar("MyPolarComplexScalar");
-    //! assert_eq!(amp.node.parameters, vec!["mag".to_string(), "phi".to_string()]);
-    //! ```
     Amplitude::new(name, PolarComplexScalar)
 }
 
