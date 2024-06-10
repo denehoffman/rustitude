@@ -25,11 +25,11 @@ def convert(root_file_path, output_parquet_path=None, tree_name=None, n_events=N
         tree_name = root_file.keys()[0] if tree_name is None else tree_name
 
         tree = root_file[tree_name]
-        numpy_arrays = tree.arrays(library='np')
+        numpy_arrays = tree.arrays(library="np")
         dataframe = pd.DataFrame(numpy_arrays)
         n_tot = len(dataframe)
-        if n_events is not None and n_events <= n_tot:
-            dataframe = dataframe.head(n_events)
+        if n_events is not None and int(n_events) <= n_tot:
+            dataframe = dataframe.head(int(n_events))
         else:
             n_events = n_tot
 
@@ -39,27 +39,27 @@ def convert(root_file_path, output_parquet_path=None, tree_name=None, n_events=N
             BigPhi = rng.choice([0.0, 45 * np.pi / 180, 90 * np.pi / 180, 135 * np.pi / 180], size=n_events)
             eps_x = p_gamma * np.cos(BigPhi)
             eps_y = p_gamma * np.sin(BigPhi)
-            dataframe['EPS'] = [np.array([ex, ey, 0.0], dtype=np.float32) for ex, ey in zip(eps_x, eps_y)]
+            dataframe["EPS"] = [np.array([ex, ey, 0.0], dtype=np.float32) for ex, ey in zip(eps_x, eps_y)]
         else:
-            dataframe['EPS'] = [
-                np.array([ex, ey, 0.0], dtype=np.float32) for ex, ey in zip(dataframe['Px_Beam'], dataframe['Py_Beam'])
+            dataframe["EPS"] = [
+                np.array([ex, ey, 0.0], dtype=np.float32) for ex, ey in zip(dataframe["Px_Beam"], dataframe["Py_Beam"])
             ]
-        dataframe['Px_Beam'] = np.zeros_like(dataframe['Px_Beam'])
-        dataframe['Py_Beam'] = np.zeros_like(dataframe['Py_Beam'])
+        dataframe["Px_Beam"] = np.zeros_like(dataframe["Px_Beam"])
+        dataframe["Py_Beam"] = np.zeros_like(dataframe["Py_Beam"])
 
     if output_parquet_path is None:
         output_parquet_path = f"{root_file_path.replace('.root', '.parquet')}"
 
     dataframe.to_parquet(output_parquet_path)
-    print(f'Converted {n_events}/{n_tot} events from ROOT to Parquet')
+    print(f"Converted {n_events}/{n_tot} events from ROOT to Parquet")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     arguments = docopt(__doc__)
-    root_file_path = arguments['<root_file_path>']
-    output_parquet_path = arguments['--output']
-    tree_name = arguments['--tree']
-    n_events = int(arguments['-n'])
-    eps = arguments['--eps']
+    root_file_path = arguments["<root_file_path>"]
+    output_parquet_path = arguments["--output"]
+    tree_name = arguments["--tree"]
+    n_events = arguments["-n"]
+    eps = arguments["--eps"]
 
     convert(root_file_path, output_parquet_path, tree_name, n_events, eps)

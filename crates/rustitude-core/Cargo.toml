@@ -1,6 +1,6 @@
 [package]
 name = "rustitude-core"
-version = "1.1.0"
+version = "2.0.0"
 edition = { workspace = true }
 authors = { workspace = true }
 description = { workspace = true }
@@ -22,6 +22,7 @@ oxyroot = { workspace = true }
 itertools = { workspace = true }
 pyo3 = { workspace = true }
 thiserror = { workspace = true }
+dyn-clone = { workspace = true }
 
 [dev-dependencies]
 sphrs = { workspace = true }

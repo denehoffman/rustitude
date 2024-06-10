@@ -44,10 +44,27 @@ impl Manager {
     pub fn evaluate(&self, parameters: &[f64]) -> Result<Vec<f64>, RustitudeError> {
         self.dataset
             .events
-            .read()
-            .par_iter()
+            .read_arc()
+            .iter()
             .map(|event: &Event| self.model.compute(parameters, event))
             .collect()
+    }
+    /// Evaluate the [`Model`] over the [`Dataset`] with the given free parameters.
+    /// This version uses a parallel loop over events.
+    ///
+    /// # Errors
+    ///
+    /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
+    /// [`Model::compute`] for more information.
+    pub fn par_evaluate(&self, parameters: &[f64]) -> Result<Vec<f64>, RustitudeError> {
+        let mut output = Vec::with_capacity(self.dataset.len());
+        self.dataset
+            .events
+            .read_arc()
+            .par_iter()
+            .map(|event: &Event| self.model.compute(parameters, event))
+            .collect_into_vec(&mut output);
+        output.into_iter().collect()
     }
 
     /// Find the normalization integral for the [`Model`] over the [`Dataset`] with the given
@@ -60,10 +77,27 @@ impl Manager {
     pub fn norm_int(&self, parameters: &[f64]) -> Result<Vec<f64>, RustitudeError> {
         self.dataset
             .events
-            .read()
-            .par_iter()
+            .read_arc()
+            .iter()
             .map(|event: &Event| self.model.norm_int(parameters, event))
             .collect()
+    }
+    /// Find the normalization integral for the [`Model`] over the [`Dataset`] with the given
+    /// free parameters. This version uses a parallel loop over events.
+    ///
+    /// # Errors
+    ///
+    /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
+    /// [`Model::norm_int`] for more information.
+    pub fn par_norm_int(&self, parameters: &[f64]) -> Result<Vec<f64>, RustitudeError> {
+        let mut output = Vec::with_capacity(self.dataset.len());
+        self.dataset
+            .events
+            .read_arc()
+            .par_iter()
+            .map(|event: &Event| self.model.norm_int(parameters, event))
+            .collect_into_vec(&mut output);
+        output.into_iter().collect()
     }
 
     /// Get a copy of an [`Amplitude`] in the [`Model`] by name.
@@ -218,30 +252,6 @@ impl ExtendedLogLikelihood {
         }
     }
 
-    /// Find the normalization integral for the [`Model`] over the [`Dataset`] with the given
-    /// free parameters.
-    ///
-    /// # Errors
-    ///
-    /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
-    /// [`Model::norm_int`] for more information.
-    pub fn norm_int(
-        &self,
-        parameters: &[f64],
-        num_threads: usize,
-        weighted: bool,
-    ) -> Result<f64, RustitudeError> {
-        create_pool(num_threads)?.install(|| {
-            let mc_norm_int = self.mc_manager.norm_int(parameters)?;
-            if weighted {
-                let mc_weights = self.mc_manager.dataset.weights();
-                Ok(mc_norm_int.iter().zip(mc_weights).map(|(r, w)| r * w).sum())
-            } else {
-                Ok(mc_norm_int.iter().sum())
-            }
-        })
-    }
-
     /// Evaluate the [`ExtendedLogLikelihood`] over the [`Dataset`] with the given free parameters
     /// This method also allows the user to input a maximum number of threads to use in the
     /// calculation.
@@ -251,12 +261,45 @@ impl ExtendedLogLikelihood {
     /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
     /// [`Model::compute`] for more information.
     #[allow(clippy::suboptimal_flops)]
-    pub fn evaluate(&self, parameters: &[f64], num_threads: usize) -> Result<f64, RustitudeError> {
+    pub fn evaluate(&self, parameters: &[f64]) -> Result<f64, RustitudeError> {
+        let data_res = self.data_manager.evaluate(parameters)?;
+        let data_weights = self.data_manager.dataset.weights();
+        let n_data = self.data_manager.dataset.len() as f64;
+        let mc_norm_int = self.mc_manager.norm_int(parameters)?;
+        let mc_weights = self.mc_manager.dataset.weights();
+        let n_mc = self.mc_manager.dataset.len() as f64;
+        let ln_l = (data_res
+            .iter()
+            .zip(data_weights)
+            .map(|(l, w)| w * l.ln())
+            .sum::<f64>())
+            - (n_data / n_mc)
+                * (mc_norm_int
+                    .iter()
+                    .zip(mc_weights)
+                    .map(|(l, w)| w * l)
+                    .sum::<f64>());
+        Ok(-2.0 * ln_l)
+    }
+    /// Evaluate the [`ExtendedLogLikelihood`] over the [`Dataset`] with the given free parameters
+    /// This method also allows the user to input a maximum number of threads to use in the
+    /// calculation. This version uses a parallel loop over events.
+    ///
+    /// # Errors
+    ///
+    /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
+    /// [`Model::compute`] for more information.
+    #[allow(clippy::suboptimal_flops)]
+    pub fn par_evaluate(
+        &self,
+        parameters: &[f64],
+        num_threads: usize,
+    ) -> Result<f64, RustitudeError> {
         create_pool(num_threads)?.install(|| {
-            let data_res = self.data_manager.evaluate(parameters)?;
+            let data_res = self.data_manager.par_evaluate(parameters)?;
             let data_weights = self.data_manager.dataset.weights();
             let n_data = self.data_manager.dataset.len() as f64;
-            let mc_norm_int = self.mc_manager.norm_int(parameters)?;
+            let mc_norm_int = self.mc_manager.par_norm_int(parameters)?;
             let mc_weights = self.mc_manager.dataset.weights();
             let n_mc = self.mc_manager.dataset.len() as f64;
             let ln_l = (data_res
@@ -274,6 +317,45 @@ impl ExtendedLogLikelihood {
         })
     }
 
+    /// Find the normalization integral for the [`Model`] over the [`Dataset`] with the given
+    /// free parameters.
+    ///
+    /// # Errors
+    ///
+    /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
+    /// [`Model::norm_int`] for more information.
+    pub fn norm_int(&self, parameters: &[f64], weighted: bool) -> Result<f64, RustitudeError> {
+        let mc_norm_int = self.mc_manager.norm_int(parameters)?;
+        if weighted {
+            let mc_weights = self.mc_manager.dataset.weights();
+            Ok(mc_norm_int.iter().zip(mc_weights).map(|(r, w)| r * w).sum())
+        } else {
+            Ok(mc_norm_int.iter().sum())
+        }
+    }
+    /// Find the normalization integral for the [`Model`] over the [`Dataset`] with the given
+    /// free parameters.
+    ///
+    /// # Errors
+    ///
+    /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
+    /// [`Model::norm_int`] for more information.
+    pub fn par_norm_int(
+        &self,
+        parameters: &[f64],
+        num_threads: usize,
+        weighted: bool,
+    ) -> Result<f64, RustitudeError> {
+        create_pool(num_threads)?.install(|| {
+            let mc_norm_int = self.mc_manager.par_norm_int(parameters)?;
+            if weighted {
+                let mc_weights = self.mc_manager.dataset.weights();
+                Ok(mc_norm_int.iter().zip(mc_weights).map(|(r, w)| r * w).sum())
+            } else {
+                Ok(mc_norm_int.iter().sum())
+            }
+        })
+    }
     /// Get a copy of an [`Amplitude`] in the [`Model`] by name.
     ///
     /// # Errors

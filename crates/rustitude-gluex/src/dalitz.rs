@@ -1,7 +1,7 @@
 use rayon::prelude::*;
 use rustitude_core::prelude::*;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct OmegaDalitz {
     dalitz_z: Vec<f64>,
     dalitz_sin3theta: Vec<f64>,

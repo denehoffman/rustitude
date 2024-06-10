@@ -1,11 +1,11 @@
-use crate::amplitude::{AmpOp, Amplitude};
+use crate::amplitude::Amplitude;
 use pyo3::prelude::*;
 use rustitude_gluex::harmonics as rust;
 use rustitude_gluex::utils::{Frame, Reflectivity, Wave};
 
 #[pyfunction]
 #[pyo3(name = "Ylm", signature = (name, l, m, frame="helicity"))]
-fn ylm(name: &str, l: usize, m: isize, frame: &str) -> AmpOp {
+fn ylm(name: &str, l: usize, m: isize, frame: &str) -> Amplitude {
     Amplitude::new(
         name,
         rust::Ylm::new(
@@ -13,12 +13,11 @@ fn ylm(name: &str, l: usize, m: isize, frame: &str) -> AmpOp {
             <Frame as std::str::FromStr>::from_str(frame).unwrap(),
         ),
     )
-    .into()
 }
 
 #[pyfunction]
 #[pyo3(name = "Zlm", signature = (name, l, m, reflectivity="positive", frame="helicity"))]
-fn zlm(name: &str, l: usize, m: isize, reflectivity: &str, frame: &str) -> AmpOp {
+fn zlm(name: &str, l: usize, m: isize, reflectivity: &str, frame: &str) -> Amplitude {
     Amplitude::new(
         name,
         rust::Zlm::new(
@@ -27,12 +26,11 @@ fn zlm(name: &str, l: usize, m: isize, reflectivity: &str, frame: &str) -> AmpOp
             <Frame as std::str::FromStr>::from_str(frame).unwrap(),
         ),
     )
-    .into()
 }
 
 #[pyfunction]
 #[pyo3(name = "OnePS", signature = (name, reflectivity="positive", frame="helicity"))]
-fn one_ps(name: &str, reflectivity: &str, frame: &str) -> AmpOp {
+fn one_ps(name: &str, reflectivity: &str, frame: &str) -> Amplitude {
     Amplitude::new(
         name,
         rust::OnePS::new(
@@ -40,12 +38,11 @@ fn one_ps(name: &str, reflectivity: &str, frame: &str) -> AmpOp {
             <Frame as std::str::FromStr>::from_str(frame).unwrap(),
         ),
     )
-    .into()
 }
 
 #[pyfunction]
 #[pyo3(name = "TwoPS", signature = (name, l, m, reflectivity="positive", frame="helicity"))]
-fn two_ps(name: &str, l: usize, m: isize, reflectivity: &str, frame: &str) -> AmpOp {
+fn two_ps(name: &str, l: usize, m: isize, reflectivity: &str, frame: &str) -> Amplitude {
     Amplitude::new(
         name,
         rust::TwoPS::new(
@@ -54,7 +51,6 @@ fn two_ps(name: &str, l: usize, m: isize, reflectivity: &str, frame: &str) -> Am
             <Frame as std::str::FromStr>::from_str(frame).unwrap(),
         ),
     )
-    .into()
 }
 
 pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {

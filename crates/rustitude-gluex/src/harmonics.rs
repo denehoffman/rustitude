@@ -7,6 +7,7 @@ use sphrs::{ComplexSH, SHEval};
 
 use crate::utils::{Frame, Reflectivity, Wave};
 
+#[derive(Clone)]
 pub struct Ylm {
     wave: Wave,
     frame: Frame,
@@ -42,6 +43,7 @@ impl Node for Ylm {
     }
 }
 
+#[derive(Clone)]
 pub struct Zlm {
     wave: Wave,
     reflectivity: Reflectivity,
@@ -93,6 +95,7 @@ impl Node for Zlm {
     }
 }
 
+#[derive(Clone)]
 pub struct OnePS {
     reflectivity: Reflectivity,
     frame: Frame,
@@ -141,6 +144,7 @@ impl Node for OnePS {
     }
 }
 
+#[derive(Clone)]
 pub struct TwoPS {
     wave: Wave,
     reflectivity: Reflectivity,

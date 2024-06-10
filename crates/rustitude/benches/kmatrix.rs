@@ -6,23 +6,23 @@ use rustitude::prelude::*;
 
 pub fn criterion_kmatrix(c: &mut Criterion) {
     let dataset = Dataset::from_parquet("benches/test_data.parquet").unwrap();
-    let f0p: AmpOp = amplitude!("f0+", KMatrixF0::new(2));
-    let f0n: AmpOp = amplitude!("f0-", KMatrixF0::new(2));
-    let f2: AmpOp = amplitude!("f2", KMatrixF2::new(2));
-    let a0p: AmpOp = amplitude!("a0+", KMatrixA0::new(1));
-    let a0n: AmpOp = amplitude!("a0-", KMatrixA0::new(1));
-    let a2: AmpOp = amplitude!("a2", KMatrixA2::new(1));
-    let s0p: AmpOp = amplitude!(
+    let f0p = Amplitude::new("f0+", KMatrixF0::new(2));
+    let f0n = Amplitude::new("f0-", KMatrixF0::new(2));
+    let f2 = Amplitude::new("f2", KMatrixF2::new(2));
+    let a0p = Amplitude::new("a0+", KMatrixA0::new(1));
+    let a0n = Amplitude::new("a0-", KMatrixA0::new(1));
+    let a2 = Amplitude::new("a2", KMatrixA2::new(1));
+    let s0p = Amplitude::new(
         "s0+",
-        Zlm::new(Wave::S0, Reflectivity::Positive, Frame::Helicity)
+        Zlm::new(Wave::S0, Reflectivity::Positive, Frame::Helicity),
     );
-    let s0n: AmpOp = amplitude!(
+    let s0n = Amplitude::new(
         "s0-",
-        Zlm::new(Wave::S0, Reflectivity::Negative, Frame::Helicity)
+        Zlm::new(Wave::S0, Reflectivity::Negative, Frame::Helicity),
     );
-    let d2: AmpOp = amplitude!(
+    let d2 = Amplitude::new(
         "d2",
-        Zlm::new(Wave::D2, Reflectivity::Positive, Frame::Helicity)
+        Zlm::new(Wave::D2, Reflectivity::Positive, Frame::Helicity),
     );
     let pos_real = (&f0p + &a0p) * s0p.real() + (&f2 + &a2) * d2.real();
     let pos_imag = (&f0p + &a0p) * s0p.imag() + (&f2 + &a2) * d2.imag();
@@ -41,7 +41,7 @@ pub fn criterion_kmatrix(c: &mut Criterion) {
             let v = (0..model.get_n_free())
                 .map(|_| rand::random::<f64>() * 100.0)
                 .collect::<Vec<_>>();
-            criterion::black_box(m.evaluate(&v))
+            criterion::black_box(m.par_evaluate(&v))
         })
     });
     c.bench_function("kmatrix_norm_int", |b| {
@@ -49,7 +49,7 @@ pub fn criterion_kmatrix(c: &mut Criterion) {
             let v = (0..model.get_n_free())
                 .map(|_| rand::random::<f64>() * 100.0)
                 .collect::<Vec<_>>();
-            criterion::black_box(m.norm_int(&v))
+            criterion::black_box(m.par_norm_int(&v))
         })
     });
     let dataset_mc = Dataset::from_parquet("benches/test_data.parquet").unwrap();
@@ -59,7 +59,7 @@ pub fn criterion_kmatrix(c: &mut Criterion) {
             let v = (0..model.get_n_free())
                 .map(|_| rand::random::<f64>() * 100.0)
                 .collect::<Vec<_>>();
-            criterion::black_box(nll.evaluate(&v, num_cpus::get()))
+            criterion::black_box(nll.par_evaluate(&v, num_cpus::get()))
         })
     });
 }

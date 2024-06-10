@@ -75,11 +75,20 @@ impl Manager {
         .map_err(PyErr::from)
     }
     #[pyo3(name = "__call__")]
+    fn call(&self, parameters: Vec<f64>) -> PyResult<Vec<f64>> {
+        self.0.par_evaluate(&parameters).map_err(PyErr::from)
+    }
     fn evaluate(&self, parameters: Vec<f64>) -> PyResult<Vec<f64>> {
         self.0.evaluate(&parameters).map_err(PyErr::from)
     }
+    fn par_evaluate(&self, parameters: Vec<f64>) -> PyResult<Vec<f64>> {
+        self.0.par_evaluate(&parameters).map_err(PyErr::from)
+    }
     fn norm_int(&self, parameters: Vec<f64>) -> PyResult<Vec<f64>> {
         self.0.norm_int(&parameters).map_err(PyErr::from)
+    }
+    fn par_norm_int(&self, parameters: Vec<f64>) -> PyResult<Vec<f64>> {
+        self.0.par_norm_int(&parameters).map_err(PyErr::from)
     }
     fn get_amplitude(&self, amplitude_name: &str) -> PyResult<Amplitude> {
         self.0
@@ -197,16 +206,34 @@ impl ExtendedLogLikelihood {
     fn new(data_manager: Manager, mc_manager: Manager) -> Self {
         rust::ExtendedLogLikelihood::new(data_manager.into(), mc_manager.into()).into()
     }
+    #[pyo3(signature = (parameters, *, weighted = true))]
+    fn norm_int(&self, parameters: Vec<f64>, weighted: bool) -> PyResult<f64> {
+        self.0.norm_int(&parameters, weighted).map_err(PyErr::from)
+    }
     #[pyo3(signature = (parameters, *, num_threads = 1, weighted = true))]
-    fn norm_int(&self, parameters: Vec<f64>, num_threads: usize, weighted: bool) -> PyResult<f64> {
+    fn par_norm_int(
+        &self,
+        parameters: Vec<f64>,
+        num_threads: usize,
+        weighted: bool,
+    ) -> PyResult<f64> {
         self.0
-            .norm_int(&parameters, num_threads, weighted)
+            .par_norm_int(&parameters, num_threads, weighted)
+            .map_err(PyErr::from)
+    }
+    fn evaluate(&self, parameters: Vec<f64>) -> PyResult<f64> {
+        self.0.evaluate(&parameters).map_err(PyErr::from)
+    }
+    #[pyo3(signature = (parameters, *, num_threads = 1))]
+    fn par_evaluate(&self, parameters: Vec<f64>, num_threads: usize) -> PyResult<f64> {
+        self.0
+            .par_evaluate(&parameters, num_threads)
             .map_err(PyErr::from)
     }
     #[pyo3(name = "__call__", signature = (parameters, *, num_threads = 1))]
-    fn evaluate(&self, parameters: Vec<f64>, num_threads: usize) -> PyResult<f64> {
+    fn call(&self, parameters: Vec<f64>, num_threads: usize) -> PyResult<f64> {
         self.0
-            .evaluate(&parameters, num_threads)
+            .par_evaluate(&parameters, num_threads)
             .map_err(PyErr::from)
     }
     fn get_amplitude(&self, amplitude_name: &str) -> PyResult<Amplitude> {

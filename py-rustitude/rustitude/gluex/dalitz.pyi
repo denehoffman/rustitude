@@ -1,3 +1,3 @@
-from rustitude import AmpOp
+from rustitude import Amplitude
 
-def OmegaDalitz() -> AmpOp: ...  # noqa: N802
+def OmegaDalitz() -> Amplitude: ...  # noqa: N802

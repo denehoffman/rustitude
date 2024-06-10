@@ -173,15 +173,26 @@
 //! ```
 //! # Combining Amplitudes into Models
 //! We can use several operations to modify and combine amplitudes. Since amplitudes yield complex
-//! values, the following convenience functions are provided:
-//! [`AmpOp::real`](crate::amplitude::AmpOp::real), and
-//! [`AmpOp::imag`](crate::amplitude::AmpOp::imag) which give the absolute-square, real part, and
+//! values, the following convenience methods are provided:
+//! [`real`](`amplitude::AmpLike::real`), and [`imag`](`amplitude::AmpLike::imag`) give the real and
 //! imaginary part of the amplitude, respectively. Additionally, amplitudes can be added and multiplied
-//! together using operator overloading. To do any of this, we must create an
-//! [`AmpOp`](crate::amplitude::AmpOp), an enum which wraps [`Amplitude`](crate::amplitude::Amplitude).
-//! This struct is just a container for a [`Node`](crate::amplitude::Node)-implementor with a
-//! [`String`] name. This crate provides a convenience macro [`amplitude!`](`crate::amplitude!`) to do
-//! this wrapping. The [`Scalar`](`crate::amplitude::Scalar`),
+//! together using operator overloading. All sums are interpreted as
+//! [coherent sums](`crate::amplitude::CohSum`), and products with these coherent sums are
+//! distributed. Incoherent sums are handled at the [`Model`](crate::amplitude::Model) level.
+//!
+//! To incoherently sum two [`Amplitude`](`amplitude::Amplitude`)s, say `amp1` and `amp2`, we would
+//! first assume that we actually want the absolute square of the given term (or write our
+//! amplitude as the square root of what we really want), and then include them both in our model:
+//!
+//! ```ignore
+//! use rustitude_core::prelude::*;
+//! // Define amp1/amp2: Amplitude here...
+//! let model = Model::new(vec![amp1.as_cohsum(), amp2.as_cohsum()])
+//! ```
+//!
+//! To reiterate, this would yield something like $`\left|\text{amp}_1\right|^2 + \left|\text{amp}_2\right|^2`$.
+//!
+//! The [`Scalar`](`crate::amplitude::Scalar`),
 //! [`ComplexScalar`](`crate::amplitude::ComplexScalar`), and
 //! [`PolarComplexScalar`](`crate::amplitude::PolarComplexScalar`) amplitudes all have convenience
 //! methods, [`scalar`](`crate::amplitude::scalar`), [`cscalar`](`crate::amplitude::cscalar`), and
@@ -258,6 +269,8 @@
     clippy::missing_safety_doc,
     clippy::missing_panics_doc,
     clippy::missing_errors_doc,
+    clippy::perf,
+    clippy::style,
     missing_docs
 )]
 #![cfg_attr(feature = "simd", feature(portable_simd))]
@@ -267,9 +280,9 @@ pub mod four_momentum;
 pub mod manager;
 /// Recommended namespace for use and development.
 pub mod prelude {
-    pub use crate::amplitude;
     pub use crate::amplitude::{
-        cscalar, pcscalar, scalar, AmpOp, Amplitude, Model, Node, Parameter, Piecewise,
+        cscalar, pcscalar, scalar, AmpLike, Amplitude, CohSum, Imag, Model, Node, Parameter,
+        Piecewise, Product, Real,
     };
     pub use crate::dataset::{Dataset, Event};
     pub use crate::errors::RustitudeError;

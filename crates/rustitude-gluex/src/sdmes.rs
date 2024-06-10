@@ -5,6 +5,7 @@ use std::f64::consts::PI;
 
 use crate::utils::Frame;
 
+#[derive(Clone)]
 pub struct TwoPiSDME {
     frame: Frame,
     data: Vec<(f64, f64, f64, f64, f64, f64)>,
@@ -97,6 +98,7 @@ impl Node for TwoPiSDME {
     }
 }
 
+#[derive(Clone)]
 pub struct ThreePiSDME {
     frame: Frame,
     data: Vec<(f64, f64, f64, f64, f64, f64)>,

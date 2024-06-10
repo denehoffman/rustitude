@@ -6,7 +6,7 @@ use nalgebra::{SMatrix, SVector};
 use rayon::prelude::*;
 use rustitude_core::prelude::*;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct BreitWigner {
     p1_indices: Vec<usize>,
     p2_indices: Vec<usize>,
@@ -79,6 +79,7 @@ pub struct AdlerZero {
     pub s_0: f64,
     pub s_norm: f64,
 }
+#[derive(Clone)]
 struct KMatrixConstants<const C: usize, const R: usize> {
     g: SMatrix<f64, C, R>,
     c: SMatrix<f64, C, C>,
@@ -165,6 +166,7 @@ impl<const C: usize, const R: usize> KMatrixConstants<C, R> {
         ikc_inv_vec.dot(&Self::p_vector(betas, pvector_constants_mat))
     }
 }
+#[derive(Clone)]
 pub struct KMatrixF0(
     usize,
     KMatrixConstants<5, 5>,
@@ -250,6 +252,7 @@ impl Node for KMatrixF0 {
         ]
     }
 }
+#[derive(Clone)]
 pub struct KMatrixF2(
     usize,
     KMatrixConstants<4, 4>,
@@ -328,6 +331,7 @@ impl Node for KMatrixF2 {
     }
 }
 
+#[derive(Clone)]
 pub struct KMatrixA0(
     usize,
     KMatrixConstants<2, 2>,
@@ -396,6 +400,7 @@ impl Node for KMatrixA0 {
     }
 }
 
+#[derive(Clone)]
 pub struct KMatrixA2(
     usize,
     KMatrixConstants<3, 2>,
@@ -466,6 +471,7 @@ impl Node for KMatrixA2 {
     }
 }
 
+#[derive(Clone)]
 pub struct KMatrixRho(
     usize,
     KMatrixConstants<3, 2>,
@@ -536,6 +542,7 @@ impl Node for KMatrixRho {
     }
 }
 
+#[derive(Clone)]
 pub struct KMatrixPi1(
     usize,
     KMatrixConstants<2, 1>,
