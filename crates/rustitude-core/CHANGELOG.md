@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0](https://github.com/denehoffman/rustitude/compare/rustitude-core-v2.0.0...rustitude-core-v3.0.0) - 2024-06-10
+
+### Added
+- [**breaking**] Restructures AmpOp into concrete types
+- add par_ versions for all compute and norm_int methods and refactor python accordingly. Also remove RwLocks and extra allocations in the Amplitude struct, which is a huge speedup
+- add dyn-clone dependency
+
+### Other
+- update core docs
+- *(amplitude)* finish documenting updates (replace AmpOp, add AmpLike, etc)
+- improve readability (doesn't seem to change performance)
+- bump versions because smart-release just doesn't know how to do anything I guess
+- preallocate memory in Manager evaluation calls
+- ensure clippy lints for perf and style
+- Merge pull request [#4](https://github.com/denehoffman/rustitude/pull/4) from denehoffman/cohsum
+
 ## 1.1.0 (2024-05-24)
 
 ### Documentation
