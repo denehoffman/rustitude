@@ -934,7 +934,7 @@ impl Model {
             .iter()
             .map(|amp| {
                 if amp.active {
-                    amp.calculate(&parameters, event).map(Some)
+                    amp.calculate(parameters, event).map(Some)
                 } else {
                     Ok(None)
                 }
