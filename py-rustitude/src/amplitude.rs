@@ -107,6 +107,9 @@ impl Amplitude {
     fn __repr__(&self) -> String {
         format!("{:?}", self.0)
     }
+    fn as_cohsum(&self) -> CohSum {
+        self.0.as_cohsum().into()
+    }
     fn __add__(&self, other: &Bound<PyAny>) -> PyResult<CohSum> {
         let other: AmpLikeOrCohSum = AmpLikeOrCohSum::extract_bound(other)?;
         match other {
@@ -160,6 +163,9 @@ impl Real {
     fn __repr__(&self) -> String {
         format!("{:?}", self.0)
     }
+    fn as_cohsum(&self) -> CohSum {
+        self.0.as_cohsum().into()
+    }
     fn __add__(&self, other: &Bound<PyAny>) -> PyResult<CohSum> {
         let other: AmpLikeOrCohSum = AmpLikeOrCohSum::extract_bound(other)?;
         match other {
@@ -210,6 +216,9 @@ impl Imag {
     fn __repr__(&self) -> String {
         format!("{:?}", self.0)
     }
+    fn as_cohsum(&self) -> CohSum {
+        self.0.as_cohsum().into()
+    }
     fn __add__(&self, other: &Bound<PyAny>) -> PyResult<CohSum> {
         let other: AmpLikeOrCohSum = AmpLikeOrCohSum::extract_bound(other)?;
         match other {
@@ -259,6 +268,9 @@ impl Product {
     }
     fn __repr__(&self) -> String {
         format!("{:?}", self.0)
+    }
+    fn as_cohsum(&self) -> CohSum {
+        self.0.as_cohsum().into()
     }
     fn __add__(&self, other: &Bound<PyAny>) -> PyResult<CohSum> {
         let other: AmpLikeOrCohSum = AmpLikeOrCohSum::extract_bound(other)?;
