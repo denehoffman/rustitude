@@ -313,13 +313,13 @@ impl ExtendedLogLikelihood {
             let mc_weights = self.mc_manager.dataset.weights();
             let n_mc = self.mc_manager.dataset.len() as f64;
             let ln_l = (data_res
-                .iter()
+                .par_iter()
                 .zip(data_weights)
                 .map(|(l, w)| w * l.ln())
                 .sum::<f64>())
                 - (n_data / n_mc)
                     * (mc_norm_int
-                        .iter()
+                        .par_iter()
                         .zip(mc_weights)
                         .map(|(l, w)| w * l)
                         .sum::<f64>());
