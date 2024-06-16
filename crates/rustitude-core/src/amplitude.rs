@@ -1426,7 +1426,7 @@ macro_rules! impl_mul {
                     }
                     (Some(terms), None) => {
                         let mut terms = terms;
-                        terms.push(Box::new(self));
+                        terms.push(Box::new(rhs));
                         Product(terms)
                     }
                     (None, None) => Product(vec![Box::new(self), Box::new(rhs)]),
