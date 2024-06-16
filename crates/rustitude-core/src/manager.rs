@@ -42,11 +42,17 @@ impl Manager {
     /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
     /// [`Model::compute`] for more information.
     pub fn evaluate(&self, parameters: &[f64]) -> Result<Vec<f64>, RustitudeError> {
+        let pars: Vec<f64> = self
+            .model
+            .parameters
+            .iter()
+            .map(|p| p.index.map_or_else(|| p.initial, |i| parameters[i]))
+            .collect();
         self.dataset
             .events
             .read_arc()
             .iter()
-            .map(|event: &Event| self.model.compute(parameters, event))
+            .map(|event: &Event| self.model.compute(&pars, event))
             .collect()
     }
     /// Evaluate the [`Model`] over the [`Dataset`] with the given free parameters.
@@ -58,11 +64,17 @@ impl Manager {
     /// [`Model::compute`] for more information.
     pub fn par_evaluate(&self, parameters: &[f64]) -> Result<Vec<f64>, RustitudeError> {
         let mut output = Vec::with_capacity(self.dataset.len());
+        let pars: Vec<f64> = self
+            .model
+            .parameters
+            .iter()
+            .map(|p| p.index.map_or_else(|| p.initial, |i| parameters[i]))
+            .collect();
         self.dataset
             .events
             .read_arc()
             .par_iter()
-            .map(|event: &Event| self.model.compute(parameters, event))
+            .map(|event| self.model.compute(&pars, event))
             .collect_into_vec(&mut output);
         output.into_iter().collect()
     }
@@ -252,9 +264,7 @@ impl ExtendedLogLikelihood {
         }
     }
 
-    /// Evaluate the [`ExtendedLogLikelihood`] over the [`Dataset`] with the given free parameters
-    /// This method also allows the user to input a maximum number of threads to use in the
-    /// calculation.
+    /// Evaluate the [`ExtendedLogLikelihood`] over the [`Dataset`] with the given free parameters.
     ///
     /// # Errors
     ///
@@ -283,7 +293,7 @@ impl ExtendedLogLikelihood {
     }
     /// Evaluate the [`ExtendedLogLikelihood`] over the [`Dataset`] with the given free parameters
     /// This method also allows the user to input a maximum number of threads to use in the
-    /// calculation. This version uses a parallel loop over events.
+    /// calculation, as it uses a parallel loop over events.
     ///
     /// # Errors
     ///

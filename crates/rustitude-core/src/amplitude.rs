@@ -927,18 +927,14 @@ impl Model {
     ///
     /// This method yields a [`RustitudeError`] if any of the [`Amplitude::calculate`] steps fail.
     pub fn compute(&self, parameters: &[f64], event: &Event) -> Result<f64, RustitudeError> {
-        let pars: Vec<f64> = self
-            .parameters
-            .iter()
-            .map(|p| p.index.map_or_else(|| p.initial, |i| parameters[i]))
-            .collect();
         // First, we calculate the values for the active amplitudes
+        // TODO: Stop reallocating!!!
         let cache: Vec<Option<Complex64>> = self
             .amplitudes
             .iter()
             .map(|amp| {
                 if amp.active {
-                    amp.calculate(&pars, event).map(Some)
+                    amp.calculate(&parameters, event).map(Some)
                 } else {
                     Ok(None)
                 }
