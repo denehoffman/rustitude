@@ -35,6 +35,7 @@ criterion = "0.5.1"
 rand = "0.8.5"
 num_cpus = "1.16.0"
 dyn-clone = "1.0.17"
+parquet2 = "0.17.2"
 
 [profile.release]
 lto = true
