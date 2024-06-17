@@ -171,3 +171,4 @@ notes
 demo.py
 py-rustitude/demo
 *perf.data*
+rustc-*
