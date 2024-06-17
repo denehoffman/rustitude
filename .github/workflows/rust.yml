@@ -11,9 +11,7 @@ env:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v4
     - name: Build
@@ -33,3 +31,8 @@ jobs:
         run: cargo docs-rs -p rustitude-gluex
       - name: Document rustitude
         run: cargo docs-rs -p rustitude
+  bench:
+    name: Criterion Compare PRs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: boa-dev/criterion-compare-action@v3.2.4
