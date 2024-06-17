@@ -5,6 +5,8 @@ mod four_momentum;
 mod gluex;
 mod manager;
 
+#[allow(deprecated)]
+
 pub fn add_submodule<F>(parent: &Bound<'_, PyModule>, name: &str, mod_init: F) -> PyResult<()>
 where
     F: Fn(&Bound<'_, PyModule>) -> PyResult<()>,

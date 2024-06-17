@@ -1,7 +1,6 @@
 use pyo3::prelude::*;
 use rustitude_core::amplitude as rust;
 use rustitude_core::amplitude::AmpLike as rust_AmpLike;
-use rustitude_core::amplitude::AsTree;
 use std::ops::{Add, Mul};
 
 #[pyclass]
