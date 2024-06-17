@@ -230,6 +230,22 @@ impl ExtendedLogLikelihood {
             .par_evaluate(&parameters, num_threads)
             .map_err(PyErr::from)
     }
+    fn intensity(&self, parameters: Vec<f64>, dataset: Dataset) -> PyResult<Vec<f64>> {
+        self.0
+            .intensity(&parameters, &dataset.into())
+            .map_err(PyErr::from)
+    }
+    #[pyo3(signature = (parameters, dataset, *, num_threads = 1))]
+    fn par_intensity(
+        &self,
+        parameters: Vec<f64>,
+        dataset: Dataset,
+        num_threads: usize,
+    ) -> PyResult<Vec<f64>> {
+        self.0
+            .par_intensity(&parameters, &dataset.into(), num_threads)
+            .map_err(PyErr::from)
+    }
     #[pyo3(name = "__call__", signature = (parameters, *, num_threads = 1))]
     fn call(&self, parameters: Vec<f64>, num_threads: usize) -> PyResult<f64> {
         self.0

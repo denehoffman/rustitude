@@ -275,7 +275,7 @@ impl ExtendedLogLikelihood {
         let data_res = self.data_manager.evaluate(parameters)?;
         let data_weights = self.data_manager.dataset.weights();
         let n_data = self.data_manager.dataset.len() as f64;
-        let mc_norm_int = self.mc_manager.norm_int(parameters)?;
+        let mc_norm_int = self.mc_manager.evaluate(parameters)?;
         let mc_weights = self.mc_manager.dataset.weights();
         let n_mc = self.mc_manager.dataset.len() as f64;
         let ln_l = (data_res
@@ -309,7 +309,7 @@ impl ExtendedLogLikelihood {
             let data_res = self.data_manager.par_evaluate(parameters)?;
             let data_weights = self.data_manager.dataset.weights();
             let n_data = self.data_manager.dataset.len() as f64;
-            let mc_norm_int = self.mc_manager.par_norm_int(parameters)?;
+            let mc_norm_int = self.mc_manager.par_evaluate(parameters)?;
             let mc_weights = self.mc_manager.dataset.weights();
             let n_mc = self.mc_manager.dataset.len() as f64;
             let ln_l = (data_res
@@ -325,6 +325,41 @@ impl ExtendedLogLikelihood {
                         .sum::<f64>());
             Ok(-2.0 * ln_l)
         })
+    }
+
+    /// Evaluate the unnormalized intensity function over the given [`Dataset`] with the given
+    /// free parameters.
+    ///
+    /// # Errors
+    ///
+    /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
+    /// [`Model::compute`] for more information.
+    #[allow(clippy::suboptimal_flops)]
+    pub fn intensity(
+        &self,
+        parameters: &[f64],
+        dataset: &Dataset,
+    ) -> Result<Vec<f64>, RustitudeError> {
+        let manager = Manager::new(&self.data_manager.model, dataset)?;
+        manager.evaluate(parameters)
+    }
+    /// Evaluate the unnormalized intensity function over the given [`Dataset`] with the given
+    /// free parameters. This method also allows the user to input a maximum number of threads
+    /// to use in the calculation. This version uses a parallel loop over events.
+    ///
+    /// # Errors
+    ///
+    /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
+    /// [`Model::compute`] for more information.
+    #[allow(clippy::suboptimal_flops)]
+    pub fn par_intensity(
+        &self,
+        parameters: &[f64],
+        dataset: &Dataset,
+        num_threads: usize,
+    ) -> Result<Vec<f64>, RustitudeError> {
+        let manager = Manager::new(&self.data_manager.model, dataset)?;
+        create_pool(num_threads)?.install(|| manager.par_evaluate(parameters))
     }
 
     /// Find the normalization integral for the [`Model`] over the [`Dataset`] with the given
