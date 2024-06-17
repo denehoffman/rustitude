@@ -281,8 +281,8 @@ pub mod manager;
 /// Recommended namespace for use and development.
 pub mod prelude {
     pub use crate::amplitude::{
-        cscalar, pcscalar, scalar, AmpLike, Amplitude, CohSum, Imag, Model, Node, Parameter,
-        Piecewise, Product, Real,
+        cscalar, pcscalar, scalar, AmpLike, Amplitude, AsTree, CohSum, Imag, Model, Node,
+        Parameter, Piecewise, Product, Real,
     };
     pub use crate::dataset::{Dataset, Event};
     pub use crate::errors::RustitudeError;

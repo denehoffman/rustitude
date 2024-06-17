@@ -1,6 +1,7 @@
 use pyo3::prelude::*;
 use rustitude_core::amplitude as rust;
 use rustitude_core::amplitude::AmpLike as rust_AmpLike;
+use rustitude_core::amplitude::AsTree;
 use std::ops::{Add, Mul};
 
 #[pyclass]
@@ -82,9 +83,6 @@ impl Amplitude {
 }
 #[pymethods]
 impl Amplitude {
-    fn print_tree(&self) {
-        self.0.print_tree()
-    }
     #[getter]
     fn name(&self) -> String {
         self.0.name.clone()
@@ -154,9 +152,6 @@ pub struct Real(rust::Real);
 impl_convert!(Real, rust::Real);
 #[pymethods]
 impl Real {
-    fn print_tree(&self) {
-        self.0.print_tree()
-    }
     fn __str__(&self) -> String {
         format!("{}", self.0)
     }
@@ -340,9 +335,6 @@ impl CohSum {
         }
         Ok(Self(rust::CohSum(rust_terms)))
     }
-    fn print_tree(&self) {
-        self.0.print_tree()
-    }
     fn __str__(&self) -> String {
         format!("{}", self.0)
     }
@@ -399,8 +391,11 @@ impl From<Model> for rust::Model {
 
 #[pymethods]
 impl Model {
-    fn print_tree(&self) {
-        self.0.print_tree()
+    fn __str__(&self) -> String {
+        format!("{}", self.0)
+    }
+    fn __repr__(&self) -> String {
+        format!("{:?}", self.0)
     }
     #[getter]
     fn cohsums(&self) -> Vec<CohSum> {

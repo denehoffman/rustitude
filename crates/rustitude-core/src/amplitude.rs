@@ -256,7 +256,7 @@ dyn_clone::clone_trait_object!(Node);
 /// namely [`Real`], [`Imag`], and [`Product`]. Others may be added in the future, but they
 /// should probably only be added through this crate and not externally, since they require several
 /// operator overloads to be implemented for nice syntax.
-pub trait AmpLike: DynClone + Send + Sync + Debug + Display {
+pub trait AmpLike: DynClone + Send + Sync + Debug + Display + AsTree {
     /// This method walks through an [`AmpLike`] struct and recursively amalgamates a list of
     /// [`Amplitude`]s contained within. Note that these [`Amplitude`]s are owned clones of the
     /// interior structures.
@@ -310,32 +310,37 @@ pub trait AmpLike: DynClone + Send + Sync + Debug + Display {
     {
         CohSum(vec![dyn_clone::clone_box(self)])
     }
-
-    /// Pretty-prints the structure of [`AmpLike`] structs starting at the current node.
-    fn print_tree(&self) {
-        self._print_tree(&mut vec![]);
-    }
-
-    /// Prints the proper indents for a given entry in [`AmpLike::print_tree`]. A `true` bit will print a vertical line, while a `false` bit
-    /// will not.
-    fn _print_indent(&self, bits: Vec<bool>) {
-        bits.iter()
-            .for_each(|b| if *b { print!("  ┃ ") } else { print!("    ") });
-    }
-    /// Prints the an intermediate branch for a given entry in [`AmpLike::print_tree`].
-    fn _print_intermediate(&self) {
-        print!("  ┣━");
-    }
-    /// Prints the a final branch for a given entry in [`AmpLike::print_tree`].
-    fn _print_end(&self) {
-        print!("  ┗━");
-    }
-    /// Prints the tree of [`AmpLike`]s starting with a particular indentation structure
-    /// defined by `bits`. A `true` bit will print a vertical line, while a `false` bit
-    /// will not.
-    fn _print_tree(&self, bits: &mut Vec<bool>);
 }
 dyn_clone::clone_trait_object!(AmpLike);
+
+/// This trait defines some simple methods for pretty-printing tree-like structures.
+pub trait AsTree {
+    /// Returns a string representing the node and its children with tree formatting.
+    fn get_tree(&self) -> String {
+        self._get_tree(&mut vec![])
+    }
+    /// Returns a string with the proper indents for a given entry in
+    /// [`AsTree::get_tree`]. A `true` bit will yield a vertical line, while a
+    /// `false` bit will not.
+    fn _get_indent(&self, bits: Vec<bool>) -> String {
+        bits.iter()
+            .map(|b| if *b { "  ┃ " } else { "    " })
+            .join("")
+    }
+    /// Returns a string with the intermediate branch symbol for a given entry in
+    /// [`AsTree::get_tree`].
+    fn _get_intermediate(&self) -> String {
+        String::from("  ┣━")
+    }
+    /// Prints the a final branch for a given entry in [`AsTree::get_tree`].
+    fn _get_end(&self) -> String {
+        String::from("  ┗━")
+    }
+    /// Prints the tree of an [`AsTree`]-implementor starting with a particular indentation structure
+    /// defined by `bits`. A `true` bit will print a vertical line, while a `false` bit
+    /// will not.
+    fn _get_tree(&self, bits: &mut Vec<bool>) -> String;
+}
 
 /// A struct which stores a named [`Node`].
 ///
@@ -363,13 +368,14 @@ pub struct Amplitude {
 }
 
 impl Debug for Amplitude {
+    #[rustfmt::skip]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Amplitude")
-            .field("name", &self.name)
-            .field("active", &self.active)
-            .field("cache_position", &self.cache_position)
-            .field("parameter_index_start", &self.parameter_index_start)
-            .finish()
+        writeln!(f, "Amplitude")?;
+        writeln!(f, "  Name:                     {}", self.name)?;
+        writeln!(f, "  Active:                   {}", self.active)?;
+        writeln!(f, "  Cache Position:           {}", self.cache_position)?;
+        writeln!(f, "  Index of First Parameter: {}", self.parameter_index_start
+        )
     }
 }
 impl Display for Amplitude {
@@ -377,11 +383,19 @@ impl Display for Amplitude {
         if self.active {
             write!(f, "{}", self.name)
         } else {
-            write!(f, "# {} #", self.name)
+            write!(f, "/* {} */", self.name)
         }
     }
 }
-
+impl AsTree for Amplitude {
+    fn _get_tree(&self, _bits: &mut Vec<bool>) -> String {
+        if self.parameters().len() > 7 {
+            format!(" {}({},...)\n", self, self.parameters()[0..7].join(", "))
+        } else {
+            format!(" {}({})\n", self, self.parameters().join(", "))
+        }
+    }
+}
 impl Amplitude {
     /// Creates a new [`Amplitude`] from a name and a [`Node`]-implementing struct.
     pub fn new(name: &str, node: impl Node + 'static) -> Self {
@@ -438,32 +452,19 @@ impl AmpLike for Amplitude {
     fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
         cache[self.cache_position]
     }
-
-    fn _print_tree(&self, _bits: &mut Vec<bool>) {
-        if self.parameters().len() > 7 {
-            println!(
-                " {}{}({},...)",
-                if self.active { "!" } else { "" },
-                self.name,
-                self.parameters()[0..7].join(", ")
-            );
-        } else {
-            println!(
-                " {}{}({})",
-                if self.active { "!" } else { "" },
-                self.name,
-                self.parameters().join(", ")
-            );
-        }
-    }
 }
 
 /// An [`AmpLike`] representing the real part of the [`AmpLike`] it contains.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Real(Box<dyn AmpLike>);
-impl Display for Real {
+impl Debug for Real {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Real [ {} ]", self.0)
+    }
+}
+impl Display for Real {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}", self.get_tree())
     }
 }
 impl AmpLike for Real {
@@ -478,23 +479,30 @@ impl AmpLike for Real {
     fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
         self.0.compute(cache).map(|r| r.re.into())
     }
-
-    fn _print_tree(&self, bits: &mut Vec<bool>) {
-        println!("[ imag ]");
-        self._print_indent(bits.to_vec());
-        self._print_end();
+}
+impl AsTree for Real {
+    fn _get_tree(&self, bits: &mut Vec<bool>) -> String {
+        let mut res = String::from("[ real ]\n");
+        res.push_str(&self._get_indent(bits.to_vec()));
+        res.push_str(&self._get_end());
         bits.push(false);
-        self.0._print_tree(&mut bits.clone());
+        res.push_str(&self.0._get_tree(&mut bits.clone()));
         bits.pop();
+        res
     }
 }
 
 /// An [`AmpLike`] representing the imaginary part of the [`AmpLike`] it contains.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Imag(Box<dyn AmpLike>);
-impl Display for Imag {
+impl Debug for Imag {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Imag [ {} ]", self.0)
+    }
+}
+impl Display for Imag {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}", self.get_tree())
     }
 }
 impl AmpLike for Imag {
@@ -509,27 +517,52 @@ impl AmpLike for Imag {
     fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
         self.0.compute(cache).map(|r| r.im.into())
     }
-
-    fn _print_tree(&self, bits: &mut Vec<bool>) {
-        println!("[ imag ]");
-        self._print_indent(bits.to_vec());
-        self._print_end();
+}
+impl AsTree for Imag {
+    fn _get_tree(&self, bits: &mut Vec<bool>) -> String {
+        let mut res = String::from("[ imag ]\n");
+        res.push_str(&self._get_indent(bits.to_vec()));
+        res.push_str(&self._get_end());
         bits.push(false);
-        self.0._print_tree(&mut bits.clone());
+        res.push_str(&self.0._get_tree(&mut bits.clone()));
         bits.pop();
+        res
     }
 }
 
 /// An [`AmpLike`] representing the product of the [`AmpLike`]s it contains.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Product(Vec<Box<dyn AmpLike>>);
-impl Display for Product {
+impl Debug for Product {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Product [ ")?;
         for op in &self.0 {
-            write!(f, "{:?} ", op)?;
+            write!(f, "{} ", op)?;
         }
         write!(f, "]")
+    }
+}
+impl Display for Product {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}", self.get_tree())
+    }
+}
+impl AsTree for Product {
+    fn _get_tree(&self, bits: &mut Vec<bool>) -> String {
+        let mut res = String::from("[ * ]\n");
+        for (i, op) in self.0.iter().enumerate() {
+            res.push_str(&self._get_indent(bits.to_vec()));
+            if i == self.0.len() - 1 {
+                res.push_str(&self._get_end());
+                bits.push(false);
+            } else {
+                res.push_str(&self._get_intermediate());
+                bits.push(true);
+            }
+            res.push_str(&op._get_tree(&mut bits.clone()));
+            bits.pop();
+        }
+        res
     }
 }
 impl AmpLike for Product {
@@ -547,46 +580,45 @@ impl AmpLike for Product {
     fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
         self.0.iter().map(|op| op.compute(cache)).product()
     }
-
-    fn _print_tree(&self, bits: &mut Vec<bool>) {
-        println!("[ * ]");
-        for (i, op) in self.0.iter().enumerate() {
-            self._print_indent(bits.to_vec());
-            if i == self.0.len() - 1 {
-                self._print_end();
-                bits.push(false);
-            } else {
-                self._print_intermediate();
-                bits.push(true);
-            }
-            op._print_tree(&mut bits.clone());
-            bits.pop();
-        }
-    }
 }
 
 /// Struct to hold a coherent sum of [`AmpLike`]s
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct CohSum(pub Vec<Box<dyn AmpLike>>);
 
-impl Display for CohSum {
+impl Debug for CohSum {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Sum [ ")?;
+        write!(f, "CohSum [ ")?;
         for op in &self.0 {
-            write!(f, "{:?} ", op)?;
+            write!(f, "{} ", op)?;
         }
         write!(f, "]")
     }
 }
-impl CohSum {
-    /// Pretty prints a tree diagram to show the node structure of the [`CohSum`].
-    pub fn print_tree(&self) {
-        let mut bits = vec![true];
-        println!("[ CohSum ]");
-        for term in self.0.iter() {
-            term._print_tree(&mut bits)
-        }
+impl Display for CohSum {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}", self.get_tree())
     }
+}
+impl AsTree for CohSum {
+    fn _get_tree(&self, bits: &mut Vec<bool>) -> String {
+        let mut res = String::from("[ + (coh) ]\n");
+        for (i, op) in self.0.iter().enumerate() {
+            res.push_str(&self._get_indent(bits.to_vec()));
+            if i == self.0.len() - 1 {
+                res.push_str(&self._get_end());
+                bits.push(false);
+            } else {
+                res.push_str(&self._get_intermediate());
+                bits.push(true);
+            }
+            res.push_str(&op._get_tree(&mut bits.clone()));
+            bits.pop();
+        }
+        res
+    }
+}
+impl CohSum {
     /// Function which returns a sum of all cross terms inside a coherent sum.
     ///
     /// Take the following coherent sum, where $`\vec{p}`$ are input parameters $`e`$ is an
@@ -641,7 +673,7 @@ impl CohSum {
 /// A model contains an API to interact with a group of [`CohSum`]s by managing their amplitudes
 /// and parameters. Models are typically passed to [`Manager`](crate::manager::Manager)-like
 /// struct.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Model {
     /// The set of coherent sums included in the [`Model`].
     pub cohsums: Vec<CohSum>,
@@ -650,14 +682,39 @@ pub struct Model {
     /// The unique parameters located within all [`CohSum`]s.
     pub parameters: Vec<Parameter>,
 }
-
-impl Model {
-    /// Pretty-prints a tree diagram to show the node structure of the [`Model`].
-    pub fn print_tree(&self) {
-        for cohsum in &self.cohsums {
-            cohsum.print_tree()
+impl Debug for Model {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Model [ ")?;
+        for op in &self.cohsums {
+            write!(f, "{} ", op)?;
         }
+        write!(f, "]")
     }
+}
+impl Display for Model {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}", self.get_tree())
+    }
+}
+impl AsTree for Model {
+    fn _get_tree(&self, bits: &mut Vec<bool>) -> String {
+        let mut res = String::from("[ + ]\n");
+        for (i, op) in self.cohsums.iter().enumerate() {
+            res.push_str(&self._get_indent(bits.to_vec()));
+            if i == self.cohsums.len() - 1 {
+                res.push_str(&self._get_end());
+                bits.push(false);
+            } else {
+                res.push_str(&self._get_intermediate());
+                bits.push(true);
+            }
+            res.push_str(&op._get_tree(&mut bits.clone()));
+            bits.pop();
+        }
+        res
+    }
+}
+impl Model {
     /// Retrieves a copy of an [`Amplitude`] in the [`Model`] by name.
     ///
     /// # Errors
