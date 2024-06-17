@@ -22,6 +22,10 @@ num_cpus = { workspace = true }
 name = "kmatrix"
 harness = false
 
+[[bench]]
+name = "read_dataset"
+harness = false
+
 [features]
 default = ["gluex"]
 gluex = ["dep:rustitude-gluex"]
