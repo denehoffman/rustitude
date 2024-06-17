@@ -1056,18 +1056,12 @@ impl Model {
         note = "Model::compute is faster and should give equivalent results"
     )]
     pub fn norm_int(&self, parameters: &[f64], event: &Event) -> Result<f64, RustitudeError> {
-        let pars: Vec<f64> = self
-            .parameters
-            .iter()
-            .map(|p| p.index.map_or_else(|| p.initial, |i| parameters[i]))
-            .collect();
-        // First, we calculate the values for the active amplitudes
         let cache: Vec<Option<Complex64>> = self
             .amplitudes
             .iter()
             .map(|amp| {
                 if amp.active {
-                    amp.calculate(&pars, event).map(Some)
+                    amp.calculate(parameters, event).map(Some)
                 } else {
                     Ok(None)
                 }
