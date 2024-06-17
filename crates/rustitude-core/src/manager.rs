@@ -239,10 +239,17 @@ impl Manager {
     pub fn activate(&mut self, amplitude: &str) {
         self.model.activate(amplitude)
     }
-
+    /// Activate all [`Amplitude`]s by name. See [`Model::activate_all`] for more information.
+    pub fn activate_all(&mut self) {
+        self.model.activate_all()
+    }
     /// Deactivate an [`Amplitude`] by name. See [`Model::deactivate`] for more information.
     pub fn deactivate(&mut self, amplitude: &str) {
         self.model.deactivate(amplitude)
+    }
+    /// Deactivate all [`Amplitude`]s by name. See [`Model::deactivate_all`] for more information.
+    pub fn deactivate_all(&mut self) {
+        self.model.deactivate_all()
     }
 }
 
@@ -540,10 +547,19 @@ impl ExtendedLogLikelihood {
         self.data_manager.activate(amplitude);
         self.mc_manager.activate(amplitude)
     }
-
+    /// Activates all [`Amplitude`]s by name. See [`Model::activate_all`] for more information.
+    pub fn activate_all(&mut self) {
+        self.data_manager.activate_all();
+        self.mc_manager.activate_all()
+    }
     /// Deactivate an [`Amplitude`] by name. See [`Model::deactivate`] for more information.
     pub fn deactivate(&mut self, amplitude: &str) {
         self.data_manager.deactivate(amplitude);
         self.mc_manager.deactivate(amplitude)
+    }
+    /// Deactivates all [`Amplitude`]s by name. See [`Model::deactivate_all`] for more information.
+    pub fn deactivate_all(&mut self) {
+        self.data_manager.deactivate_all();
+        self.mc_manager.deactivate_all()
     }
 }

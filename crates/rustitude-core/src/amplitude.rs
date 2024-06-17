@@ -875,7 +875,24 @@ impl Model {
             if amp.name == amplitude {
                 amp.active = true
             }
-        })
+        });
+        self.cohsums.iter_mut().for_each(|cohsum| {
+            cohsum.walk_mut().iter_mut().for_each(|amp| {
+                if amp.name == amplitude {
+                    amp.active = true
+                }
+            })
+        });
+    }
+    /// Activates all [`Amplitude`]s in the [`Model`].
+    pub fn activate_all(&mut self) {
+        self.amplitudes.iter_mut().for_each(|amp| amp.active = true);
+        self.cohsums.iter_mut().for_each(|cohsum| {
+            cohsum
+                .walk_mut()
+                .iter_mut()
+                .for_each(|amp| amp.active = true)
+        });
     }
     /// Deactivates an [`Amplitude`] in the [`Model`] by name.
     pub fn deactivate(&mut self, amplitude: &str) {
@@ -883,7 +900,26 @@ impl Model {
             if amp.name == amplitude {
                 amp.active = false
             }
-        })
+        });
+        self.cohsums.iter_mut().for_each(|cohsum| {
+            cohsum.walk_mut().iter_mut().for_each(|amp| {
+                if amp.name == amplitude {
+                    amp.active = false
+                }
+            })
+        });
+    }
+    /// Deactivates all [`Amplitude`]s in the [`Model`].
+    pub fn deactivate_all(&mut self) {
+        self.amplitudes
+            .iter_mut()
+            .for_each(|amp| amp.active = false);
+        self.cohsums.iter_mut().for_each(|cohsum| {
+            cohsum
+                .walk_mut()
+                .iter_mut()
+                .for_each(|amp| amp.active = false)
+        });
     }
     /// Creates a new [`Model`] from a list of [`CohSum`]s.
     pub fn new(cohsums: Vec<CohSum>) -> Self {

@@ -492,8 +492,14 @@ impl Model {
     fn activate(&mut self, amplitude: &str) {
         self.0.activate(amplitude)
     }
+    fn activate_all(&mut self) {
+        self.0.activate_all()
+    }
     fn deactivate(&mut self, amplitude: &str) {
         self.0.deactivate(amplitude)
+    }
+    fn deactivate_all(&mut self) {
+        self.0.deactivate_all()
     }
 }
 
