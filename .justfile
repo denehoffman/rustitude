@@ -1,6 +1,9 @@
 alias b := build
 alias d := develop
 
+default:
+  just --list
+
 build:
   cargo update -q
   cargo build -r -q
