@@ -1024,8 +1024,11 @@ impl Model {
     ///
     /// This method yields a [`RustitudeError`] if any of the [`Amplitude::calculate`] steps fail.
     pub fn compute(&self, parameters: &[f64], event: &Event) -> Result<f64, RustitudeError> {
-        // First, we calculate the values for the active amplitudes
-        // TODO: Stop reallocating!!!
+        // TODO: Stop reallocating?
+
+        // NOTE: This seems to be just as fast as using a Vec<Complex64> and replacing active
+        // amplitudes by multiplying their cached values by 0.0. Branch prediction doesn't get us
+        // any performance here I guess.
         let cache: Vec<Option<Complex64>> = self
             .amplitudes
             .iter()
