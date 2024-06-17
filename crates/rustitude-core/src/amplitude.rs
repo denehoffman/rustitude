@@ -637,6 +637,10 @@ impl CohSum {
     /// This should be used to compute normalization integrals. Note that if on of the terms is
     /// [`None`], this function will not add any products which contain that term. This can be used
     /// to turn terms on and off.
+    #[deprecated(
+        since = "0.7.1",
+        note = "CohSum::compute is faster and should give equivalent results"
+    )]
     pub fn norm_int(&self, cache: &[Option<Complex64>]) -> Option<f64> {
         let results = self.0.iter().map(|al| al.compute(cache));
         iproduct!(results.clone(), results)
@@ -1047,6 +1051,10 @@ impl Model {
     /// # Errors
     ///
     /// This method yields a [`RustitudeError`] if any of the [`Amplitude::calculate`] steps fail.
+    #[deprecated(
+        since = "0.7.1",
+        note = "Model::compute is faster and should give equivalent results"
+    )]
     pub fn norm_int(&self, parameters: &[f64], event: &Event) -> Result<f64, RustitudeError> {
         let pars: Vec<f64> = self
             .parameters

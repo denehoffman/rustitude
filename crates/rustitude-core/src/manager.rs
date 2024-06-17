@@ -86,6 +86,10 @@ impl Manager {
     ///
     /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
     /// [`Model::norm_int`] for more information.
+    #[deprecated(
+        since = "0.7.1",
+        note = "Manager::evaluate is faster and should give equivalent results"
+    )]
     pub fn norm_int(&self, parameters: &[f64]) -> Result<Vec<f64>, RustitudeError> {
         self.dataset
             .events
@@ -101,6 +105,10 @@ impl Manager {
     ///
     /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
     /// [`Model::norm_int`] for more information.
+    #[deprecated(
+        since = "0.7.1",
+        note = "Manager::par_evaluate is faster and should give equivalent results"
+    )]
     pub fn par_norm_int(&self, parameters: &[f64]) -> Result<Vec<f64>, RustitudeError> {
         let mut output = Vec::with_capacity(self.dataset.len());
         self.dataset
@@ -376,6 +384,10 @@ impl ExtendedLogLikelihood {
     ///
     /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
     /// [`Model::norm_int`] for more information.
+    #[deprecated(
+        since = "0.7.1",
+        note = "ExtendedLogLikelihood::evaluate is faster and should give equivalent results"
+    )]
     pub fn norm_int(&self, parameters: &[f64], weighted: bool) -> Result<f64, RustitudeError> {
         let mc_norm_int = self.mc_manager.norm_int(parameters)?;
         if weighted {
@@ -392,6 +404,10 @@ impl ExtendedLogLikelihood {
     ///
     /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
     /// [`Model::norm_int`] for more information.
+    #[deprecated(
+        since = "0.7.1",
+        note = "ExtendedLogLikelihood::par_evaluate is faster and should give equivalent results"
+    )]
     pub fn par_norm_int(
         &self,
         parameters: &[f64],

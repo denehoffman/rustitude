@@ -44,14 +44,6 @@ pub fn criterion_kmatrix(c: &mut Criterion) {
             criterion::black_box(m.par_evaluate(&v))
         })
     });
-    c.bench_function("kmatrix_norm_int", |b| {
-        b.iter(|| {
-            let v = (0..model.get_n_free())
-                .map(|_| rand::random::<f64>() * 100.0)
-                .collect::<Vec<_>>();
-            criterion::black_box(m.par_norm_int(&v))
-        })
-    });
     let dataset_mc = Dataset::from_parquet("benches/test_data.parquet").unwrap();
     let nll = ExtendedLogLikelihood::new(m, Manager::new(&model, &dataset_mc).unwrap());
     c.bench_function("kmatrix_nll", |b| {

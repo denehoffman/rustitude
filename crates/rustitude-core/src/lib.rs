@@ -273,6 +273,7 @@
     clippy::style,
     missing_docs
 )]
+#![allow(deprecated)]
 #![cfg_attr(feature = "simd", feature(portable_simd))]
 pub mod amplitude;
 pub mod dataset;
