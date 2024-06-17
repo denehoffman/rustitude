@@ -18,7 +18,7 @@ rustitude-core = { version = "3.0.0", path = "crates/rustitude-core", default-fe
 rustitude-gluex = { version = "0.4.1", path = "crates/rustitude-gluex", default-features = false }
 rayon = { version = "1.10.0" }
 approx = { version = "0.5.1", features = ["num-complex"] }
-nalgebra = "0.32.5"
+nalgebra = "0.32.6"
 num = "0.4.3"
 num-complex = "0.4.6"
 num-traits = "0.2.19"
