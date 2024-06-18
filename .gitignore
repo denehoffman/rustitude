@@ -172,3 +172,4 @@ demo.py
 py-rustitude/demo
 *perf.data*
 rustc-*
+local_tests/
