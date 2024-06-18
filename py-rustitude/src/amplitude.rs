@@ -140,8 +140,8 @@ impl Amplitude {
     fn real(&self) -> Real {
         Real(self.0.real())
     }
-    fn imag(&self) -> Real {
-        Real(self.0.real())
+    fn imag(&self) -> Imag {
+        Imag(self.0.imag())
     }
 }
 
@@ -193,8 +193,8 @@ impl Real {
     fn real(&self) -> Real {
         Real(self.0.real())
     }
-    fn imag(&self) -> Real {
-        Real(self.0.real())
+    fn imag(&self) -> Imag {
+        Imag(self.0.imag())
     }
 }
 
@@ -246,8 +246,8 @@ impl Imag {
     fn real(&self) -> Real {
         Real(self.0.real())
     }
-    fn imag(&self) -> Real {
-        Real(self.0.real())
+    fn imag(&self) -> Imag {
+        Imag(self.0.imag())
     }
 }
 
@@ -299,8 +299,8 @@ impl Product {
     fn real(&self) -> Real {
         Real(self.0.real())
     }
-    fn imag(&self) -> Real {
-        Real(self.0.real())
+    fn imag(&self) -> Imag {
+        Imag(self.0.imag())
     }
 }
 
