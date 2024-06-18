@@ -71,7 +71,8 @@ impl Node for Zlm {
                 let daughter_res_vec = event.daughter_p4s[0].boost_along(&resonance).momentum();
                 let (_, y, _, p) = self.frame.coordinates(&resonance, &daughter_res_vec, event);
                 let ylm = ComplexSH::Spherical.eval(self.wave.l(), self.wave.m(), &p);
-                let big_phi = y.dot(&event.eps).atan2(
+                let big_phi = f64::atan2(
+                    y.dot(&event.eps),
                     event
                         .beam_p4
                         .momentum()
