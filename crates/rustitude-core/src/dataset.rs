@@ -262,15 +262,13 @@ impl Event {
             match (name.as_str(), field) {
                 ("E_Beam", Field::Float(value)) => {
                     event.beam_p4.set_e(f64::from(*value));
+                    event.beam_p4.set_pz(f64::from(*value));
                 }
                 ("Px_Beam", Field::Float(value)) => {
                     event.eps[0] = f64::from(*value);
                 }
                 ("Py_Beam", Field::Float(value)) => {
                     event.eps[1] = f64::from(*value);
-                }
-                ("Pz_Beam", Field::Float(value)) => {
-                    event.beam_p4.set_pz(f64::from(*value));
                 }
                 ("Weight", Field::Float(value)) => event.weight = f64::from(*value),
                 ("E_FinalState", Field::ListInternal(list)) => {
@@ -692,7 +690,7 @@ impl Dataset {
         let e_beam: Vec<f64> = Self::extract_f32(path, &ttree, "E_Beam")?;
         let px_beam: Vec<f64> = Self::extract_f32(path, &ttree, "Px_Beam")?;
         let py_beam: Vec<f64> = Self::extract_f32(path, &ttree, "Py_Beam")?;
-        let pz_beam: Vec<f64> = Self::extract_f32(path, &ttree, "Pz_Beam")?;
+        let pz_beam: Vec<f64> = Self::extract_f32(path, &ttree, "E_Beam")?;
         let e_fs: Vec<Vec<f64>> = Self::extract_vec_f32(path, &ttree, "E_FinalState")?;
         let px_fs: Vec<Vec<f64>> = Self::extract_vec_f32(path, &ttree, "Px_FinalState")?;
         let py_fs: Vec<Vec<f64>> = Self::extract_vec_f32(path, &ttree, "Py_FinalState")?;

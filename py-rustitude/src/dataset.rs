@@ -122,7 +122,7 @@ impl Dataset {
         let e_beam_vec: Vec<f64> = data["E_Beam"].extract(py)?;
         let px_beam_vec: Vec<f64> = data["Px_Beam"].extract(py)?;
         let py_beam_vec: Vec<f64> = data["Py_Beam"].extract(py)?;
-        let pz_beam_vec: Vec<f64> = data["Pz_Beam"].extract(py)?;
+        let pz_beam_vec: Vec<f64> = data["E_Beam"].extract(py)?;
         let weight_vec: Vec<f64> = data
             .get("Weight")
             .map_or_else(|| Ok(vec![1.0; e_beam_vec.len()]), |obj| obj.extract(py))?;
