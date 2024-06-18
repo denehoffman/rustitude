@@ -80,5 +80,5 @@ def open(
         eps_y = tree_arrays['Py_Beam']
         tree_arrays['Px_Beam'] = np.zeros_like(tree_arrays['Px_Beam'])
         tree_arrays['Py_Beam'] = np.zeros_like(tree_arrays['Py_Beam'])
-        tree_arrays['EPS'] = [np.array([ex, ey, 0] for ex, ey in zip(eps_x, eps_y))]
+        tree_arrays['EPS'] = [np.array([ex, ey, 0]) for ex, ey in zip(eps_x, eps_y)]
     return Dataset.from_dict(tree_arrays)
