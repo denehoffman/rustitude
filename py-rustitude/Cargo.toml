@@ -2,6 +2,7 @@
 name = "py-rustitude"
 version = { workspace = true }
 edition = "2021"
+description = "A library to create and operate models for particle physics amplitude analyses"
 readme = { workspace = true }
 license-file = { workspace = true }
 
