@@ -141,7 +141,7 @@ impl<const C: usize, const R: usize> KMatrixConstants<C, R> {
         })
     }
 
-    fn pole_product(&self, s: f64) -> f64 {
+    fn pole_product(&self, _s: f64) -> f64 {
         1.0
         // (0..R).map(|a| (self.mrs[a].powi(2) - s)).sum()
     }
