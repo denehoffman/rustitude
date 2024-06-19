@@ -171,17 +171,18 @@ impl FromStr for Frame {
 impl Frame {
     pub fn coordinates(
         &self,
-        resonance: &FourMomentum,
+        beam_res_vec: &Vector3<f64>,
+        recoil_res_vec: &Vector3<f64>,
         daughter_res_vec: &Vector3<f64>,
         event: &Event,
     ) -> (Vector3<f64>, Vector3<f64>, Vector3<f64>, Coordinates<f64>) {
         match self {
             Frame::Helicity => {
-                let z = resonance.momentum().normalize();
+                let z = -recoil_res_vec.normalize();
                 let y = event
                     .beam_p4
                     .momentum()
-                    .cross(&(resonance.momentum()))
+                    .cross(&(-recoil_res_vec))
                     .normalize();
                 let x = y.cross(&z);
                 (
@@ -196,11 +197,11 @@ impl Frame {
                 )
             }
             Frame::GottfriedJackson => {
-                let z = event.beam_p4.boost_along(resonance).momentum().normalize();
+                let z = beam_res_vec.normalize();
                 let y = event
                     .beam_p4
                     .momentum()
-                    .cross(&(resonance.momentum()))
+                    .cross(&(-recoil_res_vec))
                     .normalize();
                 let x = y.cross(&z);
                 (

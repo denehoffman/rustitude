@@ -30,8 +30,15 @@ impl Node for Ylm {
             .par_iter()
             .map(|event| {
                 let resonance = event.daughter_p4s[0] + event.daughter_p4s[1];
+                let beam_res_vec = event.beam_p4.boost_along(&resonance).momentum();
+                let recoil_res_vec = event.recoil_p4.boost_along(&resonance).momentum();
                 let daughter_res_vec = event.daughter_p4s[0].boost_along(&resonance).momentum();
-                let (_, _, _, p) = self.frame.coordinates(&resonance, &daughter_res_vec, event);
+                let (_, _, _, p) = self.frame.coordinates(
+                    &beam_res_vec,
+                    &recoil_res_vec,
+                    &daughter_res_vec,
+                    event,
+                );
                 ComplexSH::Spherical.eval(self.wave.l(), self.wave.m(), &p)
             })
             .collect();
@@ -68,8 +75,15 @@ impl Node for Zlm {
             .par_iter()
             .map(|event| {
                 let resonance = event.daughter_p4s[0] + event.daughter_p4s[1];
+                let beam_res_vec = event.beam_p4.boost_along(&resonance).momentum();
+                let recoil_res_vec = event.recoil_p4.boost_along(&resonance).momentum();
                 let daughter_res_vec = event.daughter_p4s[0].boost_along(&resonance).momentum();
-                let (_, y, _, p) = self.frame.coordinates(&resonance, &daughter_res_vec, event);
+                let (_, y, _, p) = self.frame.coordinates(
+                    &beam_res_vec,
+                    &recoil_res_vec,
+                    &daughter_res_vec,
+                    event,
+                );
                 let ylm = ComplexSH::Spherical.eval(self.wave.l(), self.wave.m(), &p);
                 let big_phi = f64::atan2(
                     y.dot(&event.eps),
@@ -119,8 +133,15 @@ impl Node for OnePS {
             .par_iter()
             .map(|event| {
                 let resonance = event.daughter_p4s[0] + event.daughter_p4s[1];
+                let beam_res_vec = event.beam_p4.boost_along(&resonance).momentum();
+                let recoil_res_vec = event.recoil_p4.boost_along(&resonance).momentum();
                 let daughter_res_vec = event.daughter_p4s[0].boost_along(&resonance).momentum();
-                let (_, y, _, _) = self.frame.coordinates(&resonance, &daughter_res_vec, event);
+                let (_, y, _, _) = self.frame.coordinates(
+                    &beam_res_vec,
+                    &recoil_res_vec,
+                    &daughter_res_vec,
+                    event,
+                );
                 let pol_angle = event.eps[0].acos();
                 let big_phi = y.dot(&event.eps).atan2(
                     event
@@ -170,8 +191,15 @@ impl Node for TwoPS {
             .par_iter()
             .map(|event| {
                 let resonance = event.daughter_p4s[0] + event.daughter_p4s[1];
+                let beam_res_vec = event.beam_p4.boost_along(&resonance).momentum();
+                let recoil_res_vec = event.recoil_p4.boost_along(&resonance).momentum();
                 let daughter_res_vec = event.daughter_p4s[0].boost_along(&resonance).momentum();
-                let (_, _, _, p) = self.frame.coordinates(&resonance, &daughter_res_vec, event);
+                let (_, _, _, p) = self.frame.coordinates(
+                    &beam_res_vec,
+                    &recoil_res_vec,
+                    &daughter_res_vec,
+                    event,
+                );
                 let ylm_p = ComplexSH::Spherical
                     .eval(self.wave.l(), self.wave.m(), &p)
                     .conj();
