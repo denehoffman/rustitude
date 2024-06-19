@@ -369,31 +369,31 @@ pub struct Amplitude {
 }
 
 impl Debug for Amplitude {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name)
+    }
+}
+impl Display for Amplitude {
     #[rustfmt::skip]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Amplitude")?;
         writeln!(f, "  Name:                     {}", self.name)?;
         writeln!(f, "  Active:                   {}", self.active)?;
         writeln!(f, "  Cache Position:           {}", self.cache_position)?;
-        writeln!(f, "  Index of First Parameter: {}", self.parameter_index_start
-        )
-    }
-}
-impl Display for Amplitude {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if self.active {
-            write!(f, "{}", self.name)
-        } else {
-            write!(f, "/* {} */", self.name)
-        }
+        writeln!(f, "  Index of First Parameter: {}", self.parameter_index_start)
     }
 }
 impl AsTree for Amplitude {
     fn _get_tree(&self, _bits: &mut Vec<bool>) -> String {
-        if self.parameters().len() > 7 {
-            format!(" {}({},...)\n", self, self.parameters()[0..7].join(", "))
+        let name = if self.active {
+            self.name.clone()
         } else {
-            format!(" {}({})\n", self, self.parameters().join(", "))
+            format!("/* {} */", self.name)
+        };
+        if self.parameters().len() > 7 {
+            format!(" {}({},...)\n", name, self.parameters()[0..7].join(", "))
+        } else {
+            format!(" {}({})\n", name, self.parameters().join(", "))
         }
     }
 }
@@ -480,7 +480,7 @@ impl AmpLike for Amplitude {
 pub struct Real(Box<dyn AmpLike>);
 impl Debug for Real {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Real [ {} ]", self.0)
+        write!(f, "Real [ {:?} ]", self.0)
     }
 }
 impl Display for Real {
@@ -524,7 +524,7 @@ impl AsTree for Real {
 pub struct Imag(Box<dyn AmpLike>);
 impl Debug for Imag {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Imag [ {} ]", self.0)
+        write!(f, "Imag [ {:?} ]", self.0)
     }
 }
 impl Display for Imag {
@@ -570,7 +570,7 @@ impl Debug for Product {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Product [ ")?;
         for op in &self.0 {
-            write!(f, "{} ", op)?;
+            write!(f, "{:?} ", op)?;
         }
         write!(f, "]")
     }
@@ -629,7 +629,7 @@ impl Debug for CohSum {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "CohSum [ ")?;
         for op in &self.0 {
-            write!(f, "{} ", op)?;
+            write!(f, "{:?} ", op)?;
         }
         write!(f, "]")
     }
