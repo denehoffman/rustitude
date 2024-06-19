@@ -110,7 +110,7 @@ impl<const C: usize, const R: usize> KMatrixConstants<C, R> {
                     / (Self::chi_plus(s, self.m1s[i], self.m2s[i])
                         - Self::rho(s, self.m1s[i], self.m2s[i])))
                 .ln()
-                + Self::chi_plus(s, self.m1s[i], self.m2s[i]) / PI
+                - Self::chi_plus(s, self.m1s[i], self.m2s[i]) / PI
                     * ((self.m2s[i] - self.m1s[i]) / (self.m1s[i] + self.m2s[i]))
                     * (self.m2s[i] / self.m1s[i]).ln()
         }))
