@@ -719,6 +719,126 @@ impl AsTree for Model {
     }
 }
 impl Model {
+    /// Creates a new [`Model`] from a list of [`CohSum`]s.
+    pub fn new(cohsums: Vec<CohSum>) -> Self {
+        let mut amp_names = HashSet::new();
+        let amplitudes: Vec<Amplitude> = cohsums
+            .iter()
+            .flat_map(|cohsum| cohsum.walk())
+            .filter_map(|amp| {
+                if amp_names.insert(amp.name.clone()) {
+                    Some(amp)
+                } else {
+                    None
+                }
+            })
+            .collect();
+        let parameter_tags: Vec<(String, String)> = amplitudes
+            .iter()
+            .flat_map(|amp| {
+                amp.parameters()
+                    .iter()
+                    .map(|p| (amp.name.clone(), p.clone()))
+                    .collect::<Vec<_>>()
+            })
+            .collect();
+        let parameters = parameter_tags
+            .iter()
+            .enumerate()
+            .map(|(i, (amp_name, par_name))| Parameter::new(amp_name, par_name, i))
+            .collect();
+        Self {
+            cohsums: cohsums.into_iter().map(CohSum::from).collect(),
+            amplitudes,
+            parameters,
+        }
+    }
+    /// Computes the result of evaluating the terms in the model with the given [`Parameter`]s for
+    /// the given [`Event`] by summing the result of [`CohSum::compute`] for each [`CohSum`]
+    /// contained in the [`Model`].
+    ///
+    /// # Errors
+    ///
+    /// This method yields a [`RustitudeError`] if any of the [`Amplitude::calculate`] steps fail.
+    pub fn compute(&self, parameters: &[f64], event: &Event) -> Result<f64, RustitudeError> {
+        // TODO: Stop reallocating?
+
+        // NOTE: This seems to be just as fast as using a Vec<Complex64> and replacing active
+        // amplitudes by multiplying their cached values by 0.0. Branch prediction doesn't get us
+        // any performance here I guess.
+        let cache: Vec<Option<Complex64>> = self
+            .amplitudes
+            .iter()
+            .map(|amp| {
+                if amp.active {
+                    amp.calculate(parameters, event).map(Some)
+                } else {
+                    Ok(None)
+                }
+            })
+            .collect::<Result<Vec<Option<Complex64>>, RustitudeError>>()?;
+        Ok(self
+            .cohsums
+            .iter()
+            .map(|cohsum| cohsum.compute(&cache))
+            .sum::<Option<f64>>()
+            .unwrap_or_default())
+    }
+    /// Computes the result of evaluating the terms in the model with the given [`Parameter`]s for
+    /// the given [`Event`] by summing the result of [`CohSum::norm_int`] for each [`CohSum`]
+    /// contained in the [`Model`].
+    ///
+    /// # Errors
+    ///
+    /// This method yields a [`RustitudeError`] if any of the [`Amplitude::calculate`] steps fail.
+    #[deprecated(
+        since = "0.7.1",
+        note = "Model::compute is faster and should give equivalent results"
+    )]
+    pub fn norm_int(&self, parameters: &[f64], event: &Event) -> Result<f64, RustitudeError> {
+        let cache: Vec<Option<Complex64>> = self
+            .amplitudes
+            .iter()
+            .map(|amp| {
+                if amp.active {
+                    amp.calculate(parameters, event).map(Some)
+                } else {
+                    Ok(None)
+                }
+            })
+            .collect::<Result<Vec<Option<Complex64>>, RustitudeError>>()?;
+        Ok(self
+            .cohsums
+            .iter()
+            .map(|cohsum| cohsum.norm_int(&cache))
+            .sum::<Option<f64>>()
+            .unwrap_or_default())
+    }
+    /// Registers the [`Model`] with the [`Dataset`] by [`Amplitude::register`]ing each
+    /// [`Amplitude`] and setting the proper cache position and parameter starting index.
+    ///
+    /// # Errors
+    ///
+    /// This method will yield a [`RustitudeError`] if any [`Amplitude::precalculate`] steps fail.
+    pub fn load(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
+        let mut next_cache_pos = 0;
+        let mut parameter_index = 0;
+        self.amplitudes.iter_mut().try_for_each(|amp| {
+            amp.register(next_cache_pos, parameter_index, dataset)?;
+            self.cohsums.iter_mut().for_each(|cohsum| {
+                cohsum.walk_mut().iter_mut().for_each(|r_amp| {
+                    if r_amp.name == amp.name {
+                        r_amp.cache_position = next_cache_pos;
+                        r_amp.parameter_index_start = parameter_index;
+                    }
+                })
+            });
+            next_cache_pos += 1;
+            parameter_index += amp.parameters().len();
+            Ok(())
+        })
+    }
+
     /// Retrieves a copy of an [`Amplitude`] in the [`Model`] by name.
     ///
     /// # Errors
@@ -981,125 +1101,6 @@ impl Model {
                 .iter_mut()
                 .for_each(|amp| amp.active = false)
         });
-    }
-    /// Creates a new [`Model`] from a list of [`CohSum`]s.
-    pub fn new(cohsums: Vec<CohSum>) -> Self {
-        let mut amp_names = HashSet::new();
-        let amplitudes: Vec<Amplitude> = cohsums
-            .iter()
-            .flat_map(|cohsum| cohsum.walk())
-            .filter_map(|amp| {
-                if amp_names.insert(amp.name.clone()) {
-                    Some(amp)
-                } else {
-                    None
-                }
-            })
-            .collect();
-        let parameter_tags: Vec<(String, String)> = amplitudes
-            .iter()
-            .flat_map(|amp| {
-                amp.parameters()
-                    .iter()
-                    .map(|p| (amp.name.clone(), p.clone()))
-                    .collect::<Vec<_>>()
-            })
-            .collect();
-        let parameters = parameter_tags
-            .iter()
-            .enumerate()
-            .map(|(i, (amp_name, par_name))| Parameter::new(amp_name, par_name, i))
-            .collect();
-        Self {
-            cohsums: cohsums.into_iter().map(CohSum::from).collect(),
-            amplitudes,
-            parameters,
-        }
-    }
-    /// Computes the result of evaluating the terms in the model with the given [`Parameter`]s for
-    /// the given [`Event`] by summing the result of [`CohSum::compute`] for each [`CohSum`]
-    /// contained in the [`Model`].
-    ///
-    /// # Errors
-    ///
-    /// This method yields a [`RustitudeError`] if any of the [`Amplitude::calculate`] steps fail.
-    pub fn compute(&self, parameters: &[f64], event: &Event) -> Result<f64, RustitudeError> {
-        // TODO: Stop reallocating?
-
-        // NOTE: This seems to be just as fast as using a Vec<Complex64> and replacing active
-        // amplitudes by multiplying their cached values by 0.0. Branch prediction doesn't get us
-        // any performance here I guess.
-        let cache: Vec<Option<Complex64>> = self
-            .amplitudes
-            .iter()
-            .map(|amp| {
-                if amp.active {
-                    amp.calculate(parameters, event).map(Some)
-                } else {
-                    Ok(None)
-                }
-            })
-            .collect::<Result<Vec<Option<Complex64>>, RustitudeError>>()?;
-        Ok(self
-            .cohsums
-            .iter()
-            .map(|cohsum| cohsum.compute(&cache))
-            .sum::<Option<f64>>()
-            .unwrap_or_default())
-    }
-    /// Computes the result of evaluating the terms in the model with the given [`Parameter`]s for
-    /// the given [`Event`] by summing the result of [`CohSum::norm_int`] for each [`CohSum`]
-    /// contained in the [`Model`].
-    ///
-    /// # Errors
-    ///
-    /// This method yields a [`RustitudeError`] if any of the [`Amplitude::calculate`] steps fail.
-    #[deprecated(
-        since = "0.7.1",
-        note = "Model::compute is faster and should give equivalent results"
-    )]
-    pub fn norm_int(&self, parameters: &[f64], event: &Event) -> Result<f64, RustitudeError> {
-        let cache: Vec<Option<Complex64>> = self
-            .amplitudes
-            .iter()
-            .map(|amp| {
-                if amp.active {
-                    amp.calculate(parameters, event).map(Some)
-                } else {
-                    Ok(None)
-                }
-            })
-            .collect::<Result<Vec<Option<Complex64>>, RustitudeError>>()?;
-        Ok(self
-            .cohsums
-            .iter()
-            .map(|cohsum| cohsum.norm_int(&cache))
-            .sum::<Option<f64>>()
-            .unwrap_or_default())
-    }
-    /// Registers the [`Model`] with the [`Dataset`] by [`Amplitude::register`]ing each
-    /// [`Amplitude`] and setting the proper cache position and parameter starting index.
-    ///
-    /// # Errors
-    ///
-    /// This method will yield a [`RustitudeError`] if any [`Amplitude::precalculate`] steps fail.
-    pub fn load(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
-        let mut next_cache_pos = 0;
-        let mut parameter_index = 0;
-        self.amplitudes.iter_mut().try_for_each(|amp| {
-            amp.register(next_cache_pos, parameter_index, dataset)?;
-            self.cohsums.iter_mut().for_each(|cohsum| {
-                cohsum.walk_mut().iter_mut().for_each(|r_amp| {
-                    if r_amp.name == amp.name {
-                        r_amp.cache_position = next_cache_pos;
-                        r_amp.parameter_index_start = parameter_index;
-                    }
-                })
-            });
-            next_cache_pos += 1;
-            parameter_index += amp.parameters().len();
-            Ok(())
-        })
     }
     fn group_by_index(&self) -> Vec<Vec<&Parameter>> {
         self.parameters
