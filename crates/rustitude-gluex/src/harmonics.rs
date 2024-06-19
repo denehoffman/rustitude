@@ -94,12 +94,17 @@ impl Node for Zlm {
                         .dot(&event.eps.cross(&y)),
                 );
                 let pgamma = event.eps.norm();
-
                 let phase = Complex64::cis(-big_phi);
                 let zlm = ylm * phase;
                 match self.reflectivity {
-                    Reflectivity::Positive => (1.0 + pgamma).sqrt() * zlm,
-                    Reflectivity::Negative => (1.0 - pgamma).sqrt() * zlm,
+                    Reflectivity::Positive => Complex64::new(
+                        f64::sqrt(1.0 + pgamma) * zlm.re,
+                        f64::sqrt(1.0 - pgamma) * zlm.im,
+                    ),
+                    Reflectivity::Negative => Complex64::new(
+                        f64::sqrt(1.0 - pgamma) * zlm.re,
+                        f64::sqrt(1.0 + pgamma) * zlm.im,
+                    ),
                 }
             })
             .collect();
@@ -153,8 +158,14 @@ impl Node for OnePS {
                 let pgamma = event.eps.norm();
                 let phase = Complex64::cis(-(pol_angle + big_phi));
                 match self.reflectivity {
-                    Reflectivity::Positive => (1.0 + pgamma).sqrt() * phase,
-                    Reflectivity::Negative => (1.0 - pgamma).sqrt() * phase,
+                    Reflectivity::Positive => Complex64::new(
+                        f64::sqrt(1.0 + pgamma) * phase.re,
+                        f64::sqrt(1.0 - pgamma) * phase.im,
+                    ),
+                    Reflectivity::Negative => Complex64::new(
+                        f64::sqrt(1.0 - pgamma) * phase.re,
+                        f64::sqrt(1.0 + pgamma) * phase.im,
+                    ),
                 }
             })
             .collect();
