@@ -147,9 +147,9 @@ impl<const C: usize, const R: usize> KMatrixConstants<C, R> {
     }
 
     fn ikc_inv(&self, s: f64, channel: usize) -> SVector<Complex64, C> {
-        let c_mat = self.c_matrix(s);
         let i_mat = SMatrix::<Complex64, C, C>::identity();
         let k_mat = self.k_matrix(s);
+        let c_mat = self.c_matrix(s);
         let ikc_mat = (i_mat + k_mat * c_mat).scale(self.pole_product(s));
         let ikc_inv_mat = ikc_mat.try_inverse().unwrap();
         ikc_inv_mat.row(channel).transpose()
