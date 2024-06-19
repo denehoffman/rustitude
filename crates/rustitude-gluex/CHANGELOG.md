@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.3](https://github.com/denehoffman/rustitude/compare/rustitude-gluex-v0.4.2...rustitude-gluex-v0.4.3) - 2024-06-19
+
+### Added
+- add pole_product scaling to reduce numerical error near mass poles
+
+### Fixed
+- corrected P_gamma multiplicative factor in Zlm and OnePS
+- corrected frame calculation in all HX/GJ-related amplitudes
+- add more digits to channel masses in all K-matrix amplitudes
+- corrected transposed g-matrix as well as a typo in one of the terms (channel 2 resonance 0)
+- corrected a flipped minus sign in Chew-Mandelstam matrix calculation
+
+### Other
+- moved C-matrix to a chronologically sensible place
+- move postfix operator to prefix for clarity
+
 ## [0.4.2](https://github.com/denehoffman/rustitude/compare/rustitude-gluex-v0.4.1...rustitude-gluex-v0.4.2) - 2024-06-17
 
 ### Other
