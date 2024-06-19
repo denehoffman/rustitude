@@ -21,6 +21,7 @@ use std::{
     fmt::{Debug, Display},
     ops::{Add, Mul},
 };
+use tracing::{debug, info};
 
 use crate::{
     dataset::{Dataset, Event},
@@ -399,6 +400,7 @@ impl AsTree for Amplitude {
 impl Amplitude {
     /// Creates a new [`Amplitude`] from a name and a [`Node`]-implementing struct.
     pub fn new(name: &str, node: impl Node + 'static) -> Self {
+        info!("Created new amplitude named {name}");
         let parameters = node.parameters();
         Self {
             name: name.to_string(),
@@ -427,14 +429,27 @@ impl Amplitude {
 }
 impl Node for Amplitude {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
-        self.node.precalculate(dataset)
+        self.node.precalculate(dataset)?;
+        debug!("Precalculated amplitude {}", self.name);
+        Ok(())
     }
     fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
-        self.node.calculate(
+        let res = self.node.calculate(
             &parameters
                 [self.parameter_index_start..self.parameter_index_start + self.parameters.len()],
             event,
-        )
+        );
+        debug!(
+            "{}({:?}, event #{}) = {}",
+            self.name,
+            &parameters
+                [self.parameter_index_start..self.parameter_index_start + self.parameters.len()],
+            event.index,
+            res.as_ref()
+                .map(|c| c.to_string())
+                .unwrap_or_else(|e| e.to_string())
+        );
+        res
     }
     fn parameters(&self) -> Vec<String> {
         self.node.parameters()
@@ -450,7 +465,13 @@ impl AmpLike for Amplitude {
     }
 
     fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
-        cache[self.cache_position]
+        let res = cache[self.cache_position];
+        debug!(
+            "Computing {} from cache: {:?}",
+            self.name,
+            res.as_ref().map(|c| c.to_string())
+        );
+        res
     }
 }
 
@@ -477,7 +498,13 @@ impl AmpLike for Real {
     }
 
     fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
-        self.0.compute(cache).map(|r| r.re.into())
+        let res: Option<Complex64> = self.0.compute(cache).map(|r| r.re.into());
+        debug!(
+            "Computing {:?} from cache: {:?}",
+            self,
+            res.as_ref().map(|c| c.to_string())
+        );
+        res
     }
 }
 impl AsTree for Real {
@@ -515,7 +542,13 @@ impl AmpLike for Imag {
     }
 
     fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
-        self.0.compute(cache).map(|r| r.im.into())
+        let res: Option<Complex64> = self.0.compute(cache).map(|r| r.im.into());
+        debug!(
+            "Computing {:?} from cache: {:?}",
+            self,
+            res.as_ref().map(|c| c.to_string())
+        );
+        res
     }
 }
 impl AsTree for Imag {
@@ -578,7 +611,13 @@ impl AmpLike for Product {
     }
 
     fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
-        self.0.iter().map(|op| op.compute(cache)).product()
+        let res: Option<Complex64> = self.0.iter().map(|op| op.compute(cache)).product();
+        debug!(
+            "Computing {:?} from cache: {:?}",
+            self,
+            res.as_ref().map(|c| c.to_string())
+        );
+        res
     }
 }
 

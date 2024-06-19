@@ -81,6 +81,7 @@ use parquet::{
     record::{Field, Row},
 };
 use rayon::prelude::*;
+use tracing::info;
 
 use crate::{errors::RustitudeError, prelude::FourMomentum};
 
@@ -810,6 +811,7 @@ impl Dataset {
 
     /// Generate a new [`Dataset`] from a [`Vec<Event>`].
     pub fn new(events: Vec<Event>) -> Self {
+        info!("Dataset created with {} events", events.len());
         Self {
             events: Arc::new(RwLock::new(events)),
         }
