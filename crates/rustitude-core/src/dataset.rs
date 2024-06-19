@@ -232,12 +232,12 @@ impl Event {
             .zip(pz_fs[1..].iter())
             .map(|(((e, px), py), pz)| FourMomentum::new(*e, *px, *py, *pz))
             .collect();
-        let final_state_p4 = event.recoil_p4 + event.daughter_p4s.iter().sum();
-        event.beam_p4 = event.beam_p4.boost_along(&final_state_p4);
-        event.recoil_p4 = event.recoil_p4.boost_along(&final_state_p4);
-        for dp4 in event.daughter_p4s.iter_mut() {
-            *dp4 = dp4.boost_along(&final_state_p4);
-        }
+        // let final_state_p4 = event.recoil_p4 + event.daughter_p4s.iter().sum();
+        // event.beam_p4 = event.beam_p4.boost_along(&final_state_p4);
+        // event.recoil_p4 = event.recoil_p4.boost_along(&final_state_p4);
+        // for dp4 in event.daughter_p4s.iter_mut() {
+        //     *dp4 = dp4.boost_along(&final_state_p4);
+        // }
         Ok(event)
     }
     /// Reads an [`Event`] from a single [`Row`] in a Parquet file, assuming EPS is stored in the
@@ -335,12 +335,12 @@ impl Event {
             .zip(pz_fs[1..].iter())
             .map(|(((e, px), py), pz)| FourMomentum::new(*e, *px, *py, *pz))
             .collect();
-        let final_state_p4 = event.recoil_p4 + event.daughter_p4s.iter().sum();
-        event.beam_p4 = event.beam_p4.boost_along(&final_state_p4);
-        event.recoil_p4 = event.recoil_p4.boost_along(&final_state_p4);
-        for dp4 in event.daughter_p4s.iter_mut() {
-            *dp4 = dp4.boost_along(&final_state_p4);
-        }
+        // let final_state_p4 = event.recoil_p4 + event.daughter_p4s.iter().sum();
+        // event.beam_p4 = event.beam_p4.boost_along(&final_state_p4);
+        // event.recoil_p4 = event.recoil_p4.boost_along(&final_state_p4);
+        // for dp4 in event.daughter_p4s.iter_mut() {
+        //     *dp4 = dp4.boost_along(&final_state_p4);
+        // }
         Ok(event)
     }
 
@@ -442,12 +442,12 @@ impl Event {
             .zip(pz_fs[1..].iter())
             .map(|(((e, px), py), pz)| FourMomentum::new(*e, *px, *py, *pz))
             .collect();
-        let final_state_p4 = event.recoil_p4 + event.daughter_p4s.iter().sum();
-        event.beam_p4 = event.beam_p4.boost_along(&final_state_p4);
-        event.recoil_p4 = event.recoil_p4.boost_along(&final_state_p4);
-        for dp4 in event.daughter_p4s.iter_mut() {
-            *dp4 = dp4.boost_along(&final_state_p4);
-        }
+        // let final_state_p4 = event.recoil_p4 + event.daughter_p4s.iter().sum();
+        // event.beam_p4 = event.beam_p4.boost_along(&final_state_p4);
+        // event.recoil_p4 = event.recoil_p4.boost_along(&final_state_p4);
+        // for dp4 in event.daughter_p4s.iter_mut() {
+        //     *dp4 = dp4.boost_along(&final_state_p4);
+        // }
         Ok(event)
     }
 
