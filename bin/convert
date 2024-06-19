@@ -46,6 +46,7 @@ def convert(root_file_path, output_parquet_path=None, tree_name=None, n_events=N
             ]
         dataframe["Px_Beam"] = np.zeros_like(dataframe["Px_Beam"])
         dataframe["Py_Beam"] = np.zeros_like(dataframe["Py_Beam"])
+        dataframe["Pz_Beam"] = dataframe["E_Beam"]
 
     if output_parquet_path is None:
         output_parquet_path = f"{root_file_path.replace('.root', '.parquet')}"

@@ -81,6 +81,7 @@ use parquet::{
     record::{Field, Row},
 };
 use rayon::prelude::*;
+use tracing::info;
 
 use crate::{errors::RustitudeError, prelude::FourMomentum};
 
@@ -231,12 +232,12 @@ impl Event {
             .zip(pz_fs[1..].iter())
             .map(|(((e, px), py), pz)| FourMomentum::new(*e, *px, *py, *pz))
             .collect();
-        let final_state_p4 = event.recoil_p4 + event.daughter_p4s.iter().sum();
-        event.beam_p4 = event.beam_p4.boost_along(&final_state_p4);
-        event.recoil_p4 = event.recoil_p4.boost_along(&final_state_p4);
-        for dp4 in event.daughter_p4s.iter_mut() {
-            *dp4 = dp4.boost_along(&final_state_p4);
-        }
+        // let final_state_p4 = event.recoil_p4 + event.daughter_p4s.iter().sum();
+        // event.beam_p4 = event.beam_p4.boost_along(&final_state_p4);
+        // event.recoil_p4 = event.recoil_p4.boost_along(&final_state_p4);
+        // for dp4 in event.daughter_p4s.iter_mut() {
+        //     *dp4 = dp4.boost_along(&final_state_p4);
+        // }
         Ok(event)
     }
     /// Reads an [`Event`] from a single [`Row`] in a Parquet file, assuming EPS is stored in the
@@ -262,15 +263,13 @@ impl Event {
             match (name.as_str(), field) {
                 ("E_Beam", Field::Float(value)) => {
                     event.beam_p4.set_e(f64::from(*value));
+                    event.beam_p4.set_pz(f64::from(*value));
                 }
                 ("Px_Beam", Field::Float(value)) => {
                     event.eps[0] = f64::from(*value);
                 }
                 ("Py_Beam", Field::Float(value)) => {
                     event.eps[1] = f64::from(*value);
-                }
-                ("Pz_Beam", Field::Float(value)) => {
-                    event.beam_p4.set_pz(f64::from(*value));
                 }
                 ("Weight", Field::Float(value)) => event.weight = f64::from(*value),
                 ("E_FinalState", Field::ListInternal(list)) => {
@@ -336,12 +335,12 @@ impl Event {
             .zip(pz_fs[1..].iter())
             .map(|(((e, px), py), pz)| FourMomentum::new(*e, *px, *py, *pz))
             .collect();
-        let final_state_p4 = event.recoil_p4 + event.daughter_p4s.iter().sum();
-        event.beam_p4 = event.beam_p4.boost_along(&final_state_p4);
-        event.recoil_p4 = event.recoil_p4.boost_along(&final_state_p4);
-        for dp4 in event.daughter_p4s.iter_mut() {
-            *dp4 = dp4.boost_along(&final_state_p4);
-        }
+        // let final_state_p4 = event.recoil_p4 + event.daughter_p4s.iter().sum();
+        // event.beam_p4 = event.beam_p4.boost_along(&final_state_p4);
+        // event.recoil_p4 = event.recoil_p4.boost_along(&final_state_p4);
+        // for dp4 in event.daughter_p4s.iter_mut() {
+        //     *dp4 = dp4.boost_along(&final_state_p4);
+        // }
         Ok(event)
     }
 
@@ -443,12 +442,12 @@ impl Event {
             .zip(pz_fs[1..].iter())
             .map(|(((e, px), py), pz)| FourMomentum::new(*e, *px, *py, *pz))
             .collect();
-        let final_state_p4 = event.recoil_p4 + event.daughter_p4s.iter().sum();
-        event.beam_p4 = event.beam_p4.boost_along(&final_state_p4);
-        event.recoil_p4 = event.recoil_p4.boost_along(&final_state_p4);
-        for dp4 in event.daughter_p4s.iter_mut() {
-            *dp4 = dp4.boost_along(&final_state_p4);
-        }
+        // let final_state_p4 = event.recoil_p4 + event.daughter_p4s.iter().sum();
+        // event.beam_p4 = event.beam_p4.boost_along(&final_state_p4);
+        // event.recoil_p4 = event.recoil_p4.boost_along(&final_state_p4);
+        // for dp4 in event.daughter_p4s.iter_mut() {
+        //     *dp4 = dp4.boost_along(&final_state_p4);
+        // }
         Ok(event)
     }
 
@@ -692,7 +691,7 @@ impl Dataset {
         let e_beam: Vec<f64> = Self::extract_f32(path, &ttree, "E_Beam")?;
         let px_beam: Vec<f64> = Self::extract_f32(path, &ttree, "Px_Beam")?;
         let py_beam: Vec<f64> = Self::extract_f32(path, &ttree, "Py_Beam")?;
-        let pz_beam: Vec<f64> = Self::extract_f32(path, &ttree, "Pz_Beam")?;
+        let pz_beam: Vec<f64> = Self::extract_f32(path, &ttree, "E_Beam")?;
         let e_fs: Vec<Vec<f64>> = Self::extract_vec_f32(path, &ttree, "E_FinalState")?;
         let px_fs: Vec<Vec<f64>> = Self::extract_vec_f32(path, &ttree, "Px_FinalState")?;
         let py_fs: Vec<Vec<f64>> = Self::extract_vec_f32(path, &ttree, "Py_FinalState")?;
@@ -812,6 +811,7 @@ impl Dataset {
 
     /// Generate a new [`Dataset`] from a [`Vec<Event>`].
     pub fn new(events: Vec<Event>) -> Self {
+        info!("Dataset created with {} events", events.len());
         Self {
             events: Arc::new(RwLock::new(events)),
         }

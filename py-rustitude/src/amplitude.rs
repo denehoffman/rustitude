@@ -82,9 +82,6 @@ impl Amplitude {
 }
 #[pymethods]
 impl Amplitude {
-    fn print_tree(&self) {
-        self.0.print_tree()
-    }
     #[getter]
     fn name(&self) -> String {
         self.0.name.clone()
@@ -143,8 +140,8 @@ impl Amplitude {
     fn real(&self) -> Real {
         Real(self.0.real())
     }
-    fn imag(&self) -> Real {
-        Real(self.0.real())
+    fn imag(&self) -> Imag {
+        Imag(self.0.imag())
     }
 }
 
@@ -154,9 +151,6 @@ pub struct Real(rust::Real);
 impl_convert!(Real, rust::Real);
 #[pymethods]
 impl Real {
-    fn print_tree(&self) {
-        self.0.print_tree()
-    }
     fn __str__(&self) -> String {
         format!("{}", self.0)
     }
@@ -199,8 +193,8 @@ impl Real {
     fn real(&self) -> Real {
         Real(self.0.real())
     }
-    fn imag(&self) -> Real {
-        Real(self.0.real())
+    fn imag(&self) -> Imag {
+        Imag(self.0.imag())
     }
 }
 
@@ -252,8 +246,8 @@ impl Imag {
     fn real(&self) -> Real {
         Real(self.0.real())
     }
-    fn imag(&self) -> Real {
-        Real(self.0.real())
+    fn imag(&self) -> Imag {
+        Imag(self.0.imag())
     }
 }
 
@@ -305,8 +299,8 @@ impl Product {
     fn real(&self) -> Real {
         Real(self.0.real())
     }
-    fn imag(&self) -> Real {
-        Real(self.0.real())
+    fn imag(&self) -> Imag {
+        Imag(self.0.imag())
     }
 }
 
@@ -339,9 +333,6 @@ impl CohSum {
             }
         }
         Ok(Self(rust::CohSum(rust_terms)))
-    }
-    fn print_tree(&self) {
-        self.0.print_tree()
     }
     fn __str__(&self) -> String {
         format!("{}", self.0)
@@ -399,8 +390,11 @@ impl From<Model> for rust::Model {
 
 #[pymethods]
 impl Model {
-    fn print_tree(&self) {
-        self.0.print_tree()
+    fn __str__(&self) -> String {
+        format!("{}", self.0)
+    }
+    fn __repr__(&self) -> String {
+        format!("{:?}", self.0)
     }
     #[getter]
     fn cohsums(&self) -> Vec<CohSum> {
@@ -492,8 +486,14 @@ impl Model {
     fn activate(&mut self, amplitude: &str) {
         self.0.activate(amplitude)
     }
+    fn activate_all(&mut self) {
+        self.0.activate_all()
+    }
     fn deactivate(&mut self, amplitude: &str) {
         self.0.deactivate(amplitude)
+    }
+    fn deactivate_all(&mut self) {
+        self.0.deactivate_all()
     }
 }
 

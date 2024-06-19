@@ -86,6 +86,10 @@ impl Manager {
     ///
     /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
     /// [`Model::norm_int`] for more information.
+    #[deprecated(
+        since = "0.7.1",
+        note = "Manager::evaluate is faster and should give equivalent results"
+    )]
     pub fn norm_int(&self, parameters: &[f64]) -> Result<Vec<f64>, RustitudeError> {
         self.dataset
             .events
@@ -101,6 +105,10 @@ impl Manager {
     ///
     /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
     /// [`Model::norm_int`] for more information.
+    #[deprecated(
+        since = "0.7.1",
+        note = "Manager::par_evaluate is faster and should give equivalent results"
+    )]
     pub fn par_norm_int(&self, parameters: &[f64]) -> Result<Vec<f64>, RustitudeError> {
         let mut output = Vec::with_capacity(self.dataset.len());
         self.dataset
@@ -239,10 +247,17 @@ impl Manager {
     pub fn activate(&mut self, amplitude: &str) {
         self.model.activate(amplitude)
     }
-
+    /// Activate all [`Amplitude`]s by name. See [`Model::activate_all`] for more information.
+    pub fn activate_all(&mut self) {
+        self.model.activate_all()
+    }
     /// Deactivate an [`Amplitude`] by name. See [`Model::deactivate`] for more information.
     pub fn deactivate(&mut self, amplitude: &str) {
         self.model.deactivate(amplitude)
+    }
+    /// Deactivate all [`Amplitude`]s by name. See [`Model::deactivate_all`] for more information.
+    pub fn deactivate_all(&mut self) {
+        self.model.deactivate_all()
     }
 }
 
@@ -369,6 +384,10 @@ impl ExtendedLogLikelihood {
     ///
     /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
     /// [`Model::norm_int`] for more information.
+    #[deprecated(
+        since = "0.7.1",
+        note = "ExtendedLogLikelihood::evaluate is faster and should give equivalent results"
+    )]
     pub fn norm_int(&self, parameters: &[f64], weighted: bool) -> Result<f64, RustitudeError> {
         let mc_norm_int = self.mc_manager.norm_int(parameters)?;
         if weighted {
@@ -385,6 +404,10 @@ impl ExtendedLogLikelihood {
     ///
     /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
     /// [`Model::norm_int`] for more information.
+    #[deprecated(
+        since = "0.7.1",
+        note = "ExtendedLogLikelihood::par_evaluate is faster and should give equivalent results"
+    )]
     pub fn par_norm_int(
         &self,
         parameters: &[f64],
@@ -540,10 +563,19 @@ impl ExtendedLogLikelihood {
         self.data_manager.activate(amplitude);
         self.mc_manager.activate(amplitude)
     }
-
+    /// Activates all [`Amplitude`]s by name. See [`Model::activate_all`] for more information.
+    pub fn activate_all(&mut self) {
+        self.data_manager.activate_all();
+        self.mc_manager.activate_all()
+    }
     /// Deactivate an [`Amplitude`] by name. See [`Model::deactivate`] for more information.
     pub fn deactivate(&mut self, amplitude: &str) {
         self.data_manager.deactivate(amplitude);
         self.mc_manager.deactivate(amplitude)
+    }
+    /// Deactivates all [`Amplitude`]s by name. See [`Model::deactivate_all`] for more information.
+    pub fn deactivate_all(&mut self) {
+        self.data_manager.deactivate_all();
+        self.mc_manager.deactivate_all()
     }
 }

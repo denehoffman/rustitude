@@ -84,9 +84,17 @@ impl Manager {
     fn par_evaluate(&self, parameters: Vec<f64>) -> PyResult<Vec<f64>> {
         self.0.par_evaluate(&parameters).map_err(PyErr::from)
     }
+    #[deprecated(
+        since = "0.7.1",
+        note = "Model::evaluate is faster and should give equivalent results"
+    )]
     fn norm_int(&self, parameters: Vec<f64>) -> PyResult<Vec<f64>> {
         self.0.norm_int(&parameters).map_err(PyErr::from)
     }
+    #[deprecated(
+        since = "0.7.1",
+        note = "Model::evaluate is faster and should give equivalent results"
+    )]
     fn par_norm_int(&self, parameters: Vec<f64>) -> PyResult<Vec<f64>> {
         self.0.par_norm_int(&parameters).map_err(PyErr::from)
     }
@@ -135,8 +143,14 @@ impl Manager {
     fn activate(&mut self, amplitude: &str) {
         self.0.activate(amplitude)
     }
+    fn activate_all(&mut self) {
+        self.0.activate_all()
+    }
     fn deactivate(&mut self, amplitude: &str) {
         self.0.deactivate(amplitude)
+    }
+    fn deactivate_all(&mut self) {
+        self.0.deactivate_all()
     }
 }
 
@@ -207,10 +221,18 @@ impl ExtendedLogLikelihood {
         rust::ExtendedLogLikelihood::new(data_manager.into(), mc_manager.into()).into()
     }
     #[pyo3(signature = (parameters, *, weighted = true))]
+    #[deprecated(
+        since = "0.7.1",
+        note = "ExtendedLogLikelihood::evaluate is faster and should give equivalent results"
+    )]
     fn norm_int(&self, parameters: Vec<f64>, weighted: bool) -> PyResult<f64> {
         self.0.norm_int(&parameters, weighted).map_err(PyErr::from)
     }
     #[pyo3(signature = (parameters, *, num_threads = 1, weighted = true))]
+    #[deprecated(
+        since = "0.7.1",
+        note = "ExtendedLogLikelihood::par_evaluate is faster and should give equivalent results"
+    )]
     fn par_norm_int(
         &self,
         parameters: Vec<f64>,
@@ -297,8 +319,14 @@ impl ExtendedLogLikelihood {
     fn activate(&mut self, amplitude: &str) {
         self.0.activate(amplitude)
     }
+    fn activate_all(&mut self) {
+        self.0.activate_all()
+    }
     fn deactivate(&mut self, amplitude: &str) {
         self.0.deactivate(amplitude)
+    }
+    fn deactivate_all(&mut self) {
+        self.0.deactivate_all()
     }
 }
 

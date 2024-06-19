@@ -21,6 +21,7 @@ use std::{
     fmt::{Debug, Display},
     ops::{Add, Mul},
 };
+use tracing::{debug, info};
 
 use crate::{
     dataset::{Dataset, Event},
@@ -256,7 +257,7 @@ dyn_clone::clone_trait_object!(Node);
 /// namely [`Real`], [`Imag`], and [`Product`]. Others may be added in the future, but they
 /// should probably only be added through this crate and not externally, since they require several
 /// operator overloads to be implemented for nice syntax.
-pub trait AmpLike: DynClone + Send + Sync + Debug + Display {
+pub trait AmpLike: DynClone + Send + Sync + Debug + Display + AsTree {
     /// This method walks through an [`AmpLike`] struct and recursively amalgamates a list of
     /// [`Amplitude`]s contained within. Note that these [`Amplitude`]s are owned clones of the
     /// interior structures.
@@ -310,32 +311,37 @@ pub trait AmpLike: DynClone + Send + Sync + Debug + Display {
     {
         CohSum(vec![dyn_clone::clone_box(self)])
     }
-
-    /// Pretty-prints the structure of [`AmpLike`] structs starting at the current node.
-    fn print_tree(&self) {
-        self._print_tree(&mut vec![]);
-    }
-
-    /// Prints the proper indents for a given entry in [`AmpLike::print_tree`]. A `true` bit will print a vertical line, while a `false` bit
-    /// will not.
-    fn _print_indent(&self, bits: Vec<bool>) {
-        bits.iter()
-            .for_each(|b| if *b { print!("  ┃ ") } else { print!("    ") });
-    }
-    /// Prints the an intermediate branch for a given entry in [`AmpLike::print_tree`].
-    fn _print_intermediate(&self) {
-        print!("  ┣━");
-    }
-    /// Prints the a final branch for a given entry in [`AmpLike::print_tree`].
-    fn _print_end(&self) {
-        print!("  ┗━");
-    }
-    /// Prints the tree of [`AmpLike`]s starting with a particular indentation structure
-    /// defined by `bits`. A `true` bit will print a vertical line, while a `false` bit
-    /// will not.
-    fn _print_tree(&self, bits: &mut Vec<bool>);
 }
 dyn_clone::clone_trait_object!(AmpLike);
+
+/// This trait defines some simple methods for pretty-printing tree-like structures.
+pub trait AsTree {
+    /// Returns a string representing the node and its children with tree formatting.
+    fn get_tree(&self) -> String {
+        self._get_tree(&mut vec![])
+    }
+    /// Returns a string with the proper indents for a given entry in
+    /// [`AsTree::get_tree`]. A `true` bit will yield a vertical line, while a
+    /// `false` bit will not.
+    fn _get_indent(&self, bits: Vec<bool>) -> String {
+        bits.iter()
+            .map(|b| if *b { "  ┃ " } else { "    " })
+            .join("")
+    }
+    /// Returns a string with the intermediate branch symbol for a given entry in
+    /// [`AsTree::get_tree`].
+    fn _get_intermediate(&self) -> String {
+        String::from("  ┣━")
+    }
+    /// Prints the a final branch for a given entry in [`AsTree::get_tree`].
+    fn _get_end(&self) -> String {
+        String::from("  ┗━")
+    }
+    /// Prints the tree of an [`AsTree`]-implementor starting with a particular indentation structure
+    /// defined by `bits`. A `true` bit will print a vertical line, while a `false` bit
+    /// will not.
+    fn _get_tree(&self, bits: &mut Vec<bool>) -> String;
+}
 
 /// A struct which stores a named [`Node`].
 ///
@@ -364,27 +370,37 @@ pub struct Amplitude {
 
 impl Debug for Amplitude {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Amplitude")
-            .field("name", &self.name)
-            .field("active", &self.active)
-            .field("cache_position", &self.cache_position)
-            .field("parameter_index_start", &self.parameter_index_start)
-            .finish()
+        write!(f, "{}", self.name)
     }
 }
 impl Display for Amplitude {
+    #[rustfmt::skip]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if self.active {
-            write!(f, "{}", self.name)
+        writeln!(f, "Amplitude")?;
+        writeln!(f, "  Name:                     {}", self.name)?;
+        writeln!(f, "  Active:                   {}", self.active)?;
+        writeln!(f, "  Cache Position:           {}", self.cache_position)?;
+        writeln!(f, "  Index of First Parameter: {}", self.parameter_index_start)
+    }
+}
+impl AsTree for Amplitude {
+    fn _get_tree(&self, _bits: &mut Vec<bool>) -> String {
+        let name = if self.active {
+            self.name.clone()
         } else {
-            write!(f, "# {} #", self.name)
+            format!("/* {} */", self.name)
+        };
+        if self.parameters().len() > 7 {
+            format!(" {}({},...)\n", name, self.parameters()[0..7].join(", "))
+        } else {
+            format!(" {}({})\n", name, self.parameters().join(", "))
         }
     }
 }
-
 impl Amplitude {
     /// Creates a new [`Amplitude`] from a name and a [`Node`]-implementing struct.
     pub fn new(name: &str, node: impl Node + 'static) -> Self {
+        info!("Created new amplitude named {name}");
         let parameters = node.parameters();
         Self {
             name: name.to_string(),
@@ -413,14 +429,27 @@ impl Amplitude {
 }
 impl Node for Amplitude {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
-        self.node.precalculate(dataset)
+        self.node.precalculate(dataset)?;
+        debug!("Precalculated amplitude {}", self.name);
+        Ok(())
     }
     fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
-        self.node.calculate(
+        let res = self.node.calculate(
             &parameters
                 [self.parameter_index_start..self.parameter_index_start + self.parameters.len()],
             event,
-        )
+        );
+        debug!(
+            "{}({:?}, event #{}) = {}",
+            self.name,
+            &parameters
+                [self.parameter_index_start..self.parameter_index_start + self.parameters.len()],
+            event.index,
+            res.as_ref()
+                .map(|c| c.to_string())
+                .unwrap_or_else(|e| e.to_string())
+        );
+        res
     }
     fn parameters(&self) -> Vec<String> {
         self.node.parameters()
@@ -436,34 +465,27 @@ impl AmpLike for Amplitude {
     }
 
     fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
-        cache[self.cache_position]
-    }
-
-    fn _print_tree(&self, _bits: &mut Vec<bool>) {
-        if self.parameters().len() > 7 {
-            println!(
-                " {}{}({},...)",
-                if self.active { "!" } else { "" },
-                self.name,
-                self.parameters()[0..7].join(", ")
-            );
-        } else {
-            println!(
-                " {}{}({})",
-                if self.active { "!" } else { "" },
-                self.name,
-                self.parameters().join(", ")
-            );
-        }
+        let res = cache[self.cache_position];
+        debug!(
+            "Computing {} from cache: {:?}",
+            self.name,
+            res.as_ref().map(|c| c.to_string())
+        );
+        res
     }
 }
 
 /// An [`AmpLike`] representing the real part of the [`AmpLike`] it contains.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Real(Box<dyn AmpLike>);
+impl Debug for Real {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Real [ {:?} ]", self.0)
+    }
+}
 impl Display for Real {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Real [ {} ]", self.0)
+        writeln!(f, "{}", self.get_tree())
     }
 }
 impl AmpLike for Real {
@@ -476,25 +498,38 @@ impl AmpLike for Real {
     }
 
     fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
-        self.0.compute(cache).map(|r| r.re.into())
+        let res: Option<Complex64> = self.0.compute(cache).map(|r| r.re.into());
+        debug!(
+            "Computing {:?} from cache: {:?}",
+            self,
+            res.as_ref().map(|c| c.to_string())
+        );
+        res
     }
-
-    fn _print_tree(&self, bits: &mut Vec<bool>) {
-        println!("[ imag ]");
-        self._print_indent(bits.to_vec());
-        self._print_end();
+}
+impl AsTree for Real {
+    fn _get_tree(&self, bits: &mut Vec<bool>) -> String {
+        let mut res = String::from("[ real ]\n");
+        res.push_str(&self._get_indent(bits.to_vec()));
+        res.push_str(&self._get_end());
         bits.push(false);
-        self.0._print_tree(&mut bits.clone());
+        res.push_str(&self.0._get_tree(&mut bits.clone()));
         bits.pop();
+        res
     }
 }
 
 /// An [`AmpLike`] representing the imaginary part of the [`AmpLike`] it contains.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Imag(Box<dyn AmpLike>);
+impl Debug for Imag {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Imag [ {:?} ]", self.0)
+    }
+}
 impl Display for Imag {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Imag [ {} ]", self.0)
+        writeln!(f, "{}", self.get_tree())
     }
 }
 impl AmpLike for Imag {
@@ -507,29 +542,60 @@ impl AmpLike for Imag {
     }
 
     fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
-        self.0.compute(cache).map(|r| r.im.into())
+        let res: Option<Complex64> = self.0.compute(cache).map(|r| r.im.into());
+        debug!(
+            "Computing {:?} from cache: {:?}",
+            self,
+            res.as_ref().map(|c| c.to_string())
+        );
+        res
     }
-
-    fn _print_tree(&self, bits: &mut Vec<bool>) {
-        println!("[ imag ]");
-        self._print_indent(bits.to_vec());
-        self._print_end();
+}
+impl AsTree for Imag {
+    fn _get_tree(&self, bits: &mut Vec<bool>) -> String {
+        let mut res = String::from("[ imag ]\n");
+        res.push_str(&self._get_indent(bits.to_vec()));
+        res.push_str(&self._get_end());
         bits.push(false);
-        self.0._print_tree(&mut bits.clone());
+        res.push_str(&self.0._get_tree(&mut bits.clone()));
         bits.pop();
+        res
     }
 }
 
 /// An [`AmpLike`] representing the product of the [`AmpLike`]s it contains.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Product(Vec<Box<dyn AmpLike>>);
-impl Display for Product {
+impl Debug for Product {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Product [ ")?;
         for op in &self.0 {
             write!(f, "{:?} ", op)?;
         }
         write!(f, "]")
+    }
+}
+impl Display for Product {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}", self.get_tree())
+    }
+}
+impl AsTree for Product {
+    fn _get_tree(&self, bits: &mut Vec<bool>) -> String {
+        let mut res = String::from("[ * ]\n");
+        for (i, op) in self.0.iter().enumerate() {
+            res.push_str(&self._get_indent(bits.to_vec()));
+            if i == self.0.len() - 1 {
+                res.push_str(&self._get_end());
+                bits.push(false);
+            } else {
+                res.push_str(&self._get_intermediate());
+                bits.push(true);
+            }
+            res.push_str(&op._get_tree(&mut bits.clone()));
+            bits.pop();
+        }
+        res
     }
 }
 impl AmpLike for Product {
@@ -545,48 +611,53 @@ impl AmpLike for Product {
     }
 
     fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
-        self.0.iter().map(|op| op.compute(cache)).product()
-    }
-
-    fn _print_tree(&self, bits: &mut Vec<bool>) {
-        println!("[ * ]");
-        for (i, op) in self.0.iter().enumerate() {
-            self._print_indent(bits.to_vec());
-            if i == self.0.len() - 1 {
-                self._print_end();
-                bits.push(false);
-            } else {
-                self._print_intermediate();
-                bits.push(true);
-            }
-            op._print_tree(&mut bits.clone());
-            bits.pop();
-        }
+        let res: Option<Complex64> = self.0.iter().map(|op| op.compute(cache)).product();
+        debug!(
+            "Computing {:?} from cache: {:?}",
+            self,
+            res.as_ref().map(|c| c.to_string())
+        );
+        res
     }
 }
 
 /// Struct to hold a coherent sum of [`AmpLike`]s
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct CohSum(pub Vec<Box<dyn AmpLike>>);
 
-impl Display for CohSum {
+impl Debug for CohSum {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Sum [ ")?;
+        write!(f, "CohSum [ ")?;
         for op in &self.0 {
             write!(f, "{:?} ", op)?;
         }
         write!(f, "]")
     }
 }
-impl CohSum {
-    /// Pretty prints a tree diagram to show the node structure of the [`CohSum`].
-    pub fn print_tree(&self) {
-        let mut bits = vec![true];
-        println!("[ CohSum ]");
-        for term in self.0.iter() {
-            term._print_tree(&mut bits)
-        }
+impl Display for CohSum {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}", self.get_tree())
     }
+}
+impl AsTree for CohSum {
+    fn _get_tree(&self, bits: &mut Vec<bool>) -> String {
+        let mut res = String::from("[ + (coh) ]\n");
+        for (i, op) in self.0.iter().enumerate() {
+            res.push_str(&self._get_indent(bits.to_vec()));
+            if i == self.0.len() - 1 {
+                res.push_str(&self._get_end());
+                bits.push(false);
+            } else {
+                res.push_str(&self._get_intermediate());
+                bits.push(true);
+            }
+            res.push_str(&op._get_tree(&mut bits.clone()));
+            bits.pop();
+        }
+        res
+    }
+}
+impl CohSum {
     /// Function which returns a sum of all cross terms inside a coherent sum.
     ///
     /// Take the following coherent sum, where $`\vec{p}`$ are input parameters $`e`$ is an
@@ -605,6 +676,10 @@ impl CohSum {
     /// This should be used to compute normalization integrals. Note that if on of the terms is
     /// [`None`], this function will not add any products which contain that term. This can be used
     /// to turn terms on and off.
+    #[deprecated(
+        since = "0.7.1",
+        note = "CohSum::compute is faster and should give equivalent results"
+    )]
     pub fn norm_int(&self, cache: &[Option<Complex64>]) -> Option<f64> {
         let results = self.0.iter().map(|al| al.compute(cache));
         iproduct!(results.clone(), results)
@@ -641,7 +716,7 @@ impl CohSum {
 /// A model contains an API to interact with a group of [`CohSum`]s by managing their amplitudes
 /// and parameters. Models are typically passed to [`Manager`](crate::manager::Manager)-like
 /// struct.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Model {
     /// The set of coherent sums included in the [`Model`].
     pub cohsums: Vec<CohSum>,
@@ -650,14 +725,159 @@ pub struct Model {
     /// The unique parameters located within all [`CohSum`]s.
     pub parameters: Vec<Parameter>,
 }
-
+impl Debug for Model {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Model [ ")?;
+        for op in &self.cohsums {
+            write!(f, "{} ", op)?;
+        }
+        write!(f, "]")
+    }
+}
+impl Display for Model {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}", self.get_tree())
+    }
+}
+impl AsTree for Model {
+    fn _get_tree(&self, bits: &mut Vec<bool>) -> String {
+        let mut res = String::from("[ + ]\n");
+        for (i, op) in self.cohsums.iter().enumerate() {
+            res.push_str(&self._get_indent(bits.to_vec()));
+            if i == self.cohsums.len() - 1 {
+                res.push_str(&self._get_end());
+                bits.push(false);
+            } else {
+                res.push_str(&self._get_intermediate());
+                bits.push(true);
+            }
+            res.push_str(&op._get_tree(&mut bits.clone()));
+            bits.pop();
+        }
+        res
+    }
+}
 impl Model {
-    /// Pretty-prints a tree diagram to show the node structure of the [`Model`].
-    pub fn print_tree(&self) {
-        for cohsum in &self.cohsums {
-            cohsum.print_tree()
+    /// Creates a new [`Model`] from a list of [`CohSum`]s.
+    pub fn new(cohsums: Vec<CohSum>) -> Self {
+        let mut amp_names = HashSet::new();
+        let amplitudes: Vec<Amplitude> = cohsums
+            .iter()
+            .flat_map(|cohsum| cohsum.walk())
+            .filter_map(|amp| {
+                if amp_names.insert(amp.name.clone()) {
+                    Some(amp)
+                } else {
+                    None
+                }
+            })
+            .collect();
+        let parameter_tags: Vec<(String, String)> = amplitudes
+            .iter()
+            .flat_map(|amp| {
+                amp.parameters()
+                    .iter()
+                    .map(|p| (amp.name.clone(), p.clone()))
+                    .collect::<Vec<_>>()
+            })
+            .collect();
+        let parameters = parameter_tags
+            .iter()
+            .enumerate()
+            .map(|(i, (amp_name, par_name))| Parameter::new(amp_name, par_name, i))
+            .collect();
+        Self {
+            cohsums: cohsums.into_iter().map(CohSum::from).collect(),
+            amplitudes,
+            parameters,
         }
     }
+    /// Computes the result of evaluating the terms in the model with the given [`Parameter`]s for
+    /// the given [`Event`] by summing the result of [`CohSum::compute`] for each [`CohSum`]
+    /// contained in the [`Model`].
+    ///
+    /// # Errors
+    ///
+    /// This method yields a [`RustitudeError`] if any of the [`Amplitude::calculate`] steps fail.
+    pub fn compute(&self, parameters: &[f64], event: &Event) -> Result<f64, RustitudeError> {
+        // TODO: Stop reallocating?
+
+        // NOTE: This seems to be just as fast as using a Vec<Complex64> and replacing active
+        // amplitudes by multiplying their cached values by 0.0. Branch prediction doesn't get us
+        // any performance here I guess.
+        let cache: Vec<Option<Complex64>> = self
+            .amplitudes
+            .iter()
+            .map(|amp| {
+                if amp.active {
+                    amp.calculate(parameters, event).map(Some)
+                } else {
+                    Ok(None)
+                }
+            })
+            .collect::<Result<Vec<Option<Complex64>>, RustitudeError>>()?;
+        Ok(self
+            .cohsums
+            .iter()
+            .map(|cohsum| cohsum.compute(&cache))
+            .sum::<Option<f64>>()
+            .unwrap_or_default())
+    }
+    /// Computes the result of evaluating the terms in the model with the given [`Parameter`]s for
+    /// the given [`Event`] by summing the result of [`CohSum::norm_int`] for each [`CohSum`]
+    /// contained in the [`Model`].
+    ///
+    /// # Errors
+    ///
+    /// This method yields a [`RustitudeError`] if any of the [`Amplitude::calculate`] steps fail.
+    #[deprecated(
+        since = "0.7.1",
+        note = "Model::compute is faster and should give equivalent results"
+    )]
+    pub fn norm_int(&self, parameters: &[f64], event: &Event) -> Result<f64, RustitudeError> {
+        let cache: Vec<Option<Complex64>> = self
+            .amplitudes
+            .iter()
+            .map(|amp| {
+                if amp.active {
+                    amp.calculate(parameters, event).map(Some)
+                } else {
+                    Ok(None)
+                }
+            })
+            .collect::<Result<Vec<Option<Complex64>>, RustitudeError>>()?;
+        Ok(self
+            .cohsums
+            .iter()
+            .map(|cohsum| cohsum.norm_int(&cache))
+            .sum::<Option<f64>>()
+            .unwrap_or_default())
+    }
+    /// Registers the [`Model`] with the [`Dataset`] by [`Amplitude::register`]ing each
+    /// [`Amplitude`] and setting the proper cache position and parameter starting index.
+    ///
+    /// # Errors
+    ///
+    /// This method will yield a [`RustitudeError`] if any [`Amplitude::precalculate`] steps fail.
+    pub fn load(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
+        let mut next_cache_pos = 0;
+        let mut parameter_index = 0;
+        self.amplitudes.iter_mut().try_for_each(|amp| {
+            amp.register(next_cache_pos, parameter_index, dataset)?;
+            self.cohsums.iter_mut().for_each(|cohsum| {
+                cohsum.walk_mut().iter_mut().for_each(|r_amp| {
+                    if r_amp.name == amp.name {
+                        r_amp.cache_position = next_cache_pos;
+                        r_amp.parameter_index_start = parameter_index;
+                    }
+                })
+            });
+            next_cache_pos += 1;
+            parameter_index += amp.parameters().len();
+            Ok(())
+        })
+    }
+
     /// Retrieves a copy of an [`Amplitude`] in the [`Model`] by name.
     ///
     /// # Errors
@@ -875,7 +1095,24 @@ impl Model {
             if amp.name == amplitude {
                 amp.active = true
             }
-        })
+        });
+        self.cohsums.iter_mut().for_each(|cohsum| {
+            cohsum.walk_mut().iter_mut().for_each(|amp| {
+                if amp.name == amplitude {
+                    amp.active = true
+                }
+            })
+        });
+    }
+    /// Activates all [`Amplitude`]s in the [`Model`].
+    pub fn activate_all(&mut self) {
+        self.amplitudes.iter_mut().for_each(|amp| amp.active = true);
+        self.cohsums.iter_mut().for_each(|cohsum| {
+            cohsum
+                .walk_mut()
+                .iter_mut()
+                .for_each(|amp| amp.active = true)
+        });
     }
     /// Deactivates an [`Amplitude`] in the [`Model`] by name.
     pub fn deactivate(&mut self, amplitude: &str) {
@@ -883,125 +1120,26 @@ impl Model {
             if amp.name == amplitude {
                 amp.active = false
             }
-        })
-    }
-    /// Creates a new [`Model`] from a list of [`CohSum`]s.
-    pub fn new(cohsums: Vec<CohSum>) -> Self {
-        let mut amp_names = HashSet::new();
-        let amplitudes: Vec<Amplitude> = cohsums
-            .iter()
-            .flat_map(|cohsum| cohsum.walk())
-            .filter_map(|amp| {
-                if amp_names.insert(amp.name.clone()) {
-                    Some(amp)
-                } else {
-                    None
+        });
+        self.cohsums.iter_mut().for_each(|cohsum| {
+            cohsum.walk_mut().iter_mut().for_each(|amp| {
+                if amp.name == amplitude {
+                    amp.active = false
                 }
             })
-            .collect();
-        let parameter_tags: Vec<(String, String)> = amplitudes
-            .iter()
-            .flat_map(|amp| {
-                amp.parameters()
-                    .iter()
-                    .map(|p| (amp.name.clone(), p.clone()))
-                    .collect::<Vec<_>>()
-            })
-            .collect();
-        let parameters = parameter_tags
-            .iter()
-            .enumerate()
-            .map(|(i, (amp_name, par_name))| Parameter::new(amp_name, par_name, i))
-            .collect();
-        Self {
-            cohsums: cohsums.into_iter().map(CohSum::from).collect(),
-            amplitudes,
-            parameters,
-        }
+        });
     }
-    /// Computes the result of evaluating the terms in the model with the given [`Parameter`]s for
-    /// the given [`Event`] by summing the result of [`CohSum::compute`] for each [`CohSum`]
-    /// contained in the [`Model`].
-    ///
-    /// # Errors
-    ///
-    /// This method yields a [`RustitudeError`] if any of the [`Amplitude::calculate`] steps fail.
-    pub fn compute(&self, parameters: &[f64], event: &Event) -> Result<f64, RustitudeError> {
-        // First, we calculate the values for the active amplitudes
-        // TODO: Stop reallocating!!!
-        let cache: Vec<Option<Complex64>> = self
-            .amplitudes
-            .iter()
-            .map(|amp| {
-                if amp.active {
-                    amp.calculate(parameters, event).map(Some)
-                } else {
-                    Ok(None)
-                }
-            })
-            .collect::<Result<Vec<Option<Complex64>>, RustitudeError>>()?;
-        Ok(self
-            .cohsums
-            .iter()
-            .map(|cohsum| cohsum.compute(&cache))
-            .sum::<Option<f64>>()
-            .unwrap_or_default())
-    }
-    /// Computes the result of evaluating the terms in the model with the given [`Parameter`]s for
-    /// the given [`Event`] by summing the result of [`CohSum::norm_int`] for each [`CohSum`]
-    /// contained in the [`Model`].
-    ///
-    /// # Errors
-    ///
-    /// This method yields a [`RustitudeError`] if any of the [`Amplitude::calculate`] steps fail.
-    pub fn norm_int(&self, parameters: &[f64], event: &Event) -> Result<f64, RustitudeError> {
-        let pars: Vec<f64> = self
-            .parameters
-            .iter()
-            .map(|p| p.index.map_or_else(|| p.initial, |i| parameters[i]))
-            .collect();
-        // First, we calculate the values for the active amplitudes
-        let cache: Vec<Option<Complex64>> = self
-            .amplitudes
-            .iter()
-            .map(|amp| {
-                if amp.active {
-                    amp.calculate(&pars, event).map(Some)
-                } else {
-                    Ok(None)
-                }
-            })
-            .collect::<Result<Vec<Option<Complex64>>, RustitudeError>>()?;
-        Ok(self
-            .cohsums
-            .iter()
-            .map(|cohsum| cohsum.norm_int(&cache))
-            .sum::<Option<f64>>()
-            .unwrap_or_default())
-    }
-    /// Registers the [`Model`] with the [`Dataset`] by [`Amplitude::register`]ing each
-    /// [`Amplitude`] and setting the proper cache position and parameter starting index.
-    ///
-    /// # Errors
-    ///
-    /// This method will yield a [`RustitudeError`] if any [`Amplitude::precalculate`] steps fail.
-    pub fn load(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
-        let mut next_cache_pos = 0;
-        let mut parameter_index = 0;
-        self.amplitudes.iter_mut().try_for_each(|amp| {
-            amp.register(next_cache_pos, parameter_index, dataset)?;
-            self.cohsums.iter_mut().for_each(|cohsum| {
-                cohsum.walk_mut().iter_mut().for_each(|r_amp| {
-                    if r_amp.name == amp.name {
-                        r_amp.cache_position = next_cache_pos;
-                        r_amp.parameter_index_start = parameter_index;
-                    }
-                })
-            });
-            next_cache_pos += 1;
-            parameter_index += amp.parameters().len();
-            Ok(())
-        })
+    /// Deactivates all [`Amplitude`]s in the [`Model`].
+    pub fn deactivate_all(&mut self) {
+        self.amplitudes
+            .iter_mut()
+            .for_each(|amp| amp.active = false);
+        self.cohsums.iter_mut().for_each(|cohsum| {
+            cohsum
+                .walk_mut()
+                .iter_mut()
+                .for_each(|amp| amp.active = false)
+        });
     }
     fn group_by_index(&self) -> Vec<Vec<&Parameter>> {
         self.parameters

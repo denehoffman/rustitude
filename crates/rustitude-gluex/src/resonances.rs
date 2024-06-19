@@ -110,7 +110,7 @@ impl<const C: usize, const R: usize> KMatrixConstants<C, R> {
                     / (Self::chi_plus(s, self.m1s[i], self.m2s[i])
                         - Self::rho(s, self.m1s[i], self.m2s[i])))
                 .ln()
-                + Self::chi_plus(s, self.m1s[i], self.m2s[i]) / PI
+                - Self::chi_plus(s, self.m1s[i], self.m2s[i]) / PI
                     * ((self.m2s[i] - self.m1s[i]) / (self.m1s[i] + self.m2s[i]))
                     * (self.m2s[i] / self.m1s[i]).ln()
         }))
@@ -140,11 +140,17 @@ impl<const C: usize, const R: usize> KMatrixConstants<C, R> {
                 * self.adler_zero.map_or(1.0, |az| (s - az.s_0) / az.s_norm)
         })
     }
+
+    fn pole_product(&self, _s: f64) -> f64 {
+        1.0
+        // (0..R).map(|a| (self.mrs[a].powi(2) - s)).sum()
+    }
+
     fn ikc_inv(&self, s: f64, channel: usize) -> SVector<Complex64, C> {
-        let c_mat = self.c_matrix(s);
         let i_mat = SMatrix::<Complex64, C, C>::identity();
         let k_mat = self.k_matrix(s);
-        let ikc_mat = i_mat + k_mat * c_mat;
+        let c_mat = self.c_matrix(s);
+        let ikc_mat = (i_mat + k_mat * c_mat).scale(self.pole_product(s));
         let ikc_inv_mat = ikc_mat.try_inverse().unwrap();
         ikc_inv_mat.row(channel).transpose()
     }
@@ -178,11 +184,11 @@ impl KMatrixF0 {
         Self(channel,
              KMatrixConstants {
                 g: SMatrix::<f64, 5, 5>::new(
-                     0.74987, -0.01257, 0.02736, -0.15102,  0.36103,
-                     0.06401,  0.00204, 0.77413,  0.50999,  0.13112,
-                    -0.23417, -0.01032, 0.72283,  0.11934,  0.36792,
-                     0.01570,  0.26700, 0.09214,  0.02742, -0.04025,
-                    -0.14242,  0.22780, 0.15981,  0.16272, -0.17397,
+                     0.74987, 0.06401, -0.23417,  0.01270, -0.14242,  
+                    -0.01257, 0.00204, -0.01032,  0.26700,  0.22780, 
+                     0.27536, 0.77413,  0.72283,  0.09214,  0.15981,  
+                    -0.15102, 0.50999,  0.11934,  0.02742,  0.16272, 
+                     0.36103, 0.13112,  0.36792, -0.04025, -0.17397,
                 ),
                 c: SMatrix::<f64, 5, 5>::new(
                      0.03728, 0.00000, -0.01398, -0.02203,  0.01397,
@@ -191,8 +197,8 @@ impl KMatrixF0 {
                     -0.02203, 0.00000,  0.03101, -0.13769, -0.06722,
                      0.01397, 0.00000, -0.04003, -0.06722, -0.28401,
                 ),
-                m1s: [0.13498, 0.26995, 0.49368, 0.54786, 0.54786],
-                m2s: [0.13498, 0.26995, 0.49761, 0.54786, 0.95778],
+                m1s: [0.1349768, 2.0 * 0.1349768, 0.493677, 0.547862, 0.547862],
+                m2s: [0.1349768, 2.0 * 0.1349768, 0.497611, 0.547862, 0.95778],
                 mrs: [0.51461, 0.90630, 1.23089, 1.46104, 1.69611],
                 adler_zero: Some(AdlerZero {
                     s_0: 0.0091125,
@@ -216,6 +222,7 @@ impl Node for KMatrixF0 {
                 let pvector_constants = SMatrix::<Complex64, 5, 5>::from_fn(|i, a| {
                     Complex64::from(barrier_mat[(i, a)]) * self.1.g[(i, a)]
                         / (self.1.mrs[a].powi(2) - s)
+                        * self.1.pole_product(s)
                 });
                 (self.1.ikc_inv(s, self.0), pvector_constants)
             })
@@ -275,8 +282,8 @@ impl KMatrixF2 {
                      0.00984, 0.00000, -0.07344,  0.05533,
                      0.01028, 0.00000,  0.05533, -0.05183,
                 ),
-                m1s: [0.13498, 0.26995, 0.49368, 0.54786],
-                m2s: [0.13498, 0.26995, 0.49761, 0.54786],
+                m1s: [0.1349768, 2.0 * 0.1349768, 0.493677, 0.547862],
+                m2s: [0.1349768, 2.0 * 0.1349768, 0.497611, 0.547862],
                 mrs: [1.15299, 1.48359, 1.72923, 1.96700],
                 adler_zero: None,
                 l: 2,
@@ -297,6 +304,7 @@ impl Node for KMatrixF2 {
                 let pvector_constants = SMatrix::<Complex64, 4, 4>::from_fn(|i, a| {
                     Complex64::from(barrier_mat[(i, a)]) * self.1.g[(i, a)]
                         / (self.1.mrs[a].powi(2) - s)
+                        * self.1.pole_product(s)
                 });
                 (self.1.ikc_inv(s, self.0), pvector_constants)
             })
@@ -350,8 +358,8 @@ impl KMatrixA0 {
                     0.00000, 0.00000,
                     0.00000, 0.00000
                 ),
-                m1s: [0.13498, 0.49368],
-                m2s: [0.54786, 0.49761],
+                m1s: [0.1349768, 0.493677],
+                m2s: [0.547862, 0.497611],
                 mrs: [0.95395, 1.26767],
                 adler_zero: None,
                 l: 0,
@@ -372,6 +380,7 @@ impl Node for KMatrixA0 {
                 let pvector_constants = SMatrix::<Complex64, 2, 2>::from_fn(|i, a| {
                     Complex64::from(barrier_mat[(i, a)]) * self.1.g[(i, a)]
                         / (self.1.mrs[a].powi(2) - s)
+                        * self.1.pole_product(s)
                 });
                 (self.1.ikc_inv(s, self.0), pvector_constants)
             })
@@ -421,8 +430,8 @@ impl KMatrixA2 {
                      0.00033, -0.21416, -0.06193,
                     -0.08707, -0.06193, -0.17435,
                 ),
-                m1s: [0.13498, 0.49368, 0.13498],
-                m2s: [0.54786, 0.49761, 0.95778],
+                m1s: [0.1349768, 0.493677, 0.1349768],
+                m2s: [0.547862, 0.497611, 0.95778],
                 mrs: [1.30080, 1.75351],
                 adler_zero: None,
                 l: 2,
@@ -443,6 +452,7 @@ impl Node for KMatrixA2 {
                 let pvector_constants = SMatrix::<Complex64, 3, 2>::from_fn(|i, a| {
                     Complex64::from(barrier_mat[(i, a)]) * self.1.g[(i, a)]
                         / (self.1.mrs[a].powi(2) - s)
+                        * self.1.pole_product(s)
                 });
                 (self.1.ikc_inv(s, self.0), pvector_constants)
             })
@@ -492,8 +502,8 @@ impl KMatrixRho {
                      0.00000, 0.00000,  0.00000,
                      0.07958, 0.00000, -0.60000,
                 ),
-                m1s: [0.13498, 0.26995, 0.49368],
-                m2s: [0.13498, 0.26995, 0.49761],
+                m1s: [0.1349768, 2.0 * 0.1349768, 0.493677],
+                m2s: [0.1349768, 2.0 * 0.1349768, 0.497611],
                 mrs: [0.71093, 1.58660],
                 adler_zero: None,
                 l: 1,
@@ -514,6 +524,7 @@ impl Node for KMatrixRho {
                 let pvector_constants = SMatrix::<Complex64, 3, 2>::from_fn(|i, a| {
                     Complex64::from(barrier_mat[(i, a)]) * self.1.g[(i, a)]
                         / (self.1.mrs[a].powi(2) - s)
+                        * self.1.pole_product(s)
                 });
                 (self.1.ikc_inv(s, self.0), pvector_constants)
             })
@@ -561,8 +572,8 @@ impl KMatrixPi1 {
                     1.05000,  0.15163,
                     0.15163, -0.24611,
                 ),
-                m1s: [0.13498, 0.13498],
-                m2s: [0.54786, 0.95778],
+                m1s: [0.1349768, 0.1349768],
+                m2s: [0.547862, 0.95778],
                 mrs: [1.38552],
                 adler_zero: None,
                 l: 1,
@@ -583,6 +594,7 @@ impl Node for KMatrixPi1 {
                 let pvector_constants = SMatrix::<Complex64, 2, 1>::from_fn(|i, a| {
                     Complex64::from(barrier_mat[(i, a)]) * self.1.g[(i, a)]
                         / (self.1.mrs[a].powi(2) - s)
+                        * self.1.pole_product(s)
                 });
                 (self.1.ikc_inv(s, self.0), pvector_constants)
             })

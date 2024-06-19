@@ -28,8 +28,15 @@ impl Node for TwoPiSDME {
             .par_iter()
             .map(|event| {
                 let resonance = event.daughter_p4s[0] + event.daughter_p4s[1];
+                let beam_res_vec = event.beam_p4.boost_along(&resonance).momentum();
+                let recoil_res_vec = event.recoil_p4.boost_along(&resonance).momentum();
                 let daughter_res_vec = event.daughter_p4s[0].boost_along(&resonance).momentum();
-                let (_, y, _, p) = self.frame.coordinates(&resonance, &daughter_res_vec, event);
+                let (_, y, _, p) = self.frame.coordinates(
+                    &beam_res_vec,
+                    &recoil_res_vec,
+                    &daughter_res_vec,
+                    event,
+                );
                 let big_phi = y.dot(&event.eps).atan2(
                     event
                         .beam_p4
@@ -122,10 +129,16 @@ impl Node for ThreePiSDME {
             .map(|event| {
                 let resonance =
                     event.daughter_p4s[0] + event.daughter_p4s[1] + event.daughter_p4s[2];
-                let p1_res_vec = event.daughter_p4s[0].boost_along(&resonance).momentum();
-                let p2_res_vec = event.daughter_p4s[1].boost_along(&resonance).momentum();
-                let daughter_res_vec = p1_res_vec.cross(&p2_res_vec).normalize();
-                let (_, y, _, p) = self.frame.coordinates(&resonance, &daughter_res_vec, event);
+                let daughter_res_vec = event.daughter_p4s[0].boost_along(&resonance).momentum();
+                let beam_res_vec = event.beam_p4.boost_along(&resonance).momentum();
+                let recoil_res_vec = event.recoil_p4.boost_along(&resonance).momentum();
+                let (_, y, _, p) = self.frame.coordinates(
+                    &beam_res_vec,
+                    &recoil_res_vec,
+                    &daughter_res_vec,
+                    event,
+                );
+
                 let big_phi = y.dot(&event.eps).atan2(
                     event
                         .beam_p4
