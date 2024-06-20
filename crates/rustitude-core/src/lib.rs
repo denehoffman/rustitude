@@ -289,11 +289,13 @@ pub mod prelude {
     pub use crate::errors::RustitudeError;
     pub use crate::four_momentum::FourMomentum;
     pub use crate::manager::{ExtendedLogLikelihood, Manager};
+    pub use nalgebra::Vector3;
     pub use num_complex::Complex64;
 }
 
 pub mod errors {
-    //!
+    //! This module contains an all-encompassing error enum that almost every crate method will
+    //! produce if it returns a Result.
     use pyo3::{exceptions::PyException, PyErr};
     use thiserror::Error;
 
@@ -342,6 +344,96 @@ pub mod errors {
         fn from(err: RustitudeError) -> Self {
             PyException::new_err(err.to_string())
         }
+    }
+}
+
+pub mod utils {
+    //! This module holds some convenience methods for writing nice test functions for Amplitudes.
+    use crate::prelude::*;
+
+    /// Generate a test event for the reaction $`\gamma p \to K_S K_S p`$.
+    pub fn generate_test_event() -> Event {
+        Event {
+            index: 0,
+            weight: -0.48,
+            beam_p4: FourMomentum::new(8.747920989990234, 0.0, 0.0, 8.747920989990234),
+            recoil_p4: FourMomentum::new(
+                1.0409027338027954,
+                0.11911032348871231,
+                0.37394723296165466,
+                0.22158582508563995,
+            ),
+            daughter_p4s: vec![
+                FourMomentum::new(
+                    3.136247158050537,
+                    -0.11177468299865723,
+                    0.2934262752532959,
+                    3.080557346343994,
+                ),
+                FourMomentum::new(
+                    5.509043216705322,
+                    -0.007335639093071222,
+                    -0.667373538017273,
+                    5.445777893066406,
+                ),
+            ],
+            eps: Vector3::from([0.3851095736026764, 0.022205278277397156, 0.0]),
+        }
+    }
+
+    /// Checks if two floating point numbers are essentially equal.
+    /// See [https://floating-point-gui.de/errors/comparison/](https://floating-point-gui.de/errors/comparison/).
+    pub fn is_close(a: f64, b: f64, epsilon: f64) -> bool {
+        let abs_a = f64::abs(a);
+        let abs_b = f64::abs(b);
+        let diff = f64::abs(a - b);
+        if a == b {
+            true
+        } else if a == 0.0 || b == 0.0 || (abs_a + abs_b < f64::MIN_POSITIVE) {
+            diff < (epsilon * f64::MIN_POSITIVE)
+        } else {
+            diff / f64::min(abs_a + abs_b, f64::MAX) < epsilon
+        }
+    }
+
+    /// A macro to assert if two floating point numbers are essentially equal. Similar to [`approx`] crate.
+    #[macro_export]
+    macro_rules! assert_is_close {
+        ($given:expr, $expected:expr) => {
+            match (&($given), &($expected)) {
+                (given, expected) => assert!(
+                    is_close(*given, *expected, 1e-7),
+                    "assert_is_close!({}, {})
+
+    a = {:?}
+    b = {:?}
+
+",
+                    stringify!($given),
+                    stringify!($expected),
+                    given,
+                    expected
+                ),
+            }
+        };
+        ($given:expr, $expected:expr, $eps:expr) => {
+            match (&($given), &($expected), &($eps)) {
+                (given, expected, eps) => assert!(
+                    is_close(*given, *expected, *eps),
+                    "assert_is_close!({}, {}, {})
+
+    a = {:?}
+    b = {:?}
+
+",
+                    stringify!($given),
+                    stringify!($expected),
+                    stringify!($eps),
+                    given,
+                    expected
+                ),
+            }
+        };
     }
 }
 

@@ -71,33 +71,21 @@ impl Debug for Parameter {
         if self.index.is_none() {
             write!(
                 f,
-                "< {} >[ {} (*{}*) ]({:?})({:?})",
-                self.amplitude, self.name, self.initial, self.index, self.fixed_index,
+                "Parameter(name={}, value={} (fixed), bounds=({}, {}), parent={})",
+                self.name, self.initial, self.bounds.0, self.bounds.1, self.amplitude
             )
         } else {
             write!(
                 f,
-                "< {} >[ {} ({}) ]({:?})({:?})",
-                self.amplitude, self.name, self.initial, self.index, self.fixed_index,
+                "Parameter(name={}, value={}, bounds=({}, {}), parent={})",
+                self.name, self.initial, self.bounds.0, self.bounds.1, self.amplitude
             )
         }
     }
 }
 impl Display for Parameter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if self.index.is_none() {
-            write!(
-                f,
-                "<{}>[ {} (*{}*) ]",
-                self.amplitude, self.name, self.initial
-            )
-        } else {
-            write!(
-                f,
-                "<{}>[ {} ({}) ]",
-                self.amplitude, self.name, self.initial
-            )
-        }
+        write!(f, "{}", self.name)
     }
 }
 
@@ -248,6 +236,14 @@ pub trait Node: Sync + Send + DynClone {
     /// are expected to be given as input to the [`Node::calculate`] method.
     fn parameters(&self) -> Vec<String> {
         vec![]
+    }
+
+    /// A convenience method for turning [`Node`]s into [`Amplitude`]s.
+    fn into_amplitude(self, name: &str) -> Amplitude
+    where
+        Self: std::marker::Sized + 'static,
+    {
+        Amplitude::new(name, self)
     }
 }
 dyn_clone::clone_trait_object!(Node);
@@ -611,7 +607,12 @@ impl AmpLike for Product {
     }
 
     fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
-        let res: Option<Complex64> = self.0.iter().map(|op| op.compute(cache)).product();
+        let mut values = self.0.iter().filter_map(|op| op.compute(cache)).peekable();
+        let res: Option<Complex64> = if values.peek().is_none() {
+            Some(Complex64::default())
+        } else {
+            Some(values.product())
+        };
         debug!(
             "Computing {:?} from cache: {:?}",
             self,
@@ -682,10 +683,12 @@ impl CohSum {
     )]
     pub fn norm_int(&self, cache: &[Option<Complex64>]) -> Option<f64> {
         let results = self.0.iter().map(|al| al.compute(cache));
-        iproduct!(results.clone(), results)
-            .map(|(a, b)| Some(a? * b?.conjugate()))
-            .sum::<Option<Complex64>>()
-            .map(|val| val.re)
+        Some(
+            iproduct!(results.clone(), results)
+                .filter_map(|(a, b)| Some(a? * b?.conjugate()))
+                .sum::<Complex64>()
+                .re,
+        )
     }
 
     /// Shortcut for computation using a cache of precomputed values. This method will return
@@ -694,11 +697,13 @@ impl CohSum {
     /// cached value. The computation is run across the [`CohSum`]'s terms, and the absolute square
     /// of the result is returned (coherent sum).
     pub fn compute(&self, cache: &[Option<Complex64>]) -> Option<f64> {
-        self.0
-            .iter()
-            .map(|al| al.compute(cache))
-            .sum::<Option<Complex64>>()
-            .map(|val| val.norm_sqr())
+        Some(
+            self.0
+                .iter()
+                .filter_map(|al| al.compute(cache))
+                .sum::<Complex64>()
+                .norm_sqr(),
+        )
     }
 
     /// Walks through a [`CohSum`] and collects all the contained [`Amplitude`]s recursively.
@@ -819,9 +824,8 @@ impl Model {
         Ok(self
             .cohsums
             .iter()
-            .map(|cohsum| cohsum.compute(&cache))
-            .sum::<Option<f64>>()
-            .unwrap_or_default())
+            .filter_map(|cohsum| cohsum.compute(&cache))
+            .sum::<f64>())
     }
     /// Computes the result of evaluating the terms in the model with the given [`Parameter`]s for
     /// the given [`Event`] by summing the result of [`CohSum::norm_int`] for each [`CohSum`]
