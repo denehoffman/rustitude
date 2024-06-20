@@ -63,6 +63,12 @@ impl Manager {
     /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
     /// [`Model::compute`] for more information.
     pub fn par_evaluate(&self, parameters: &[f64]) -> Result<Vec<f64>, RustitudeError> {
+        if self.model.contains_python_amplitudes {
+            return Err(RustitudeError::PythonError(
+                "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!"
+                    .to_string(),
+            ));
+        }
         let mut output = Vec::with_capacity(self.dataset.len());
         let pars: Vec<f64> = self
             .model
@@ -110,6 +116,12 @@ impl Manager {
         note = "Manager::par_evaluate is faster and should give equivalent results"
     )]
     pub fn par_norm_int(&self, parameters: &[f64]) -> Result<Vec<f64>, RustitudeError> {
+        if self.model.contains_python_amplitudes {
+            return Err(RustitudeError::PythonError(
+                "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!"
+                    .to_string(),
+            ));
+        }
         let mut output = Vec::with_capacity(self.dataset.len());
         self.dataset
             .events

@@ -245,6 +245,14 @@ pub trait Node: Sync + Send + DynClone {
     {
         Amplitude::new(name, self)
     }
+
+    /// A flag which says if the [`Node`] was written in Python. This matters because the GIL
+    /// cannot currently play nice with [`rayon`] multithreading. You will probably never need to
+    /// set this, as the only object which returns `True` is in the `py_rustitude` crate which
+    /// binds this crate to Python.
+    fn is_python_node(&self) -> bool {
+        false
+    }
 }
 dyn_clone::clone_trait_object!(Node);
 
@@ -729,6 +737,9 @@ pub struct Model {
     pub amplitudes: Vec<Amplitude>,
     /// The unique parameters located within all [`CohSum`]s.
     pub parameters: Vec<Parameter>,
+    /// Flag which is `True` iff at least one [`Amplitude`] is written in Python and has a [`Node`]
+    /// for which [`Node::is_python_node`] returns `True`.
+    pub contains_python_amplitudes: bool,
 }
 impl Debug for Model {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -791,10 +802,12 @@ impl Model {
             .enumerate()
             .map(|(i, (amp_name, par_name))| Parameter::new(amp_name, par_name, i))
             .collect();
+        let contains_python_amplitudes = amplitudes.iter().any(|amp| amp.node.is_python_node());
         Self {
             cohsums: cohsums.into_iter().map(CohSum::from).collect(),
             amplitudes,
             parameters,
+            contains_python_amplitudes,
         }
     }
     /// Computes the result of evaluating the terms in the model with the given [`Parameter`]s for

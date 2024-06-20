@@ -1161,6 +1161,7 @@ dependencies = [
  "indoc",
  "libc",
  "memoffset",
+ "num-complex",
  "parking_lot",
  "portable-atomic",
  "pyo3-build-config",

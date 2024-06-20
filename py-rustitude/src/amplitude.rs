@@ -1,4 +1,4 @@
-use pyo3::prelude::*;
+use pyo3::{prelude::*, types::PyList};
 use rustitude_core::amplitude as rust;
 use rustitude_core::amplitude::AmpLike as rust_AmpLike;
 use std::ops::{Add, Mul};
@@ -82,6 +82,10 @@ impl Amplitude {
 }
 #[pymethods]
 impl Amplitude {
+    #[new]
+    fn from_pynode(name: &str, pynode: PyNode) -> Self {
+        Self(rust::Amplitude::new(name, pynode))
+    }
     #[getter]
     fn name(&self) -> String {
         self.0.name.clone()
@@ -142,6 +146,92 @@ impl Amplitude {
     }
     fn imag(&self) -> Imag {
         Imag(self.0.imag())
+    }
+}
+
+#[pyclass(name = "Node")]
+#[derive(Clone)]
+struct PyNode {
+    node: Py<PyAny>,
+}
+#[pymethods]
+impl PyNode {
+    #[new]
+    pub fn new(node: Py<PyAny>) -> Self {
+        PyNode { node }
+    }
+    pub fn precalculate(&mut self, dataset: crate::dataset::Dataset) -> Result<(), PyErr> {
+        rust::Node::precalculate(self, &dataset.into()).map_err(PyErr::from)
+    }
+    pub fn calculate(
+        &self,
+        parameters: Vec<f64>,
+        event: crate::dataset::Event,
+    ) -> Result<rustitude_core::prelude::Complex64, PyErr> {
+        rust::Node::calculate(self, &parameters, &event.into()).map_err(PyErr::from)
+    }
+    pub fn parameters(&self) -> Vec<String> {
+        rust::Node::parameters(self)
+    }
+    #[allow(clippy::wrong_self_convention)]
+    pub fn into_amplitude(&self, name: &str) -> Amplitude {
+        Amplitude(rust::Node::into_amplitude(self.clone(), name))
+    }
+}
+
+impl rust::Node for PyNode {
+    fn precalculate(
+        &mut self,
+        dataset: &rustitude::prelude::Dataset,
+    ) -> Result<(), rustitude::prelude::RustitudeError> {
+        Python::with_gil(|py| {
+            let py_dataset = crate::dataset::Dataset::from(dataset.clone());
+            let py_dataset_obj = Py::new(py, py_dataset).unwrap();
+            match self
+                .node
+                .call_method1(py, "precalculate", (py_dataset_obj,))
+            {
+                Ok(_) => Ok(()),
+                Err(e) => Err(rustitude_core::errors::RustitudeError::from(e)),
+            }
+        })
+    }
+
+    fn calculate(
+        &self,
+        parameters: &[f64],
+        event: &rustitude::prelude::Event,
+    ) -> Result<rustitude::prelude::Complex64, rustitude::prelude::RustitudeError> {
+        Python::with_gil(|py| {
+            let py_parameters = PyList::new_bound(py, parameters);
+            let py_event = crate::dataset::Event::from(event.clone());
+            let py_event_obj = Py::new(py, py_event).unwrap();
+            match self
+                .node
+                .call_method1(py, "calculate", (py_parameters, py_event_obj))
+            {
+                Ok(result) => {
+                    let complex: rustitude::prelude::Complex64 = result.extract(py)?;
+                    Ok(complex)
+                }
+                Err(e) => Err(rustitude_core::errors::RustitudeError::from(e)),
+            }
+        })
+    }
+
+    fn parameters(&self) -> Vec<String> {
+        Python::with_gil(|py| {
+            self.node
+                .bind(py)
+                .call_method("parameters", (), None)
+                .unwrap()
+                .extract()
+                .unwrap()
+        })
+    }
+
+    fn is_python_node(&self) -> bool {
+        true
     }
 }
 
@@ -523,6 +613,7 @@ pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Amplitude>()?;
     m.add_class::<CohSum>()?;
     m.add_class::<Model>()?;
+    m.add_class::<PyNode>()?;
     m.add_function(wrap_pyfunction!(scalar, m)?)?;
     m.add_function(wrap_pyfunction!(cscalar, m)?)?;
     m.add_function(wrap_pyfunction!(pcscalar, m)?)?;
