@@ -237,6 +237,14 @@ pub trait Node: Sync + Send + DynClone {
     fn parameters(&self) -> Vec<String> {
         vec![]
     }
+
+    /// A convenience method for turning [`Node`]s into [`Amplitude`]s.
+    fn into_amplitude(self, name: &str) -> Amplitude
+    where
+        Self: std::marker::Sized + 'static,
+    {
+        Amplitude::new(name, self)
+    }
 }
 dyn_clone::clone_trait_object!(Node);
 
