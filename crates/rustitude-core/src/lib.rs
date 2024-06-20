@@ -333,16 +333,25 @@ pub mod errors {
         AmplitudeNotFoundError(String),
 
         #[allow(missing_docs)]
-        #[error("invalid parameter value")]
+        #[error("Invalid parameter value: {0}")]
         InvalidParameterValue(String),
 
         #[allow(missing_docs)]
-        #[error("evaluation error")]
+        #[error("Evaluation error: {0}")]
         EvaluationError(String),
+
+        #[allow(missing_docs)]
+        #[error("Python error: {0}")]
+        PythonError(String),
     }
     impl From<RustitudeError> for PyErr {
         fn from(err: RustitudeError) -> Self {
             PyException::new_err(err.to_string())
+        }
+    }
+    impl From<PyErr> for RustitudeError {
+        fn from(err: PyErr) -> Self {
+            Self::PythonError(err.to_string())
         }
     }
 }
