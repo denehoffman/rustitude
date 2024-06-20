@@ -289,6 +289,7 @@ pub mod prelude {
     pub use crate::errors::RustitudeError;
     pub use crate::four_momentum::FourMomentum;
     pub use crate::manager::{ExtendedLogLikelihood, Manager};
+    pub use nalgebra::Vector3;
     pub use num_complex::Complex64;
 }
 

@@ -1,7 +1,6 @@
 use std::{fmt::Display, str::FromStr};
 
 use factorial::Factorial;
-use nalgebra::Vector3;
 use rustitude_core::prelude::*;
 use sphrs::Coordinates;
 
