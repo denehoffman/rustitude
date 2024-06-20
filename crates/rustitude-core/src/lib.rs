@@ -294,7 +294,8 @@ pub mod prelude {
 }
 
 pub mod errors {
-    //!
+    //! This module contains an all-encompassing error enum that almost every crate method will
+    //! produce if it returns a Result.
     use pyo3::{exceptions::PyException, PyErr};
     use thiserror::Error;
 
