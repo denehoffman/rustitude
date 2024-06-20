@@ -607,7 +607,12 @@ impl AmpLike for Product {
     }
 
     fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
-        let res: Option<Complex64> = self.0.iter().map(|op| op.compute(cache)).product();
+        let mut values = self.0.iter().filter_map(|op| op.compute(cache)).peekable();
+        let res: Option<Complex64> = if values.peek().is_none() {
+            Some(Complex64::default())
+        } else {
+            Some(values.product())
+        };
         debug!(
             "Computing {:?} from cache: {:?}",
             self,
@@ -678,10 +683,12 @@ impl CohSum {
     )]
     pub fn norm_int(&self, cache: &[Option<Complex64>]) -> Option<f64> {
         let results = self.0.iter().map(|al| al.compute(cache));
-        iproduct!(results.clone(), results)
-            .map(|(a, b)| Some(a? * b?.conjugate()))
-            .sum::<Option<Complex64>>()
-            .map(|val| val.re)
+        Some(
+            iproduct!(results.clone(), results)
+                .filter_map(|(a, b)| Some(a? * b?.conjugate()))
+                .sum::<Complex64>()
+                .re,
+        )
     }
 
     /// Shortcut for computation using a cache of precomputed values. This method will return
@@ -690,11 +697,13 @@ impl CohSum {
     /// cached value. The computation is run across the [`CohSum`]'s terms, and the absolute square
     /// of the result is returned (coherent sum).
     pub fn compute(&self, cache: &[Option<Complex64>]) -> Option<f64> {
-        self.0
-            .iter()
-            .map(|al| al.compute(cache))
-            .sum::<Option<Complex64>>()
-            .map(|val| val.norm_sqr())
+        Some(
+            self.0
+                .iter()
+                .filter_map(|al| al.compute(cache))
+                .sum::<Complex64>()
+                .norm_sqr(),
+        )
     }
 
     /// Walks through a [`CohSum`] and collects all the contained [`Amplitude`]s recursively.
@@ -815,9 +824,8 @@ impl Model {
         Ok(self
             .cohsums
             .iter()
-            .map(|cohsum| cohsum.compute(&cache))
-            .sum::<Option<f64>>()
-            .unwrap_or_default())
+            .filter_map(|cohsum| cohsum.compute(&cache))
+            .sum::<f64>())
     }
     /// Computes the result of evaluating the terms in the model with the given [`Parameter`]s for
     /// the given [`Event`] by summing the result of [`CohSum::norm_int`] for each [`CohSum`]
