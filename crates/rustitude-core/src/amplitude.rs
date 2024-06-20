@@ -71,33 +71,21 @@ impl Debug for Parameter {
         if self.index.is_none() {
             write!(
                 f,
-                "< {} >[ {} (*{}*) ]({:?})({:?})",
-                self.amplitude, self.name, self.initial, self.index, self.fixed_index,
+                "Parameter(name={}, value={} (fixed), bounds=({}, {}), parent={})",
+                self.name, self.initial, self.bounds.0, self.bounds.1, self.amplitude
             )
         } else {
             write!(
                 f,
-                "< {} >[ {} ({}) ]({:?})({:?})",
-                self.amplitude, self.name, self.initial, self.index, self.fixed_index,
+                "Parameter(name={}, value={}, bounds=({}, {}), parent={})",
+                self.name, self.initial, self.bounds.0, self.bounds.1, self.amplitude
             )
         }
     }
 }
 impl Display for Parameter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if self.index.is_none() {
-            write!(
-                f,
-                "<{}>[ {} (*{}*) ]",
-                self.amplitude, self.name, self.initial
-            )
-        } else {
-            write!(
-                f,
-                "<{}>[ {} ({}) ]",
-                self.amplitude, self.name, self.initial
-            )
-        }
+        write!(f, "{}", self.name)
     }
 }
 
