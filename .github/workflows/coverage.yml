@@ -14,10 +14,8 @@ jobs:
           version: latest
           use-tool-cache: true
       - name: Generate code coverage
-        uses: actions-rs/cargo@v1
-        with:
-          command: tarpaulin
-          args: --verbose --all-features --workspace --timeout 120 --out xml
+        run: |
+          cargo +nightly tarpaulin --verbose --all-features --workspace --timeout 120 --out xml
       - name: Upload to codecov.io
         uses: codecov/codecov-action@main
         with:
