@@ -7,5 +7,9 @@ pub fn criterion_read_dataset(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, criterion_read_dataset);
+criterion_group! {
+    name = benches;
+    config = Criterion::default().sample_size(20);
+    targets = criterion_read_dataset
+}
 criterion_main!(benches);

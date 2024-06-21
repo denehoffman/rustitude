@@ -18,9 +18,12 @@ from .amplitude import (
     Imag,
     Product,
     CohSum,
+    Node,
 )
 from .dataset import Event, Dataset
 from .manager import ExtendedLogLikelihood, Manager
+
+from abc import ABCMeta, abstractmethod
 
 __version__: str = __version__
 
@@ -47,6 +50,8 @@ __all__ = [
     'Model',
     'gluex',
     'open',
+    'Node',
+    'PyNode',
 ]
 
 
@@ -82,3 +87,17 @@ def open(
         tree_arrays['Py_Beam'] = np.zeros_like(tree_arrays['Py_Beam'])
         tree_arrays['EPS'] = [np.array([ex, ey, 0]) for ex, ey in zip(eps_x, eps_y)]
     return Dataset.from_dict(tree_arrays)
+
+
+class PyNode(metaclass=ABCMeta):
+    @abstractmethod
+    def precalculate(self, dataset: Dataset) -> None:
+        pass
+
+    @abstractmethod
+    def calculate(self, parameters: list[float], event: Event) -> complex:
+        pass
+
+    @abstractmethod
+    def parameters(self) -> list[str]:
+        pass

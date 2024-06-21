@@ -22,3 +22,6 @@ publish:
   cargo publish -p rustitude-gluex
   cargo publish -p rustitude
   cargo publish -p py-rustitude
+
+pydoc:
+  sphinx-build -M html docs/source/ docs/build/

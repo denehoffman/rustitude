@@ -1,4 +1,4 @@
-use pyo3::prelude::*;
+use pyo3::{exceptions::PyRuntimeError, prelude::*};
 use rustitude_core::manager as rust;
 
 use crate::{
@@ -76,12 +76,22 @@ impl Manager {
     }
     #[pyo3(name = "__call__")]
     fn call(&self, parameters: Vec<f64>) -> PyResult<Vec<f64>> {
+        if self.0.model.contains_python_amplitudes {
+            return Err(PyRuntimeError::new_err(
+                "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!",
+            ));
+        }
         self.0.par_evaluate(&parameters).map_err(PyErr::from)
     }
     fn evaluate(&self, parameters: Vec<f64>) -> PyResult<Vec<f64>> {
         self.0.evaluate(&parameters).map_err(PyErr::from)
     }
     fn par_evaluate(&self, parameters: Vec<f64>) -> PyResult<Vec<f64>> {
+        if self.0.model.contains_python_amplitudes {
+            return Err(PyRuntimeError::new_err(
+                "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!",
+            ));
+        }
         self.0.par_evaluate(&parameters).map_err(PyErr::from)
     }
     #[deprecated(
@@ -96,6 +106,11 @@ impl Manager {
         note = "Model::evaluate is faster and should give equivalent results"
     )]
     fn par_norm_int(&self, parameters: Vec<f64>) -> PyResult<Vec<f64>> {
+        if self.0.model.contains_python_amplitudes {
+            return Err(PyRuntimeError::new_err(
+                "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!",
+            ));
+        }
         self.0.par_norm_int(&parameters).map_err(PyErr::from)
     }
     fn get_amplitude(&self, amplitude_name: &str) -> PyResult<Amplitude> {
@@ -239,6 +254,13 @@ impl ExtendedLogLikelihood {
         num_threads: usize,
         weighted: bool,
     ) -> PyResult<f64> {
+        if self.0.data_manager.model.contains_python_amplitudes
+            || self.0.mc_manager.model.contains_python_amplitudes
+        {
+            return Err(PyRuntimeError::new_err(
+                "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!",
+            ));
+        }
         self.0
             .par_norm_int(&parameters, num_threads, weighted)
             .map_err(PyErr::from)
@@ -248,6 +270,13 @@ impl ExtendedLogLikelihood {
     }
     #[pyo3(signature = (parameters, *, num_threads = 1))]
     fn par_evaluate(&self, parameters: Vec<f64>, num_threads: usize) -> PyResult<f64> {
+        if self.0.data_manager.model.contains_python_amplitudes
+            || self.0.mc_manager.model.contains_python_amplitudes
+        {
+            return Err(PyRuntimeError::new_err(
+                "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!",
+            ));
+        }
         self.0
             .par_evaluate(&parameters, num_threads)
             .map_err(PyErr::from)
@@ -264,6 +293,13 @@ impl ExtendedLogLikelihood {
         dataset: Dataset,
         num_threads: usize,
     ) -> PyResult<Vec<f64>> {
+        if self.0.data_manager.model.contains_python_amplitudes
+            || self.0.mc_manager.model.contains_python_amplitudes
+        {
+            return Err(PyRuntimeError::new_err(
+                "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!",
+            ));
+        }
         self.0
             .par_intensity(&parameters, &dataset.into(), num_threads)
             .map_err(PyErr::from)

@@ -63,6 +63,12 @@ impl Manager {
     /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
     /// [`Model::compute`] for more information.
     pub fn par_evaluate(&self, parameters: &[f64]) -> Result<Vec<f64>, RustitudeError> {
+        if self.model.contains_python_amplitudes {
+            return Err(RustitudeError::PythonError(
+                "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!"
+                    .to_string(),
+            ));
+        }
         let mut output = Vec::with_capacity(self.dataset.len());
         let pars: Vec<f64> = self
             .model
@@ -110,6 +116,12 @@ impl Manager {
         note = "Manager::par_evaluate is faster and should give equivalent results"
     )]
     pub fn par_norm_int(&self, parameters: &[f64]) -> Result<Vec<f64>, RustitudeError> {
+        if self.model.contains_python_amplitudes {
+            return Err(RustitudeError::PythonError(
+                "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!"
+                    .to_string(),
+            ));
+        }
         let mut output = Vec::with_capacity(self.dataset.len());
         self.dataset
             .events
@@ -320,6 +332,14 @@ impl ExtendedLogLikelihood {
         parameters: &[f64],
         num_threads: usize,
     ) -> Result<f64, RustitudeError> {
+        if self.data_manager.model.contains_python_amplitudes
+            || self.mc_manager.model.contains_python_amplitudes
+        {
+            return Err(RustitudeError::PythonError(
+                "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!"
+                    .to_string(),
+            ));
+        }
         create_pool(num_threads)?.install(|| {
             let data_res = self.data_manager.par_evaluate(parameters)?;
             let data_weights = self.data_manager.dataset.weights();
@@ -373,6 +393,14 @@ impl ExtendedLogLikelihood {
         dataset: &Dataset,
         num_threads: usize,
     ) -> Result<Vec<f64>, RustitudeError> {
+        if self.data_manager.model.contains_python_amplitudes
+            || self.mc_manager.model.contains_python_amplitudes
+        {
+            return Err(RustitudeError::PythonError(
+                "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!"
+                    .to_string(),
+            ));
+        }
         let manager = Manager::new(&self.data_manager.model, dataset)?;
         create_pool(num_threads)?.install(|| manager.par_evaluate(parameters))
     }
@@ -414,6 +442,14 @@ impl ExtendedLogLikelihood {
         num_threads: usize,
         weighted: bool,
     ) -> Result<f64, RustitudeError> {
+        if self.data_manager.model.contains_python_amplitudes
+            || self.mc_manager.model.contains_python_amplitudes
+        {
+            return Err(RustitudeError::PythonError(
+                "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!"
+                    .to_string(),
+            ));
+        }
         create_pool(num_threads)?.install(|| {
             let mc_norm_int = self.mc_manager.par_norm_int(parameters)?;
             if weighted {

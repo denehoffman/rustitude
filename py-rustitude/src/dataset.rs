@@ -69,6 +69,11 @@ impl From<rust::Dataset> for Dataset {
         Dataset(dataset)
     }
 }
+impl From<&rust::Dataset> for Dataset {
+    fn from(dataset: &rust::Dataset) -> Self {
+        Dataset(dataset.clone())
+    }
+}
 impl From<Dataset> for rust::Dataset {
     fn from(dataset: Dataset) -> Self {
         dataset.0
