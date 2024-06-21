@@ -9,16 +9,25 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/denehoffman/rustitude/releases" alt="Releases">
+    <img alt="GitHub Release" src="https://img.shields.io/github/v/release/denehoffman/rustitude?style=for-the-badge&logo=github"></a>
   <a href="https://github.com/denehoffman/rustitude/commits/main/" alt="Lastest Commits">
-    <img src="https://img.shields.io/github/last-commit/denehoffman/rustitude/main" /></a>
+    <img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/denehoffman/rustitude?style=for-the-badge&logo=github"></a>
   <a href="https://github.com/denehoffman/rustitude/actions" alt="Build Status">
-    <img src="https://img.shields.io/github/actions/workflow/status/denehoffman/rustitude/rust.yml" /></a>
+    <img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/denehoffman/rustitude/rust.yml?style=for-the-badge&logo=github"></a>
   <a href="LICENSE" alt="License">
-    <img src="https://img.shields.io/github/license/denehoffman/rustitude" /></a>
+    <img alt="GitHub License" src="https://img.shields.io/github/license/denehoffman/rustitude?style=for-the-badge"></a>
   <a href="https://crates.io/crates/rustitude" alt="Rustitude on crates.io">
-    <img src="https://img.shields.io/crates/v/rustitude" /></a>
+    <img alt="Crates.io Version" src="https://img.shields.io/crates/v/rustitude?style=for-the-badge&logo=rust&logoColor=red&color=red"></a>
   <a href="https://docs.rs/rustitude" alt="Rustitude documentation on docs.rs">
-    <img src="https://img.shields.io/docsrs/rustitude" /></a>
+    <img alt="docs.rs" src="https://img.shields.io/docsrs/rustitude?style=for-the-badge&logo=rust&logoColor=red"></a>
+  <a href="https://app.codecov.io/github/denehoffman/rustitude/tree/main/" alt="Codecov coverage report">
+    <img alt="Codecov" src="https://img.shields.io/codecov/c/github/denehoffman/rustitude?style=for-the-badge&logo=codecov"></a>
+  <a href="https://pypi.org/project/rustitude/" alt="View project on PyPI">
+  <img alt="PyPI - Version" src="https://img.shields.io/pypi/v/rustitude?style=for-the-badge&logo=python&logoColor=yellow&labelColor=blue"></a>
+  <a href="https://rustitude.readthedocs.io/en/latest/", alt="Rustitude documentation on readthedocs.io">
+    <img alt="Read the Docs" src="https://img.shields.io/readthedocs/rustitude?style=for-the-badge&logo=python&logoColor=yellow&labelColor=blue"></a>
+
 </p>
 
 ### Table of Contents:
@@ -32,7 +41,7 @@
 
 This project began with a desire to make a fast but easy to use interface for fitting amplitudes to particle physics data. That being said, there are performant methods such as [`AmpTools`](https://github.com/mashephe/AmpTools), which is written in C++, but in my personal experience, it can be a bit tricky to use and extend, and it generally requires a lot of boilerplate code to generate new amplitudes or plotting scripts. On the other hand, there are also libraries like [`PyPWA`](https://github.com/JeffersonLab/PyPWA/) (written in Python) which seem like they could be easy to use, but often fail in this aspect due to Python's limiting syntax, speed issues, and a general lack of documentation and ongoing development. There have been attempts to bridge the gap between AmpTools and Python, most recently (and successfully) [`PyAmpTools`](https://github.com/lan13005/PyAmpTools). The difficulty with this method is that it relies on PyROOT, which also means you need ROOT installed (and built with your version of Python). For now, I'll spare you the anti-ROOT rant and just say that ROOT should be an opt-in, not a requirement. So where does that leave `rustitude`?
 
-As the name suggests, `rustitude` was written in Rust, so let's get the obvious downside out of the way: not many particle physicists know how to write Rust code. Hopefully, this will change over the next decade (and there has already been some [support](https://www.whitehouse.gov/oncd/briefing-room/2024/02/26/memory-safety-statements-of-support/) from the US government, of all places). While Rust carries the disadvantage of relative obscurity compared to C++, it also has many benefits. No `null` means no null references (Tony Hoare's ["billion dollar mistake"](https://web.archive.org/web/20090628071208/http://qconlondon.com/london-2009/speaker/Tony+Hoare)). Pointers (called references in Rust) are always valid, a guarantee made by a very helpful and only occasionally frustrating borrow checker. Rust "crates" are set up in a way which encourages documentation (see [`rustitude-core`'s documentation](https://docs.rs/rustitude-core/)), and the basic syntax is fairly easy to learn for people who have been using optional type checking in Python. Perhaps one of the biggest benefits of Rust is how easy it is to employ [parallelization](https://crates.io/crates/rayon), but the two reasons I like it most are that it's incredibly easy to write Python bindings (that's what this library is after all) and it has a package manager. This second point is important -- unlike C/C++, where a developer is swamped with some menagerie `Makefile`, `CMakeLists.txt`, or some `scons` monstrosity which may only work on "X" system and only if you install and use `make`, `cmake`, `g++`, or whatever (oh yeah, and you made sure all your external dependencies are linked correctly, right? Right?), Rust supports adding a package by simply adding a line to `Cargo.toml` (or using the `cargo add` command). In many ways, package management in Rust is actually simpler than Python, since there's only one prefered method of creating and managing projects, formatting, linting, and compiling.
+As the name suggests, `rustitude` was written in Rust, so let's get the obvious downside out of the way: not many particle physicists know how to write Rust code. Hopefully, this will change over the next decade (and there has already been some [support](https://www.whitehouse.gov/oncd/briefing-room/2024/02/26/memory-safety-statements-of-support/) from the US government, of all places). While Rust carries the disadvantage of relative obscurity compared to C++, it also has many benefits. No `null` means no null references (Tony Hoare's ["billion dollar mistake"](https://web.archive.org/web/20090628071208/http://qconlondon.com/london-2009/speaker/Tony+Hoare)). In Rust, references are always valid, a guarantee made by a very helpful and only occasionally frustrating borrow checker. Rust "crates" are set up in a way which encourages documentation (see [`rustitude-core`'s documentation](https://docs.rs/rustitude-core/)), and the basic syntax is fairly easy to learn for people who have been using optional type checking in Python. Perhaps one of the biggest benefits of Rust is how easy it is to employ [parallelization](https://crates.io/crates/rayon), but the two reasons I like it most are that it's incredibly easy to write Python bindings (that's what this library is after all) and it has a package manager. This second point is important -- unlike C/C++, where a developer is swamped with some menagerie `Makefile`, `CMakeLists.txt`, or some `scons` monstrosity which may only work on "X" system and only if you install and use `make`, `cmake`, `g++`, or whatever (oh yeah, and you made sure all your external dependencies are linked correctly, right? Right?), Rust supports adding a package by simply adding a line to `Cargo.toml` (or using the `cargo add` command). In many ways, package management in Rust is actually simpler than Python, since there's only one prefered method of creating and managing projects, formatting, linting, and compiling.
 
 Now I've covered why I don't like some of the existing solutions, and why I chose to use Rust, but what does this project have that makes it stand out? Here are some reasons to entice you:
 
@@ -112,7 +121,7 @@ m_mc = rt.Manager(mod, ds_mc)
 
 nll = rt.ExtendedLogLikelihood(m_data, m_mc)
 
-res = nll([10.0] * mod.get_n_free())
+res = nll([10.0] * mod.n_free, num_threads=4) # automatic CPU parallelism without GIL
 print(res) # prints some value for the NLL
 ```
 

@@ -9,16 +9,24 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/denehoffman/rustitude/releases" alt="Releases">
+    <img alt="GitHub Release" src="https://img.shields.io/github/v/release/denehoffman/rustitude?style=for-the-badge&logo=github"></a>
   <a href="https://github.com/denehoffman/rustitude/commits/main/" alt="Lastest Commits">
-    <img src="https://img.shields.io/github/last-commit/denehoffman/rustitude/main" /></a>
+    <img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/denehoffman/rustitude?style=for-the-badge&logo=github"></a>
   <a href="https://github.com/denehoffman/rustitude/actions" alt="Build Status">
-    <img src="https://img.shields.io/github/actions/workflow/status/denehoffman/rustitude/rust.yml" /></a>
+    <img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/denehoffman/rustitude/rust.yml?style=for-the-badge&logo=github"></a>
   <a href="LICENSE" alt="License">
-    <img src="https://img.shields.io/github/license/denehoffman/rustitude" /></a>
-  <a href="https://crates.io/crates/rustitude-gluex" alt="Rustitude-GlueX on crates.io">
-    <img src="https://img.shields.io/crates/v/rustitude-gluex" /></a>
-  <a href="https://docs.rs/rustitude-gluex/latest/rustitude_gluex/" alt="Rustitude-GlueX documentation on docs.rs">
-    <img src="https://img.shields.io/docsrs/rustitude-gluex" /></a>
+    <img alt="GitHub License" src="https://img.shields.io/github/license/denehoffman/rustitude?style=for-the-badge"></a>
+  <a href="https://crates.io/crates/rustitude" alt="Rustitude on crates.io">
+    <img alt="Crates.io Version" src="https://img.shields.io/crates/v/rustitude?style=for-the-badge&logo=rust&logoColor=red&color=red"></a>
+  <a href="https://docs.rs/rustitude" alt="Rustitude documentation on docs.rs">
+    <img alt="docs.rs" src="https://img.shields.io/docsrs/rustitude?style=for-the-badge&logo=rust&logoColor=red"></a>
+  <a href="https://app.codecov.io/github/denehoffman/rustitude/tree/main/" alt="Codecov coverage report">
+    <img alt="Codecov" src="https://img.shields.io/codecov/c/github/denehoffman/rustitude?style=for-the-badge&logo=codecov"></a>
+  <a href="https://pypi.org/project/rustitude/" alt="View project on PyPI">
+  <img alt="PyPI - Version" src="https://img.shields.io/pypi/v/rustitude?style=for-the-badge&logo=python&logoColor=yellow&labelColor=blue"></a>
+  <a href="https://rustitude.readthedocs.io/en/latest/", alt="Rustitude documentation on readthedocs.io">
+    <img alt="Read the Docs" src="https://img.shields.io/readthedocs/rustitude?style=for-the-badge&logo=python&logoColor=yellow&labelColor=blue"></a>
 </p>
 
 ### Table of Contents
@@ -67,7 +75,7 @@ There are a few amplitudes from [halld_sim](https://github.com/JeffersonLab/hall
 | [Pi0ReggeModel.cc](https://github.com/JeffersonLab/halld_sim/blob/master/src/libraries/AMPTOOLS_AMPS/Pi0ReggeModel.cc)                   |                                                                                                     |           :x:            |
 | [Pi0SAID.cc](https://github.com/JeffersonLab/halld_sim/blob/master/src/libraries/AMPTOOLS_AMPS/Pi0SAID.cc)                               |                                                                                                     |           :x:            |
 | [PiPlusRegge.cc](https://github.com/JeffersonLab/halld_sim/blob/master/src/libraries/AMPTOOLS_AMPS/PiPlusRegge.cc)                       |                                                                                                     |           :x:            |
-| [Piecewise.cc](https://github.com/JeffersonLab/halld_sim/blob/master/src/libraries/AMPTOOLS_AMPS/Piecewise.cc)                           | `rustitude::amplitude::PiecewiseM`                                                                   |    :white_check_mark:    |
+| [Piecewise.cc](https://github.com/JeffersonLab/halld_sim/blob/master/src/libraries/AMPTOOLS_AMPS/Piecewise.cc)                           | `rustitude::amplitude::PiecewiseM`                                                                  |    :white_check_mark:    |
 | [SinglePS.cc](https://github.com/JeffersonLab/halld_sim/blob/master/src/libraries/AMPTOOLS_AMPS/SinglePS.cc)                             | `rustitude-gluex::harmonics::OnePS`                                                                 |    :white_check_mark:    |
 | [ThreePiAngles.cc](https://github.com/JeffersonLab/halld_sim/blob/master/src/libraries/AMPTOOLS_AMPS/ThreePiAngles.cc)                   |                                                                                                     |        :bangbang:        |
 | [ThreePiAnglesSchilling.cc](https://github.com/JeffersonLab/halld_sim/blob/master/src/libraries/AMPTOOLS_AMPS/ThreePiAnglesSchilling.cc) | `rustitude-gluex::sdmes::ThreePiSDME`                                                               |    :white_check_mark:    |
