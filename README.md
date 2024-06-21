@@ -84,7 +84,7 @@ s0n = gluex.harmonics.Zlm('Z00-', 0, 0, reflectivity='-')
 d2p = gluex.harmonics.Zlm('Z22+', 2, 2, reflectivity='+')
 
 # Next, let's put them together into a model
-# The API supports addition, and multiplication and has additional methods for the absolute-square (`norm_sqr`), real part (`real`) and imaginary part (`imag`).
+# The API supports addition and multiplication and has additional methods for the real part (`real`) and imaginary part (`imag`).
 pos_re_sum = (f0p + a0p) * s0p.real() + (f2 + a2) * d2p.real()
 pos_im_sum = (f0p + a0p) * s0p.imag() + (f2 + a2) * d2p.imag()
 neg_re_sum = (f0n + a0n) * s0n.real()
