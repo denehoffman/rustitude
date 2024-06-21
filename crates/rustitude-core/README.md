@@ -173,7 +173,7 @@ pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
 }
 ```
 
-Rather than bind the `struct` directly, we prefer to bind a function which returns a `PyAmpOp`, a wrapper struct that implements `#[pyclass]` and can be used in the Python interface. The `pyo3_module` function will then need to be added to the `rustitude` crate's [`lib.rs`](https://github.com/denehoffman/rustitude/blob/main/src/lib.rs) file. This step is a bit problematic, since it means new amplitudes cannot be added without modifying `rustitude` itself. For this reason, developers may want to work with their own fork of the repository rather than using the one installed by `cargo` if they wish to use Python. This is a limitation of `pyo3`, which doesn't recognize class bindings across crates.
+Rather than bind the `struct` directly, we prefer to bind a function which returns a `PyAmpOp`, a wrapper struct that implements `#[pyclass]` and can be used in the Python interface. The `pyo3_module` function will then need to be added to the `py-rustitude` crate's [`lib.rs`](https://github.com/denehoffman/rustitude/blob/main/py-rustitude/src/lib.rs) file. This step is a bit problematic, since it means new amplitudes cannot be added without modifying `py-rustitude` itself. For this reason, developers may want to work with their own fork of the repository rather than using the one installed by `cargo` if they wish to use Python with custom amplitudes. This is a limitation of `pyo3`, which doesn't recognize class bindings across crates. There is also a mechanism to implement `Amplitude`s via pure Python classes, but it is currently incompatible with multithreading due to the GIL (see the [Python docs](https://rustitude.readthedocs.io/en/latest/custom_nodes.html)).
 
 # TODOs
 
