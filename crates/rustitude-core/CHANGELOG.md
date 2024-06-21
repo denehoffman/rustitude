@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.0](https://github.com/denehoffman/rustitude/compare/rustitude-core-v3.2.0...rustitude-core-v3.3.0) - 2024-06-20
+
+### Added
+- add rustitude_core::utils mod to hold some nice testing functions
+- re-export nalgebra::Vector3 in rustitude_core::prelude since it gets used so often
+- add convenience method for turning Nodes into Amplitudes
+
+### Fixed
+- corrected behavior of deactivated Amplitudes
+
+### Other
+- Merge pull request [#11](https://github.com/denehoffman/rustitude/pull/11) from denehoffman/development
+- add tests for some GlueX amplitudes as well as some of the main crate functionality
+- add a bit of documentation to rustitude_core::errors module
+- update parameter display methods
+
+## [3.2.0](https://github.com/denehoffman/rustitude/compare/rustitude-core-v3.1.0...rustitude-core-v3.2.0) - 2024-06-19
+
+### Added
+- add some logging in for datasets and amplitudes
+- add (de)activate_all methods for Model, Manager, and ExtendedLogLikelihood
+
+### Fixed
+- temporarily remove automatic COM boost in dataset loading for parquet
+- update some Debug methods for clearer printing in downstream
+- the pol_in_beam convention actually sets Pz_Beam = 0, this corrects for that
+- deprecated methods should still work properly
+
+### Other
+- move important methods to beginning of impl block
+- add some notes to the Model::compute method
+- deprecate norm_int methods
+- remove print_tree and replace it with Debug
+
 ## [3.1.0](https://github.com/denehoffman/rustitude/compare/rustitude-core-v3.0.0...rustitude-core-v3.1.0) - 2024-06-17
 
 ### Added
