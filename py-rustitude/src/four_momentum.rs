@@ -19,7 +19,7 @@ impl From<rust::FourMomentum> for FourMomentum {
 #[pymethods]
 impl FourMomentum {
     #[new]
-    pub const fn new(e: f64, px: f64, py: f64, pz: f64) -> Self {
+    pub fn new(e: f64, px: f64, py: f64, pz: f64) -> Self {
         Self(rust::FourMomentum::new(e, px, py, pz))
     }
     fn __repr__(&self) -> String {

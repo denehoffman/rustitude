@@ -68,7 +68,8 @@ impl Display for FourMomentum {
 
 impl FourMomentum {
     #[cfg(not(feature = "simd"))]
-    pub const fn new(e: f64, px: f64, py: f64, pz: f64) -> Self {
+    #[allow(clippy::missing_const_for_fn)]
+    pub fn new(e: f64, px: f64, py: f64, pz: f64) -> Self {
         //! Create a new [`FourMomentum`] from energy and momentum components.
         //!
         //! Components are listed in the order $` (E, p_x, p_y, p_z) `$
@@ -76,6 +77,7 @@ impl FourMomentum {
     }
 
     #[cfg(feature = "simd")]
+    #[allow(clippy::missing_const_for_fn)]
     pub fn new(e: f64, px: f64, py: f64, pz: f64) -> Self {
         //! Create a new [`FourMomentum`] from energy and momentum components.
         //!
