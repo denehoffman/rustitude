@@ -83,9 +83,11 @@ def open(
     if pol_in_beam:
         eps_x = tree_arrays['Px_Beam']
         eps_y = tree_arrays['Py_Beam']
+        eps_z = tree_arrays['Pz_Beam']
         tree_arrays['Px_Beam'] = np.zeros_like(tree_arrays['Px_Beam'])
         tree_arrays['Py_Beam'] = np.zeros_like(tree_arrays['Py_Beam'])
-        tree_arrays['EPS'] = [np.array([ex, ey, 0]) for ex, ey in zip(eps_x, eps_y)]
+        tree_arrays['Pz_Beam'] = tree_arrays['E_Beam']
+        tree_arrays['EPS'] = [np.array([ex, ey, ez]) for ex, ey, ez in zip(eps_x, eps_y, eps_z)]
     return Dataset.from_dict(tree_arrays)
 
 
