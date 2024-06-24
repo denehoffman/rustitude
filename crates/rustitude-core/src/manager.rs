@@ -301,10 +301,10 @@ impl ExtendedLogLikelihood {
     pub fn evaluate(&self, parameters: &[f64]) -> Result<f64, RustitudeError> {
         let data_res = self.data_manager.evaluate(parameters)?;
         let data_weights = self.data_manager.dataset.weights();
-        let n_data = self.data_manager.dataset.len() as f64;
+        let n_data = data_weights.iter().sum::<f64>();
         let mc_norm_int = self.mc_manager.evaluate(parameters)?;
         let mc_weights = self.mc_manager.dataset.weights();
-        let n_mc = self.mc_manager.dataset.len() as f64;
+        let n_mc = mc_weights.iter().sum::<f64>();
         let ln_l = (data_res
             .iter()
             .zip(data_weights)
@@ -343,10 +343,10 @@ impl ExtendedLogLikelihood {
         create_pool(num_threads)?.install(|| {
             let data_res = self.data_manager.par_evaluate(parameters)?;
             let data_weights = self.data_manager.dataset.weights();
-            let n_data = self.data_manager.dataset.len() as f64;
+            let n_data = data_weights.iter().sum::<f64>();
             let mc_norm_int = self.mc_manager.par_evaluate(parameters)?;
             let mc_weights = self.mc_manager.dataset.weights();
-            let n_mc = self.mc_manager.dataset.len() as f64;
+            let n_mc = mc_weights.iter().sum::<f64>();
             let ln_l = (data_res
                 .par_iter()
                 .zip(data_weights)
@@ -362,8 +362,9 @@ impl ExtendedLogLikelihood {
         })
     }
 
-    /// Evaluate the unnormalized intensity function over the given [`Dataset`] with the given
-    /// free parameters.
+    /// Evaluate the normalized intensity function over the given [`Dataset`] with the given
+    /// free parameters. This is intended to be used to plot a model over the dataset, usually with
+    /// the generated or accepted Monte-Carlo as the input.
     ///
     /// # Errors
     ///
@@ -376,11 +377,21 @@ impl ExtendedLogLikelihood {
         dataset: &Dataset,
     ) -> Result<Vec<f64>, RustitudeError> {
         let manager = Manager::new(&self.data_manager.model, dataset)?;
-        manager.evaluate(parameters)
+        let data_len_weighted: f64 = self.data_manager.dataset.weights().iter().sum();
+        let ds_len_weighted: f64 = dataset.weights().iter().sum();
+        manager.evaluate(parameters).map(|r_vec| {
+            r_vec
+                .iter()
+                .zip(dataset.events.read().iter())
+                .map(|(r, e)| r * data_len_weighted / ds_len_weighted * e.weight)
+                .collect()
+        })
     }
-    /// Evaluate the unnormalized intensity function over the given [`Dataset`] with the given
-    /// free parameters. This method also allows the user to input a maximum number of threads
-    /// to use in the calculation. This version uses a parallel loop over events.
+    /// Evaluate the normalized intensity function over the given [`Dataset`] with the given
+    /// free parameters. This is intended to be used to plot a model over the dataset, usually
+    /// with the generated or accepted Monte-Carlo as the input. This method also allows the
+    /// user to input a maximum number of threads to use in the calculation. This version uses
+    /// a parallel loop over events.
     ///
     /// # Errors
     ///
@@ -402,7 +413,17 @@ impl ExtendedLogLikelihood {
             ));
         }
         let manager = Manager::new(&self.data_manager.model, dataset)?;
-        create_pool(num_threads)?.install(|| manager.par_evaluate(parameters))
+        let data_len_weighted: f64 = self.data_manager.dataset.weights().iter().sum();
+        let ds_len_weighted: f64 = dataset.weights().iter().sum();
+        create_pool(num_threads)?.install(|| {
+            manager.par_evaluate(parameters).map(|r_vec| {
+                r_vec
+                    .iter()
+                    .zip(dataset.events.read().iter())
+                    .map(|(r, e)| r * data_len_weighted / ds_len_weighted * e.weight)
+                    .collect()
+            })
+        })
     }
 
     /// Find the normalization integral for the [`Model`] over the [`Dataset`] with the given
