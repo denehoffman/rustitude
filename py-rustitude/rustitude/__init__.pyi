@@ -9,6 +9,8 @@ class Parameter:
     name: str
     index: int | None
     fixed_index: int | None
+    free: bool
+    fixed: bool
     initial: float
     bounds: tuple[float, float]
 

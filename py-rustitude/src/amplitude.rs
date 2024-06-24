@@ -41,6 +41,14 @@ impl Parameter {
         self.0.fixed_index
     }
     #[getter]
+    fn free(&self) -> bool {
+        self.0.index.is_some()
+    }
+    #[getter]
+    fn fixed(&self) -> bool {
+        self.0.index.is_none()
+    }
+    #[getter]
     fn initial(&self) -> f64 {
         self.0.initial
     }
