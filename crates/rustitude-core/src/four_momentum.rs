@@ -277,3 +277,50 @@ impl std::iter::Sum<Self> for FourMomentum {
         iter.fold(Self::default(), |a, b| a + b)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::assert_is_close;
+    use crate::utils::*;
+    #[test]
+    fn test_set_components() {
+        let mut p = FourMomentum::default();
+        p.set_e(1.0);
+        p.set_px(2.0);
+        p.set_py(3.0);
+        p.set_pz(4.0);
+        assert_is_close!(p.e(), 1.0);
+        assert_is_close!(p.px(), 2.0);
+        assert_is_close!(p.py(), 3.0);
+        assert_is_close!(p.pz(), 4.0);
+    }
+
+    #[test]
+    fn test_sum() {
+        let a = FourMomentum::new(0.1, 0.2, 0.3, 0.4);
+        let b = FourMomentum::new(1.0, 2.0, 3.0, 4.0);
+        let c = FourMomentum::new(10.0, 20.0, 30.0, 40.0);
+        let d: FourMomentum = [a, b, c].into_iter().sum();
+        assert_is_close!(d.e(), 11.1);
+        assert_is_close!(d.px(), 22.2);
+        assert_is_close!(d.py(), 33.3);
+        assert_is_close!(d.pz(), 44.4);
+    }
+
+    #[test]
+    fn test_ops() {
+        let a = FourMomentum::new(0.1, 0.2, 0.3, 0.4);
+        let b = FourMomentum::new(1.0, 2.0, 3.0, 4.0);
+        let c = a + b;
+        let d = b - a;
+        assert_is_close!(c.e(), 1.1);
+        assert_is_close!(c.px(), 2.2);
+        assert_is_close!(c.py(), 3.3);
+        assert_is_close!(c.pz(), 4.4);
+        assert_is_close!(d.e(), 0.9);
+        assert_is_close!(d.px(), 1.8);
+        assert_is_close!(d.py(), 2.7);
+        assert_is_close!(d.pz(), 3.6);
+    }
+}
