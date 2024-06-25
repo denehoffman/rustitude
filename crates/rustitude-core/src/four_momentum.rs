@@ -10,9 +10,6 @@ use std::{
     ops::{Add, Sub},
 };
 
-#[cfg(feature = "simd")]
-use std::simd::prelude::*;
-
 /// Struct which holds energy and three-momentum as a four-vector.
 ///
 /// A four-momentum structure with helpful methods for boosts.
@@ -28,28 +25,8 @@ use std::simd::prelude::*;
 /// let vec_a = FourMomentum::new(1.3, 0.2, 0.3, 0.1);
 /// let vec_b = FourMomentum::new(4.2, 0.5, 0.4, 0.5);
 /// ```
-#[cfg(not(feature = "simd"))]
 #[derive(Debug, Clone, PartialEq, Copy, Default)]
 pub struct FourMomentum([f64; 4]);
-
-/// Struct which holds energy and three-momentum as a four-vector.
-///
-/// A four-momentum structure with helpful methods for boosts.
-///
-/// This is the basic structure of a Lorentz four-vector
-/// of the form $`(E, \vec{p})`$ where $`E`$ is the energy and $`\vec{p}`$ is the
-/// momentum.
-///
-/// # Examples
-/// ```
-/// use rustitude_core::prelude::*;
-///
-/// let vec_a = FourMomentum::new(1.3, 0.2, 0.3, 0.1);
-/// let vec_b = FourMomentum::new(4.2, 0.5, 0.4, 0.5);
-/// ```
-#[cfg(feature = "simd")]
-#[derive(Debug, Clone, PartialEq, Copy, Default)]
-pub struct FourMomentum(f64x4);
 
 impl Eq for FourMomentum {}
 
@@ -67,22 +44,12 @@ impl Display for FourMomentum {
 }
 
 impl FourMomentum {
-    #[cfg(not(feature = "simd"))]
     #[allow(clippy::missing_const_for_fn)]
     pub fn new(e: f64, px: f64, py: f64, pz: f64) -> Self {
         //! Create a new [`FourMomentum`] from energy and momentum components.
         //!
         //! Components are listed in the order $` (E, p_x, p_y, p_z) `$
         Self([e, px, py, pz])
-    }
-
-    #[cfg(feature = "simd")]
-    #[allow(clippy::missing_const_for_fn)]
-    pub fn new(e: f64, px: f64, py: f64, pz: f64) -> Self {
-        //! Create a new [`FourMomentum`] from energy and momentum components.
-        //!
-        //! Components are listed in the order $` (E, p_x, p_y, p_z) `$
-        Self([e, px, py, pz].into())
     }
 
     /// Returns the energy of the given [`FourMomentum`].
@@ -243,70 +210,30 @@ impl From<&FourMomentum> for Vector4<f64> {
     }
 }
 
-#[cfg(not(feature = "simd"))]
 impl From<Vector4<f64>> for FourMomentum {
     fn from(value: Vector4<f64>) -> Self {
         Self([value[0], value[1], value[2], value[3]])
     }
 }
 
-#[cfg(feature = "simd")]
-impl From<Vector4<f64>> for FourMomentum {
-    fn from(value: Vector4<f64>) -> Self {
-        Self(Simd::from_array([value[0], value[1], value[2], value[3]]))
-    }
-}
-
-#[cfg(not(feature = "simd"))]
 impl From<&Vector4<f64>> for FourMomentum {
     fn from(value: &Vector4<f64>) -> Self {
         Self([value[0], value[1], value[2], value[3]])
     }
 }
 
-#[cfg(feature = "simd")]
-impl From<&Vector4<f64>> for FourMomentum {
-    fn from(value: &Vector4<f64>) -> Self {
-        Self(Simd::from_array([value[0], value[1], value[2], value[3]]))
-    }
-}
-
-#[cfg(not(feature = "simd"))]
 impl From<Vec<f64>> for FourMomentum {
     fn from(value: Vec<f64>) -> Self {
         Self([value[0], value[1], value[2], value[3]])
     }
 }
 
-#[cfg(feature = "simd")]
-impl From<Vec<f64>> for FourMomentum {
-    fn from(value: Vec<f64>) -> Self {
-        Self(Simd::from_array([value[0], value[1], value[2], value[3]]))
-    }
-}
-
-#[cfg(not(feature = "simd"))]
 impl From<&Vec<f64>> for FourMomentum {
     fn from(value: &Vec<f64>) -> Self {
         Self([value[0], value[1], value[2], value[3]])
     }
 }
 
-#[cfg(feature = "simd")]
-impl From<&Vec<f64>> for FourMomentum {
-    fn from(value: &Vec<f64>) -> Self {
-        Self(Simd::from_array([value[0], value[1], value[2], value[3]]))
-    }
-}
-
-#[cfg(feature = "simd")]
-impl From<FourMomentum> for f64x4 {
-    fn from(value: FourMomentum) -> Self {
-        value.0
-    }
-}
-
-#[cfg(not(feature = "simd"))]
 impl Add for FourMomentum {
     type Output = Self;
     fn add(self, rhs: Self) -> Self::Output {
@@ -319,14 +246,6 @@ impl Add for FourMomentum {
     }
 }
 
-#[cfg(feature = "simd")]
-impl Add for FourMomentum {
-    type Output = FourMomentum;
-    fn add(self, rhs: Self) -> Self::Output {
-        FourMomentum(self.0 + rhs.0)
-    }
-}
-
 impl Add for &FourMomentum {
     type Output = <FourMomentum as Add>::Output;
     fn add(self, rhs: &FourMomentum) -> Self::Output {
@@ -334,7 +253,6 @@ impl Add for &FourMomentum {
     }
 }
 
-#[cfg(not(feature = "simd"))]
 impl Sub for FourMomentum {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self::Output {
@@ -344,14 +262,6 @@ impl Sub for FourMomentum {
             self.0[2] - rhs.0[2],
             self.0[3] - rhs.0[3],
         ])
-    }
-}
-
-#[cfg(feature = "simd")]
-impl Sub for FourMomentum {
-    type Output = FourMomentum;
-    fn sub(self, rhs: Self) -> Self::Output {
-        FourMomentum(self.0 - rhs.0)
     }
 }
 
