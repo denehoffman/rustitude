@@ -272,8 +272,8 @@ impl Sub for &FourMomentum {
     }
 }
 
-impl<'a> std::iter::Sum<&'a Self> for FourMomentum {
-    fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
-        iter.fold(Self::default(), |a, b| a + *b)
+impl std::iter::Sum<Self> for FourMomentum {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Self::default(), |a, b| a + b)
     }
 }

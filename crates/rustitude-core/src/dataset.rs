@@ -501,7 +501,7 @@ impl Dataset {
                 .clone()
                 .unwrap_or_else(|| vec![0, 1])
                 .iter()
-                .map(|i| &e.daughter_p4s[*i])
+                .map(|i| e.daughter_p4s[*i])
                 .sum();
             p4.m()
         };

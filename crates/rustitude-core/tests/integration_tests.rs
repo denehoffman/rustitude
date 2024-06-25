@@ -9,7 +9,7 @@ fn test_masses() {
     assert_is_close!(event.recoil_p4.m(), 0.9382720);
     assert_is_close!(event.daughter_p4s[0].m(), 0.497611, 1e-4);
     assert_is_close!(event.daughter_p4s[1].m(), 0.497611, 1e-4);
-    let resonance: FourMomentum = event.daughter_p4s.iter().sum();
+    let resonance: FourMomentum = event.daughter_p4s.into_iter().sum();
     assert_is_close!(resonance.m(), 1.3742740);
 }
 
