@@ -667,38 +667,6 @@ impl AsTree for CohSum {
     }
 }
 impl CohSum {
-    /// Function which returns a sum of all cross terms inside a coherent sum.
-    ///
-    /// Take the following coherent sum, where $`\vec{p}`$ are input parameters $`e`$ is an
-    /// event, and $`f_i`$ is the $`i`$th term in the sum:
-    ///
-    /// ```math
-    /// \left| \sum_{i\in\text{terms}} f_i(\vec{p}, e) \right|^2
-    /// ```
-    ///
-    /// This function will then return
-    ///
-    /// ```math
-    /// \sum_{i\in\text{terms}} \sum_{j\in\text{terms}} f_i(\vec{p}, e) f_j^*(\vec{p}, e)
-    /// ```
-    ///
-    /// This should be used to compute normalization integrals. Note that if on of the terms is
-    /// [`None`], this function will not add any products which contain that term. This can be used
-    /// to turn terms on and off.
-    #[deprecated(
-        since = "0.7.1",
-        note = "CohSum::compute is faster and should give equivalent results"
-    )]
-    pub fn norm_int(&self, cache: &[Option<Complex64>]) -> Option<f64> {
-        let results = self.0.iter().map(|al| al.compute(cache));
-        Some(
-            iproduct!(results.clone(), results)
-                .filter_map(|(a, b)| Some(a? * b?.conjugate()))
-                .sum::<Complex64>()
-                .re,
-        )
-    }
-
     /// Shortcut for computation using a cache of precomputed values. This method will return
     /// [`None`] if the cache value at the corresponding [`Amplitude`]'s
     /// [`Amplitude::cache_position`] is also [`None`], otherwise it just returns the corresponding
@@ -839,36 +807,6 @@ impl Model {
             .iter()
             .filter_map(|cohsum| cohsum.compute(&cache))
             .sum::<f64>())
-    }
-    /// Computes the result of evaluating the terms in the model with the given [`Parameter`]s for
-    /// the given [`Event`] by summing the result of [`CohSum::norm_int`] for each [`CohSum`]
-    /// contained in the [`Model`].
-    ///
-    /// # Errors
-    ///
-    /// This method yields a [`RustitudeError`] if any of the [`Amplitude::calculate`] steps fail.
-    #[deprecated(
-        since = "0.7.1",
-        note = "Model::compute is faster and should give equivalent results"
-    )]
-    pub fn norm_int(&self, parameters: &[f64], event: &Event) -> Result<f64, RustitudeError> {
-        let cache: Vec<Option<Complex64>> = self
-            .amplitudes
-            .iter()
-            .map(|amp| {
-                if amp.active {
-                    amp.calculate(parameters, event).map(Some)
-                } else {
-                    Ok(None)
-                }
-            })
-            .collect::<Result<Vec<Option<Complex64>>, RustitudeError>>()?;
-        Ok(self
-            .cohsums
-            .iter()
-            .map(|cohsum| cohsum.norm_int(&cache))
-            .sum::<Option<f64>>()
-            .unwrap_or_default())
     }
     /// Registers the [`Model`] with the [`Dataset`] by [`Amplitude::register`]ing each
     /// [`Amplitude`] and setting the proper cache position and parameter starting index.
