@@ -103,6 +103,8 @@ impl Dataset {
     fn __getitem__(&self, idx: isize) -> PyResult<Py<Event>> {
         Ok(Python::with_gil(|py| Py::new(py, self.events()[idx as usize].clone())).unwrap())
     }
+
+    #[pyo3(signature = (range, bins, daughter_indices=None))]
     fn split_m(
         &self,
         range: (f64, f64),
