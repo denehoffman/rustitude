@@ -108,13 +108,12 @@ impl Dataset {
         range: (f64, f64),
         bins: usize,
         daughter_indices: Option<Vec<usize>>,
-    ) -> (Vec<Self>, Self, Self) {
-        let (binned_data, underflow, overflow) = self.0.split_m(range, bins, daughter_indices);
-        (
-            binned_data.into_iter().map(Dataset::from).collect(),
-            underflow.into(),
-            overflow.into(),
-        )
+    ) -> (Vec<Vec<usize>>, Vec<usize>, Vec<usize>) {
+        self.0.split_m(range, bins, daughter_indices)
+    }
+
+    fn get_bootstrap_indices(&self, seed: usize) -> Vec<usize> {
+        self.0.get_bootstrap_indices(seed)
     }
 
     #[staticmethod]

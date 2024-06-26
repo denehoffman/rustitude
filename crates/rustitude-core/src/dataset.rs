@@ -70,9 +70,9 @@
 //! operation. There is also a convenience method, [`Dataset::split_m`], to split the dataset by
 //! the mass of the summed four-momentum of any of the daughter particles, specified by their
 //! index.
-use std::{fmt::Display, fs::File, path::Path, sync::Arc};
+use std::{fmt::Display, fs::File, iter::repeat_with, path::Path, sync::Arc};
 
-use itertools::izip;
+use itertools::{izip, Either, Itertools};
 use nalgebra::Vector3;
 use oxyroot::{ReaderTree, RootFile, Slice};
 use parking_lot::RwLock;
@@ -487,15 +487,26 @@ impl Dataset {
         self.events.read_arc().iter().map(|e| e.weight).collect()
     }
 
+    /// Retrieves the weights from the events in the dataset which have the given indices.
+    pub fn weights_indexed(&self, indices: &[usize]) -> Vec<f64> {
+        indices
+            .iter()
+            .map(|index| self.events.read_arc()[*index].weight)
+            .collect()
+    }
+
     /// Splits the dataset by the mass of the combination of specified daughter particles in the
     /// event. If no daughters are given, the first and second particle are assumed to form the
-    /// desired combination.
+    /// desired combination. This method returns [`Vec<usize>`]s corresponding to the indices of
+    /// events in each bin, the underflow bin, and the overflow bin respectively. This is intended
+    /// to be used in conjunction with
+    /// [`Manager::evaluate_indexed`](`crate::manager::Manager::evaluate_indexed`).
     pub fn split_m(
         &self,
         range: (f64, f64),
         bins: usize,
         daughter_indices: Option<Vec<usize>>,
-    ) -> (Vec<Self>, Self, Self) {
+    ) -> (Vec<Vec<usize>>, Vec<usize>, Vec<usize>) {
         let mass = |e: &Event| {
             let p4: FourMomentum = daughter_indices
                 .clone()
@@ -505,7 +516,7 @@ impl Dataset {
                 .sum();
             p4.m()
         };
-        self.clone().split(mass, range, bins) // TODO: fix clone here eventually
+        self.get_binned_indices(mass, range, bins)
     }
 
     /// Generates a new [`Dataset`] from a Parquet file.
@@ -827,58 +838,61 @@ impl Dataset {
         self.events.read().len()
     }
 
-    /// Selects events in the dataset using the given query and remove them from the [`Dataset`],
-    /// returning them in a new [`Dataset`]. The original [`Dataset`] will then contain the
-    /// "rejected" events, events for which the query returned `false`.
-    ///
-    /// See also: [`Dataset::reject`]
-    pub fn select(&mut self, query: impl Fn(&Event) -> bool + Sync + Send) -> Self {
-        let (mut selected, mut rejected): (Vec<_>, Vec<_>) =
-            self.events.write().par_drain(..).partition(query);
-        selected
-            .par_iter_mut()
-            .enumerate()
-            .for_each(|(i, event)| event.index = i);
-        rejected
-            .par_iter_mut()
-            .enumerate()
-            .for_each(|(i, event)| event.index = i);
-        self.events = Arc::new(RwLock::new(selected));
-        Self::new(rejected)
+    /// Returns a set of indices which represent a bootstrapped [`Dataset`]. This method is to be
+    /// used in conjunction with
+    /// [`Manager::evaluate_indexed`](crate::manager::Manager::evaluate_indexed).
+    pub fn get_bootstrap_indices(&self, seed: usize) -> Vec<usize> {
+        fastrand::seed(seed as u64);
+        repeat_with(|| fastrand::usize(0..self.len()))
+            .take(self.len())
+            .collect()
     }
 
-    /// Removes events from the dataset if the query returns `true` and returns them in a new
-    /// [`Dataset`]. The original [`Dataset`] will contain events for which the query returned
-    /// `true`.
-    ///
-    /// See also: [`Dataset::select`]
-    pub fn reject(&mut self, query: impl Fn(&Event) -> bool + Sync + Send) -> Self {
-        self.select(|event| !query(event))
+    /// Selects indices of events in a dataset using the given query. Indices of events for which
+    /// the query returns `true` will end up in the first member of the returned tuple, and indices
+    /// of events which return `false` will end up in the second member.
+    pub fn get_selected_indices(
+        &self,
+        query: impl Fn(&Event) -> bool + Sync + Send,
+    ) -> (Vec<usize>, Vec<usize>) {
+        self.events.read_arc().par_iter().partition_map(|event| {
+            if query(event) {
+                Either::Left(event.index)
+            } else {
+                Either::Right(event.index)
+            }
+        })
     }
 
-    /// Splits the dataset into bins of the specified variable derived from an [`Event`]. This
-    /// method returns a [`Vec<Dataset>`] containing the binned datasets, an underflow [`Dataset`]
-    /// (events which are below the lower range), and an overflow [`Dataset`] (events above the
-    /// upper range) in that order.
-    pub fn split(
-        mut self,
+    /// Splits the dataset by the given query. This method returns [`Vec<usize>`]s corresponding to
+    /// the indices of events in each bin, the underflow bin, and the overflow bin respectively.
+    /// This is intended to be used in conjunction with
+    /// [`Manager::evaluate_indexed`](`crate::manager::Manager::evaluate_indexed`).
+    pub fn get_binned_indices(
+        &self,
         variable: impl Fn(&Event) -> f64 + Sync + Send,
         range: (f64, f64),
         nbins: usize,
-    ) -> (Vec<Self>, Self, Self) {
+    ) -> (Vec<Vec<usize>>, Vec<usize>, Vec<usize>) {
         let mut bins: Vec<f64> = Vec::with_capacity(nbins + 1);
         let width = (range.1 - range.0) / nbins as f64;
         for m in 0..=nbins {
             bins.push(width.mul_add(m as f64, range.0));
         }
-        let mut out: Vec<Self> = Vec::with_capacity(nbins);
-        let underflow: Self = self.reject(|event: &Event| variable(event) < bins[0]);
-        let overflow: Self = self.reject(|event: &Event| variable(event) > bins[bins.len() - 1]);
-        // now the ends are trimmed off of self
-        bins.into_iter().skip(1).for_each(|ub| {
-            let bin_contents = self.reject(|event| variable(event) < ub);
-            out.push(bin_contents);
-        });
-        (out, underflow, overflow)
+        let (underflow, _) = self.get_selected_indices(|event| variable(event) < bins[0]);
+        let (overflow, _) =
+            self.get_selected_indices(|event| variable(event) >= bins[bins.len() - 1]);
+        let binned_indices = bins
+            .into_iter()
+            .tuple_windows()
+            .map(|(lb, ub)| {
+                let (sel, _) = self.get_selected_indices(|event| {
+                    let res = variable(event);
+                    lb <= res && res < ub
+                });
+                sel
+            })
+            .collect();
+        (binned_indices, underflow, overflow)
     }
 }

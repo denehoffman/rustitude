@@ -86,6 +86,11 @@ impl Manager {
     fn evaluate(&self, parameters: Vec<f64>) -> PyResult<Vec<f64>> {
         self.0.evaluate(&parameters).map_err(PyErr::from)
     }
+    fn evaluate_indexed(&self, parameters: Vec<f64>, indices: Vec<usize>) -> PyResult<Vec<f64>> {
+        self.0
+            .evaluate_indexed(&parameters, &indices)
+            .map_err(PyErr::from)
+    }
     fn par_evaluate(&self, parameters: Vec<f64>) -> PyResult<Vec<f64>> {
         if self.0.model.contains_python_amplitudes {
             return Err(PyRuntimeError::new_err(
@@ -94,24 +99,19 @@ impl Manager {
         }
         self.0.par_evaluate(&parameters).map_err(PyErr::from)
     }
-    #[deprecated(
-        since = "0.7.1",
-        note = "Model::evaluate is faster and should give equivalent results"
-    )]
-    fn norm_int(&self, parameters: Vec<f64>) -> PyResult<Vec<f64>> {
-        self.0.norm_int(&parameters).map_err(PyErr::from)
-    }
-    #[deprecated(
-        since = "0.7.1",
-        note = "Model::evaluate is faster and should give equivalent results"
-    )]
-    fn par_norm_int(&self, parameters: Vec<f64>) -> PyResult<Vec<f64>> {
+    fn par_evaluate_indexed(
+        &self,
+        parameters: Vec<f64>,
+        indices: Vec<usize>,
+    ) -> PyResult<Vec<f64>> {
         if self.0.model.contains_python_amplitudes {
             return Err(PyRuntimeError::new_err(
                 "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!",
             ));
         }
-        self.0.par_norm_int(&parameters).map_err(PyErr::from)
+        self.0
+            .par_evaluate_indexed(&parameters, &indices)
+            .map_err(PyErr::from)
     }
     fn get_amplitude(&self, amplitude_name: &str) -> PyResult<Amplitude> {
         self.0
@@ -239,38 +239,18 @@ impl ExtendedLogLikelihood {
     fn new(data_manager: Manager, mc_manager: Manager) -> Self {
         rust::ExtendedLogLikelihood::new(data_manager.into(), mc_manager.into()).into()
     }
-    #[pyo3(signature = (parameters, *, weighted = true))]
-    #[deprecated(
-        since = "0.7.1",
-        note = "ExtendedLogLikelihood::evaluate is faster and should give equivalent results"
-    )]
-    fn norm_int(&self, parameters: Vec<f64>, weighted: bool) -> PyResult<f64> {
-        self.0.norm_int(&parameters, weighted).map_err(PyErr::from)
-    }
-    #[pyo3(signature = (parameters, *, num_threads = 1, weighted = true))]
-    #[deprecated(
-        since = "0.7.1",
-        note = "ExtendedLogLikelihood::par_evaluate is faster and should give equivalent results"
-    )]
-    fn par_norm_int(
-        &self,
-        parameters: Vec<f64>,
-        num_threads: usize,
-        weighted: bool,
-    ) -> PyResult<f64> {
-        if self.0.data_manager.model.contains_python_amplitudes
-            || self.0.mc_manager.model.contains_python_amplitudes
-        {
-            return Err(PyRuntimeError::new_err(
-                "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!",
-            ));
-        }
-        self.0
-            .par_norm_int(&parameters, num_threads, weighted)
-            .map_err(PyErr::from)
-    }
     fn evaluate(&self, parameters: Vec<f64>) -> PyResult<f64> {
         self.0.evaluate(&parameters).map_err(PyErr::from)
+    }
+    fn evaluate_indexed(
+        &self,
+        parameters: Vec<f64>,
+        indices_data: Vec<usize>,
+        indices_mc: Vec<usize>,
+    ) -> PyResult<f64> {
+        self.0
+            .evaluate_indexed(&parameters, &indices_data, &indices_mc)
+            .map_err(PyErr::from)
     }
     #[pyo3(signature = (parameters, *, num_threads = 1))]
     fn par_evaluate(&self, parameters: Vec<f64>, num_threads: usize) -> PyResult<f64> {
@@ -285,16 +265,48 @@ impl ExtendedLogLikelihood {
             .par_evaluate(&parameters, num_threads)
             .map_err(PyErr::from)
     }
+    #[pyo3(signature = (parameters, indices_data, indices_mc, *, num_threads = 1))]
+    fn par_evaluate_indexed(
+        &self,
+        parameters: Vec<f64>,
+        indices_data: Vec<usize>,
+        indices_mc: Vec<usize>,
+        num_threads: usize,
+    ) -> PyResult<f64> {
+        if self.0.data_manager.model.contains_python_amplitudes
+            || self.0.mc_manager.model.contains_python_amplitudes
+        {
+            return Err(PyRuntimeError::new_err(
+                "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!",
+            ));
+        }
+        self.0
+            .par_evaluate_indexed(&parameters, &indices_data, &indices_mc, num_threads)
+            .map_err(PyErr::from)
+    }
     fn intensity(&self, parameters: Vec<f64>, dataset: Dataset) -> PyResult<Vec<f64>> {
         self.0
             .intensity(&parameters, &dataset.into())
             .map_err(PyErr::from)
     }
-    #[pyo3(signature = (parameters, dataset, *, num_threads = 1))]
+    fn intensity_indexed(
+        &self,
+        parameters: Vec<f64>,
+        indices_data: Vec<usize>,
+        dataset_mc: Dataset,
+        indices_mc: Vec<usize>,
+    ) -> PyResult<Vec<f64>> {
+        self.0
+            .intensity_indexed(&parameters, &indices_data, &dataset_mc.into(), &indices_mc)
+            .map_err(PyErr::from)
+    }
+    #[pyo3(signature = (parameters, indices_data, dataset_mc, indices_mc, *, num_threads = 1))]
     fn par_intensity(
         &self,
         parameters: Vec<f64>,
-        dataset: Dataset,
+        indices_data: Vec<usize>,
+        dataset_mc: Dataset,
+        indices_mc: Vec<usize>,
         num_threads: usize,
     ) -> PyResult<Vec<f64>> {
         if self.0.data_manager.model.contains_python_amplitudes
@@ -305,7 +317,13 @@ impl ExtendedLogLikelihood {
             ));
         }
         self.0
-            .par_intensity(&parameters, &dataset.into(), num_threads)
+            .par_intensity_indexed(
+                &parameters,
+                &indices_data,
+                &dataset_mc.into(),
+                &indices_mc,
+                num_threads,
+            )
             .map_err(PyErr::from)
     }
     #[pyo3(name = "__call__", signature = (parameters, *, num_threads = 1))]
