@@ -16,7 +16,4 @@ rustitude = { workspace = true, default-features = true }
 rustitude-core = { workspace = true }
 rustitude-gluex = { workspace = true }
 nalgebra = { workspace = true }
-
-[dependencies.pyo3]
-version = "0.21.2"
-features = ["abi3-py37"]
+pyo3 = { workspace = true }

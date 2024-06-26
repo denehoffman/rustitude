@@ -24,6 +24,7 @@ pyo3 = { workspace = true }
 thiserror = { workspace = true }
 dyn-clone = { workspace = true }
 tracing = { workspace = true }
+fastrand = { workspace = true }
 
 [dev-dependencies]
 sphrs = { workspace = true }
