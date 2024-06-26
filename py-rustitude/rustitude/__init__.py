@@ -2,8 +2,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from typing import Literal, Any, overload, Protocol
 import numpy as np
+from numpy.typing import ArrayLike
 import uproot
+from iminuit import Minuit
+from scipy.optimize import OptimizeResult
+import scipy.optimize as opt
 
 from ._rustitude import amplitude, dataset, four_momentum, gluex, manager, __version__
 from .amplitude import (
@@ -49,9 +54,11 @@ __all__ = [
     'Parameter',
     'Model',
     'gluex',
-    'open',
     'Node',
     'PyNode',
+    'open',
+    'as_minuit',
+    'minimize',
 ]
 
 
@@ -103,3 +110,105 @@ class PyNode(metaclass=ABCMeta):
     @abstractmethod
     def parameters(self) -> list[str]:
         pass
+
+
+def as_minuit(ell: ExtendedLogLikelihood, num_threads: int = 1) -> Minuit:
+    def fcn(*args: float):
+        # error def is correct because of implicit multiplication by 2 in ELL
+        return ell(list(args), num_threads=num_threads)
+
+    minuit_par_names = [f'{p.amplitude} - {p.name}' for p in ell.parameters if p.free]
+    m = Minuit(fcn, *ell.initial, name=minuit_par_names)
+    for par_name, bound in zip(minuit_par_names, ell.bounds):
+        lb = None if bound[0] == -np.inf else bound[0]
+        ub = None if bound[1] == np.inf else bound[1]
+        m.limits[par_name] = (lb, ub)
+    return m
+
+
+@overload
+def minimize(
+    ell: ExtendedLogLikelihood,
+    method: Literal['Minuit'],
+    *args: Any,
+    num_threads: int = 1,
+    **kwargs: Any,
+) -> Minuit: ...
+
+
+ScipyOptMethods = Literal[
+    'Nelder-Mead',
+    'Powell',
+    'CG',
+    'BFGS',
+    'Newton-CG',
+    'L-BFGS-B',
+    'TNC',
+    'COBYLA',
+    'COBYQA',
+    'SLSQP',
+    'trust-constr',
+    'dogleg',
+    'trust-ncg',
+    'trust-exact',
+    'trust-krylov',
+]
+
+
+class ScipyCallable(Protocol):
+    def __call__(self, x: ArrayLike, *args: Any) -> float: ...
+
+
+class ScipyMinCallable(Protocol):
+    def __call__(
+        self, fun: ScipyCallable, x0: ArrayLike, args: tuple[Any], **kwargs_and_options: Any
+    ) -> OptimizeResult: ...
+
+
+@overload
+def minimize(
+    ell: ExtendedLogLikelihood,
+    method: ScipyOptMethods,
+    *args: Any,
+    num_threads: int = 1,
+    **kwargs: Any,
+) -> OptimizeResult: ...
+
+
+@overload
+def minimize(
+    ell: ExtendedLogLikelihood,
+    method: ScipyMinCallable,
+    *args: Any,
+    num_threads: int = 1,
+    **kwargs: Any,
+) -> OptimizeResult: ...
+
+
+def minimize(
+    ell: ExtendedLogLikelihood,
+    method: Literal['Minuit'] | ScipyOptMethods | ScipyMinCallable | None = None,
+    *args: Any,
+    num_threads: int = 1,
+    **kwargs: Any,
+) -> Minuit | OptimizeResult:
+    bounds = []
+    unbounded = True
+    for bound in ell.bounds:
+        lb = None if bound[0] == -np.inf else bound[0]
+        ub = None if bound[1] == np.inf else bound[1]
+        if lb or ub:
+            unbounded = False
+        bounds.append((lb, ub))
+    if callable(method) or method != 'Minuit' or method is None:
+
+        def fcn_scipy(x: ArrayLike, *args: Any):
+            return ell(x, num_threads=num_threads)
+
+        if unbounded:
+            return opt.minimize(fcn_scipy, ell.initial, args, method, **kwargs)
+        else:
+            return opt.minimize(fcn_scipy, ell.initial, args, method, bounds=bounds, **kwargs)
+
+    else:
+        return as_minuit(ell, num_threads=num_threads)
