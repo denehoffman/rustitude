@@ -60,7 +60,7 @@ impl Parameter {
             name: name.to_string(),
             index: Some(index),
             fixed_index: None,
-            initial: 0.0,
+            initial: 1.0,
             bounds: (f64::NEG_INFINITY, f64::INFINITY),
         }
     }
