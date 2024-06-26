@@ -12,8 +12,7 @@
 //! We can then use [`Manager`](crate::manager::Manager)-like structs to handle computataion
 //! over [`Dataset`]s.
 use dyn_clone::DynClone;
-use itertools::{iproduct, Itertools};
-use nalgebra::ComplexField;
+use itertools::Itertools;
 use num::complex::Complex64;
 use rayon::prelude::*;
 use std::{
