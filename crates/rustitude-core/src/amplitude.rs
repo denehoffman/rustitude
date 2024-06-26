@@ -1068,6 +1068,13 @@ impl Model {
                 .for_each(|amp| amp.active = true)
         });
     }
+    /// Activate only the specified [`Amplitude`]s while deactivating the rest.
+    pub fn isolate(&mut self, amplitudes: Vec<&str>) {
+        self.deactivate_all();
+        for amplitude in amplitudes {
+            self.activate(amplitude);
+        }
+    }
     /// Deactivates an [`Amplitude`] in the [`Model`] by name.
     pub fn deactivate(&mut self, amplitude: &str) {
         self.amplitudes.iter_mut().for_each(|amp| {

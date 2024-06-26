@@ -587,6 +587,10 @@ impl Model {
     fn activate_all(&mut self) {
         self.0.activate_all()
     }
+    fn isolate(&mut self, amplitudes: Vec<String>) {
+        self.0
+            .isolate(amplitudes.iter().map(|s| s.as_ref()).collect())
+    }
     fn deactivate(&mut self, amplitude: &str) {
         self.0.deactivate(amplitude)
     }

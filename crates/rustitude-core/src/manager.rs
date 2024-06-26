@@ -249,6 +249,11 @@ impl Manager {
     pub fn activate_all(&mut self) {
         self.model.activate_all()
     }
+    /// Activate only the specified [`Amplitude`]s while deactivating the rest. See
+    /// [`Model::isolate`] for more information.
+    pub fn isolate(&mut self, amplitudes: Vec<&str>) {
+        self.model.isolate(amplitudes);
+    }
     /// Deactivate an [`Amplitude`] by name. See [`Model::deactivate`] for more information.
     pub fn deactivate(&mut self, amplitude: &str) {
         self.model.deactivate(amplitude)
@@ -594,6 +599,12 @@ impl ExtendedLogLikelihood {
     pub fn activate_all(&mut self) {
         self.data_manager.activate_all();
         self.mc_manager.activate_all()
+    }
+    /// Activate only the specified [`Amplitude`]s while deactivating the rest. See
+    /// [`Model::isolate`] for more information.
+    pub fn isolate(&mut self, amplitudes: Vec<&str>) {
+        self.data_manager.isolate(amplitudes.clone());
+        self.mc_manager.isolate(amplitudes);
     }
     /// Deactivate an [`Amplitude`] by name. See [`Model::deactivate`] for more information.
     pub fn deactivate(&mut self, amplitude: &str) {
