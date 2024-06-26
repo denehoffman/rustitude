@@ -44,7 +44,6 @@ need_stdout = false
 command = [
     "cargo",
     "test",
-    "--release",
     "--color",
     "always",
     "--",
