@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0](https://github.com/denehoffman/rustitude/compare/rustitude-core-v3.4.0...rustitude-core-v4.0.0) - 2024-06-27
+
+### Added
+- remove RwLock from Dataset and adopt indexing methods for splitting data
+- [**breaking**] add indexed versions of all evaluators and selectors
+- add isolate method as a shortcut for activating a set of amplitudes
+
+### Fixed
+- fix model debug
+- remove prints from tests
+- remove unused imports
+- make parameters initialize at 1.0 rather than 0.0
+- change FourMomentum sum implementation to take owned copies
+- update ELL evaluate methods to use the sum of weights rather than number of events and add normalization to intensity functions
+- remove const functions for now, they fail on nightly
+
+### Other
+- *(amplitude)* fix doctest
+- remove unused dependencies
+- update dependencies
+- remove deprecated norm_int methods
+- *(four_momentum)* add some more tests for FourMomentum methods
+- remove simd feature (for now)
+- add custom node reference to rustitude-core README.md
+- update all README.mds
+
 ## [3.4.0](https://github.com/denehoffman/rustitude/compare/rustitude-core-v3.3.0...rustitude-core-v3.4.0) - 2024-06-21
 
 ### Added

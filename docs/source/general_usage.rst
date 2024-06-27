@@ -161,25 +161,24 @@ Here's a complex example that demonstrates many of rustitude's features:
     nll.fix("f0-", "f0_500 im", 0.0)
     nll.fix("f0-", "f0_980 im", 0.0)
 
-    # Define optimization function
-    # This is only required because the scipy.optimize.minimize function
-    # doesn't accept keyword-only arguments as far as I'm aware
-    def fun(p):
-        return nll(p, num_threads=num_threads)
 
     # Perform optimization
+    
     rng = np.random.default_rng()
-    res = scipy.optimize.minimize(
-        fun,
-        rng.random(size=nll.n_free) * 100, # Start the fit in some random hypercube bounded at [-100, 100]
-        bounds=nll.bounds,
-    )
+
+    for parameter in nll.parameters:
+        if parameter.free:
+            nll.set_initial(parameter.amplitude, parameter.name, rng.random() * 100)
+
+    # With the default 'method=None' argument, this will use scipy.optimize.minimize's default algorithm:
+    m = rt.minimizer(nll, num_threads=num_threads)
+    res = m()
 
     # Process results
     print(f"Fit Result:\n{res}")
     fit_pars = res.x
     masses = [(event.daughter_p4s[0] + event.daughter_p4s[1]).m for event in ds.events]
-    fit_weights_mc = nll.par_intensity(fit_pars, ds_mc, num_threads=num_threads) / len(masses_mc) * len(masses) / 2 # Note that the scaling factor here is a bit fraught and still needs some work.
+    fit_weights_mc = nll.intensity(fit_pars, ds_mc, num_threads=num_threads)
     masses_mc = [(event.daughter_p4s[0] + event.daughter_p4s[1]).m for event in ds_mc.events]
 
     # Plot results

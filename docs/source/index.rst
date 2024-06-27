@@ -91,12 +91,18 @@ Contents
    :caption: Contents:
 
    general_usage
+   binned_fits
    custom_nodes
 
 General Usage
 ^^^^^^^^^^^^^
 
 Learn about the basic concepts and how to use rustitude for amplitude analysis.
+
+Binned Fits
+^^^^^^^^^^^
+
+Learn how rustitude can be used to fit mass-binned data.
 
 Writing Custom Nodes
 ^^^^^^^^^^^^^^^^^^^^
