@@ -50,7 +50,6 @@ impl Manager {
             .collect();
         self.dataset
             .events
-            .read_arc()
             .iter()
             .map(|event: &Event| self.model.compute(&pars, event))
             .collect()
@@ -83,10 +82,9 @@ impl Manager {
             .iter()
             .map(|p| p.index.map_or_else(|| p.initial, |i| parameters[i]))
             .collect();
-        let data = self.dataset.events.read_arc();
         indices
             .iter()
-            .map(|index| self.model.compute(&pars, &data[*index]))
+            .map(|index| self.model.compute(&pars, &self.dataset.events[*index]))
             .collect()
     }
 
@@ -114,7 +112,6 @@ impl Manager {
             .collect();
         self.dataset
             .events
-            .read_arc()
             .par_iter()
             .map(|event| self.model.compute(&pars, event))
             .collect_into_vec(&mut output);
@@ -151,10 +148,16 @@ impl Manager {
             .iter()
             .map(|p| p.index.map_or_else(|| p.initial, |i| parameters[i]))
             .collect();
-        let data = self.dataset.events.read_arc();
-        indices
+        // indices
+        //     .par_iter()
+        //     .map(|index| self.model.compute(&pars, &self.dataset.events[*index]))
+        //     .collect_into_vec(&mut output);
+        let view: Vec<&Event> = indices
             .par_iter()
-            .map(|index| self.model.compute(&pars, &data[*index]))
+            .map(|&index| &self.dataset.events[index])
+            .collect();
+        view.par_iter()
+            .map(|&event| self.model.compute(&pars, event))
             .collect_into_vec(&mut output);
         output.into_iter().collect()
     }
@@ -374,7 +377,7 @@ impl ExtendedLogLikelihood {
         let data_weights = self.data_manager.dataset.weights_indexed(indices_data);
         let n_data = data_weights.iter().sum::<f64>();
         let mc_norm_int = self.mc_manager.evaluate_indexed(parameters, indices_mc)?;
-        let mc_weights = self.mc_manager.dataset.weights_indexed(indices_data);
+        let mc_weights = self.mc_manager.dataset.weights_indexed(indices_mc);
         let n_mc = mc_weights.iter().sum::<f64>();
         let ln_l = (data_res
             .iter()
@@ -467,11 +470,13 @@ impl ExtendedLogLikelihood {
         create_pool(num_threads)?.install(|| {
             let data_res = self
                 .data_manager
-                .evaluate_indexed(parameters, indices_data)?;
+                .par_evaluate_indexed(parameters, indices_data)?;
             let data_weights = self.data_manager.dataset.weights_indexed(indices_data);
             let n_data = data_weights.iter().sum::<f64>();
-            let mc_norm_int = self.mc_manager.evaluate_indexed(parameters, indices_mc)?;
-            let mc_weights = self.mc_manager.dataset.weights_indexed(indices_data);
+            let mc_norm_int = self
+                .mc_manager
+                .par_evaluate_indexed(parameters, indices_mc)?;
+            let mc_weights = self.mc_manager.dataset.weights_indexed(indices_mc);
             let n_mc = mc_weights.iter().sum::<f64>();
             let ln_l = (data_res
                 .par_iter()
@@ -508,7 +513,7 @@ impl ExtendedLogLikelihood {
         mc_manager.evaluate(parameters).map(|r_vec| {
             r_vec
                 .iter()
-                .zip(dataset_mc.events.read().iter())
+                .zip(dataset_mc.events.iter())
                 .map(|(r, e)| r * data_len_weighted / mc_len_weighted * e.weight)
                 .collect()
         })
@@ -530,8 +535,8 @@ impl ExtendedLogLikelihood {
     pub fn intensity_indexed(
         &self,
         parameters: &[f64],
-        indices_data: &[usize],
         dataset_mc: &Dataset,
+        indices_data: &[usize],
         indices_mc: &[usize],
     ) -> Result<Vec<f64>, RustitudeError> {
         let mc_manager = Manager::new(&self.data_manager.model, dataset_mc)?;
@@ -542,12 +547,16 @@ impl ExtendedLogLikelihood {
             .iter()
             .sum::<f64>();
         let mc_len_weighted = dataset_mc.weights_indexed(indices_mc).iter().sum::<f64>();
+        let view: Vec<&Event> = indices_mc
+            .par_iter()
+            .map(|&index| &mc_manager.dataset.events[index])
+            .collect();
         mc_manager
             .evaluate_indexed(parameters, indices_mc)
             .map(|r_vec| {
                 r_vec
                     .iter()
-                    .zip(dataset_mc.events.read().iter())
+                    .zip(view.iter())
                     .map(|(r, e)| r * data_len_weighted / mc_len_weighted * e.weight)
                     .collect()
             })
@@ -585,7 +594,7 @@ impl ExtendedLogLikelihood {
             manager.par_evaluate(parameters).map(|r_vec| {
                 r_vec
                     .iter()
-                    .zip(dataset.events.read().iter())
+                    .zip(dataset.events.iter())
                     .map(|(r, e)| r * data_len_weighted / ds_len_weighted * e.weight)
                     .collect()
             })
@@ -611,8 +620,8 @@ impl ExtendedLogLikelihood {
     pub fn par_intensity_indexed(
         &self,
         parameters: &[f64],
-        indices_data: &[usize],
         dataset_mc: &Dataset,
+        indices_data: &[usize],
         indices_mc: &[usize],
         num_threads: usize,
     ) -> Result<Vec<f64>, RustitudeError> {
@@ -624,13 +633,17 @@ impl ExtendedLogLikelihood {
             .iter()
             .sum::<f64>();
         let mc_len_weighted = dataset_mc.weights_indexed(indices_mc).iter().sum::<f64>();
+        let view: Vec<&Event> = indices_mc
+            .par_iter()
+            .map(|&index| &mc_manager.dataset.events[index])
+            .collect();
         create_pool(num_threads)?.install(|| {
             mc_manager
                 .par_evaluate_indexed(parameters, indices_mc)
                 .map(|r_vec| {
                     r_vec
-                        .iter()
-                        .zip(dataset_mc.events.read().iter())
+                        .par_iter()
+                        .zip(view.par_iter())
                         .map(|(r, e)| r * data_len_weighted / mc_len_weighted * e.weight)
                         .collect()
                 })

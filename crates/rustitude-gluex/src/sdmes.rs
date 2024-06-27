@@ -24,7 +24,6 @@ impl Node for TwoPiSDME {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.data = dataset
             .events
-            .read()
             .par_iter()
             .map(|event| {
                 let resonance = event.daughter_p4s[0] + event.daughter_p4s[1];
@@ -124,7 +123,6 @@ impl Node for ThreePiSDME {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.data = dataset
             .events
-            .read()
             .par_iter()
             .map(|event| {
                 let resonance =

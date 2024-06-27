@@ -84,13 +84,7 @@ impl From<Dataset> for rust::Dataset {
 impl Dataset {
     #[getter]
     fn events(&self) -> Vec<Event> {
-        self.0
-            .events
-            .read_arc()
-            .iter()
-            .cloned()
-            .map(Event::from)
-            .collect()
+        self.0.events.iter().cloned().map(Event::from).collect()
     }
     #[getter]
     fn weights(&self) -> Vec<f64> {

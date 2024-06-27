@@ -1299,12 +1299,7 @@ where
     F: Fn(&Event) -> f64 + Send + Sync + Copy,
 {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
-        self.calculated_variable = dataset
-            .events
-            .read()
-            .par_iter()
-            .map(self.variable)
-            .collect();
+        self.calculated_variable = dataset.events.par_iter().map(self.variable).collect();
         Ok(())
     }
 

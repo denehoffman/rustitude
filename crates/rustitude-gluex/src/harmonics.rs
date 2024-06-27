@@ -26,7 +26,6 @@ impl Node for Ylm {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.data = dataset
             .events
-            .read()
             .par_iter()
             .map(|event| {
                 let resonance = event.daughter_p4s[0] + event.daughter_p4s[1];
@@ -71,7 +70,6 @@ impl Node for Zlm {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.data = dataset
             .events
-            .read()
             .par_iter()
             .map(|event| {
                 let resonance = event.daughter_p4s[0] + event.daughter_p4s[1];
@@ -134,7 +132,6 @@ impl Node for OnePS {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.data = dataset
             .events
-            .read()
             .par_iter()
             .map(|event| {
                 let resonance = event.daughter_p4s[0] + event.daughter_p4s[1];
@@ -198,7 +195,6 @@ impl Node for TwoPS {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.data = dataset
             .events
-            .read()
             .par_iter()
             .map(|event| {
                 let resonance = event.daughter_p4s[0] + event.daughter_p4s[1];

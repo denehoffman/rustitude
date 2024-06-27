@@ -75,7 +75,6 @@ use std::{fmt::Display, fs::File, iter::repeat_with, path::Path, sync::Arc};
 use itertools::{izip, Either, Itertools};
 use nalgebra::Vector3;
 use oxyroot::{ReaderTree, RootFile, Slice};
-use parking_lot::RwLock;
 use parquet::{
     file::reader::{FileReader, SerializedFileReader},
     record::{Field, Row},
@@ -470,13 +469,13 @@ impl Event {
 /// contain.
 ///
 /// A [`Dataset`] can be loaded from either Parquet and ROOT files using the corresponding
-/// `Dataset::from_*` methods. Events are stored in an [`Arc<RwLock<Vec<Event>>>`], since we
+/// `Dataset::from_*` methods. Events are stored in an [`Arc<Vec<Event>>`], since we
 /// rarely need to write data to a dataset (splitting/selecting/rejecting events) but often need to
 /// read events from a dataset.
 #[derive(Default, Debug, Clone)]
 pub struct Dataset {
     /// Storage for events.
-    pub events: Arc<RwLock<Vec<Event>>>,
+    pub events: Arc<Vec<Event>>,
 }
 
 impl Dataset {
@@ -484,14 +483,14 @@ impl Dataset {
 
     /// Retrieves the weights from the events in the dataset
     pub fn weights(&self) -> Vec<f64> {
-        self.events.read_arc().iter().map(|e| e.weight).collect()
+        self.events.iter().map(|e| e.weight).collect()
     }
 
     /// Retrieves the weights from the events in the dataset which have the given indices.
     pub fn weights_indexed(&self, indices: &[usize]) -> Vec<f64> {
         indices
             .iter()
-            .map(|index| self.events.read_arc()[*index].weight)
+            .map(|index| self.events[*index].weight)
             .collect()
     }
 
@@ -824,18 +823,18 @@ impl Dataset {
     pub fn new(events: Vec<Event>) -> Self {
         info!("Dataset created with {} events", events.len());
         Self {
-            events: Arc::new(RwLock::new(events)),
+            events: Arc::new(events),
         }
     }
 
     /// Checks if the dataset is empty.
     pub fn is_empty(&self) -> bool {
-        self.events.read().is_empty()
+        self.events.is_empty()
     }
 
     /// Returns the number of events in the dataset.
     pub fn len(&self) -> usize {
-        self.events.read().len()
+        self.events.len()
     }
 
     /// Returns a set of indices which represent a bootstrapped [`Dataset`]. This method is to be
@@ -843,9 +842,11 @@ impl Dataset {
     /// [`Manager::evaluate_indexed`](crate::manager::Manager::evaluate_indexed).
     pub fn get_bootstrap_indices(&self, seed: usize) -> Vec<usize> {
         fastrand::seed(seed as u64);
-        repeat_with(|| fastrand::usize(0..self.len()))
+        let mut inds: Vec<usize> = repeat_with(|| fastrand::usize(0..self.len()))
             .take(self.len())
-            .collect()
+            .collect();
+        inds.sort_unstable();
+        inds
     }
 
     /// Selects indices of events in a dataset using the given query. Indices of events for which
@@ -855,13 +856,17 @@ impl Dataset {
         &self,
         query: impl Fn(&Event) -> bool + Sync + Send,
     ) -> (Vec<usize>, Vec<usize>) {
-        self.events.read_arc().par_iter().partition_map(|event| {
-            if query(event) {
-                Either::Left(event.index)
-            } else {
-                Either::Right(event.index)
-            }
-        })
+        let (mut indices_selected, mut indices_rejected): (Vec<usize>, Vec<usize>) =
+            self.events.par_iter().partition_map(|event| {
+                if query(event) {
+                    Either::Left(event.index)
+                } else {
+                    Either::Right(event.index)
+                }
+            });
+        indices_selected.sort_unstable();
+        indices_rejected.sort_unstable();
+        (indices_selected, indices_rejected)
     }
 
     /// Splits the dataset by the given query. This method returns [`Vec<usize>`]s corresponding to

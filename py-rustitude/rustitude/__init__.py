@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from typing import Literal, Any, overload, Protocol
+from typing import Callable, Literal, Any, overload, Protocol
 import numpy as np
 from numpy.typing import ArrayLike
 import uproot
@@ -57,8 +57,7 @@ __all__ = [
     'Node',
     'PyNode',
     'open',
-    'as_minuit',
-    'minimize',
+    'minimizer',
 ]
 
 
@@ -112,27 +111,15 @@ class PyNode(metaclass=ABCMeta):
         pass
 
 
-def as_minuit(ell: ExtendedLogLikelihood, num_threads: int = 1) -> Minuit:
-    def fcn(*args: float):
-        # error def is correct because of implicit multiplication by 2 in ELL
-        return ell(list(args), num_threads=num_threads)
-
-    minuit_par_names = [f'{p.amplitude} - {p.name}' for p in ell.parameters if p.free]
-    m = Minuit(fcn, *ell.initial, name=minuit_par_names)
-    for par_name, bound in zip(minuit_par_names, ell.bounds):
-        lb = None if bound[0] == -np.inf else bound[0]
-        ub = None if bound[1] == np.inf else bound[1]
-        m.limits[par_name] = (lb, ub)
-    return m
-
-
 @overload
-def minimize(
+def minimizer(
     ell: ExtendedLogLikelihood,
     method: Literal['Minuit'],
     *args: Any,
+    indices_data: list[int] | None = None,
+    indices_mc: list[int] | None = None,
     num_threads: int = 1,
-    **kwargs: Any,
+    minimizer_kwargs: dict[str, Any] | None = None,
 ) -> Minuit: ...
 
 
@@ -166,32 +153,38 @@ class ScipyMinCallable(Protocol):
 
 
 @overload
-def minimize(
+def minimizer(
     ell: ExtendedLogLikelihood,
     method: ScipyOptMethods,
     *args: Any,
+    indices_data: list[int] | None = None,
+    indices_mc: list[int] | None = None,
     num_threads: int = 1,
-    **kwargs: Any,
-) -> OptimizeResult: ...
+    minimizer_kwargs: dict[str, Any] | None = None,
+) -> Callable[[], OptimizeResult]: ...
 
 
 @overload
-def minimize(
+def minimizer(
     ell: ExtendedLogLikelihood,
     method: ScipyMinCallable,
     *args: Any,
+    indices_data: list[int] | None = None,
+    indices_mc: list[int] | None = None,
     num_threads: int = 1,
-    **kwargs: Any,
-) -> OptimizeResult: ...
+    minimizer_kwargs: dict[str, Any] | None = None,
+) -> Callable[[], OptimizeResult]: ...
 
 
-def minimize(
+def minimizer(
     ell: ExtendedLogLikelihood,
     method: Literal['Minuit'] | ScipyOptMethods | ScipyMinCallable | None = None,
     *args: Any,
+    indices_data: list[int] | None = None,
+    indices_mc: list[int] | None = None,
     num_threads: int = 1,
-    **kwargs: Any,
-) -> Minuit | OptimizeResult:
+    minimizer_kwargs: dict[str, Any] | None = None,
+) -> Minuit | Callable[[], OptimizeResult]:
     bounds = []
     unbounded = True
     for bound in ell.bounds:
@@ -201,14 +194,34 @@ def minimize(
             unbounded = False
         bounds.append((lb, ub))
     if callable(method) or method != 'Minuit' or method is None:
+        if minimizer_kwargs is None:
+            minimizer_kwargs = {}
+        if unbounded:
+            bounds = None
 
         def fcn_scipy(x: ArrayLike, *args: Any):
-            return ell(x, num_threads=num_threads)
+            return ell(x, indices_data=indices_data, indices_mc=indices_mc, num_threads=num_threads)
 
-        if unbounded:
-            return opt.minimize(fcn_scipy, ell.initial, args, method, **kwargs)
-        else:
-            return opt.minimize(fcn_scipy, ell.initial, args, method, bounds=bounds, **kwargs)
+        def fit() -> OptimizeResult:
+            return opt.minimize(
+                fcn_scipy, ell.initial, args, method, bounds=bounds, **minimizer_kwargs
+            )
+
+        return fit
 
     else:
-        return as_minuit(ell, num_threads=num_threads)
+
+        def fcn_minuit(*args: float):
+            # error def is correct because of implicit multiplication by 2 in ELL
+            return ell(
+                list(args),
+                indices_data=indices_data,
+                indices_mc=indices_mc,
+                num_threads=num_threads,
+            )
+
+        minuit_par_names = [f'{p.amplitude} - {p.name}' for p in ell.parameters if p.free]
+        m = Minuit(fcn_minuit, *ell.initial, name=minuit_par_names)
+        for par_name, bound in zip(minuit_par_names, bounds):
+            m.limits[par_name] = bound
+        return m
