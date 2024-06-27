@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0](https://github.com/denehoffman/rustitude/compare/py-rustitude-v0.7.4...py-rustitude-v0.8.0) - 2024-06-27
+
+### Added
+- remove RwLock from Dataset and adopt indexing methods for splitting data
+- [**breaking**] add indexed versions of all evaluators and selectors
+- add isolate method as a shortcut for activating a set of amplitudes
+- add as_minuit and minimize functions to python API
+- add fixed/free properties to parameters in python API
+
+### Fixed
+- opt-in to py-clone feature and get rid of another deprecation warning
+- add scipy and iminuit dependencies to python package
+- update pol_in_beam method on python API to correctly load Beam_P4 and EPS
+- remove const functions for now, they fail on nightly
+
+### Other
+- update dependencies
+- remove deprecated norm_int methods
+- corrected mistake in README.md
+- update all README.mds
+- update badges
+
 ## [0.7.4](https://github.com/denehoffman/rustitude/compare/py-rustitude-v0.7.3...py-rustitude-v0.7.4) - 2024-06-21
 
 ### Added
