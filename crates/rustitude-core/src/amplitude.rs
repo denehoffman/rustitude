@@ -153,7 +153,7 @@ impl Display for Parameter {
 /// impl Node for Ylm {
 ///     fn parameters(&self) -> Vec<String> { vec![] }
 ///     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
-///         self.1 = dataset.events.read()
+///         self.1 = dataset.events
 ///             .par_iter()
 ///             .map(|event| {
 ///                 let resonance = event.daughter_p4s[0] + event.daughter_p4s[1];
