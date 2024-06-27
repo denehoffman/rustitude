@@ -712,7 +712,7 @@ impl Debug for Model {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Model [ ")?;
         for op in &self.cohsums {
-            write!(f, "{} ", op)?;
+            write!(f, "{:?} ", op)?;
         }
         write!(f, "]")
     }
