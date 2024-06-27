@@ -54,6 +54,21 @@ pub fn criterion_kmatrix(c: &mut Criterion) {
             criterion::black_box(nll.par_evaluate(&v, num_cpus::get()))
         })
     });
+    let indices_data = (0..dataset.len()).collect::<Vec<usize>>();
+    let indices_mc = (0..dataset_mc.len()).collect::<Vec<usize>>();
+    c.bench_function("kmatrix_nll_indexed", |b| {
+        b.iter(|| {
+            let v = (0..model.get_n_free())
+                .map(|_| rand::random::<f64>() * 100.0)
+                .collect::<Vec<_>>();
+            criterion::black_box(nll.par_evaluate_indexed(
+                &v,
+                &indices_data,
+                &indices_mc,
+                num_cpus::get(),
+            ))
+        })
+    });
 }
 
 criterion_group!(benches, criterion_kmatrix);
