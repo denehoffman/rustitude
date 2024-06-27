@@ -12,7 +12,6 @@ impl Node for OmegaDalitz {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         (self.dalitz_z, (self.dalitz_sin3theta, self.lambda)) = dataset
             .events
-            .read()
             .par_iter()
             .map(|event| {
                 let pi0 = event.daughter_p4s[0];

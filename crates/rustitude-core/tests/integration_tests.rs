@@ -9,7 +9,7 @@ fn test_masses() {
     assert_is_close!(event.recoil_p4.m(), 0.9382720);
     assert_is_close!(event.daughter_p4s[0].m(), 0.497611, 1e-4);
     assert_is_close!(event.daughter_p4s[1].m(), 0.497611, 1e-4);
-    let resonance: FourMomentum = event.daughter_p4s.iter().sum();
+    let resonance: FourMomentum = event.daughter_p4s.into_iter().sum();
     assert_is_close!(resonance.m(), 1.3742740);
 }
 
@@ -30,24 +30,15 @@ fn test_activation() -> Result<(), RustitudeError> {
     // |1|^2 = 1
     manager.deactivate_all();
     manager.activate("a");
-    for amp in manager.model.amplitudes.iter() {
-        println!("{}", amp);
-    }
     assert_is_close!(manager.evaluate(&[1.0, 10.0, 100.0, 2.0, 1000.0])?[0], 1.0);
     // |1 + 10|^2 = 121
     manager.activate("b");
-    for amp in manager.model.amplitudes.iter() {
-        println!("{}", amp);
-    }
     assert_is_close!(
         manager.evaluate(&[1.0, 10.0, 100.0, 2.0, 1000.0])?[0],
         121.0
     );
     // |1 + 10|^2 + |100|^2 = 121 + 10000 = 10121
     manager.activate("c");
-    for amp in manager.model.amplitudes.iter() {
-        println!("{}", amp);
-    }
     assert_is_close!(
         manager.evaluate(&[1.0, 10.0, 100.0, 2.0, 1000.0])?[0],
         10121.0
@@ -56,9 +47,6 @@ fn test_activation() -> Result<(), RustitudeError> {
     manager.deactivate("c");
     manager.deactivate("c"); // this shouldn't cause problems
     manager.activate("d");
-    for amp in manager.model.amplitudes.iter() {
-        println!("{}", amp);
-    }
     assert_is_close!(
         manager.evaluate(&[1.0, 10.0, 100.0, 2.0, 1000.0])?[0],
         125.0

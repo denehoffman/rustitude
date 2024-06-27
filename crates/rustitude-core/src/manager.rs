@@ -50,12 +50,46 @@ impl Manager {
             .collect();
         self.dataset
             .events
-            .read_arc()
             .iter()
             .map(|event: &Event| self.model.compute(&pars, event))
             .collect()
     }
+
     /// Evaluate the [`Model`] over the [`Dataset`] with the given free parameters.
+    ///
+    /// This method allows the user to supply a list of indices and will only evaluate events at
+    /// those indices. This can be used to evaluate only a subset of events or to resample events
+    /// with replacement, such as in a bootstrap.
+    ///
+    /// # Errors
+    ///
+    /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
+    /// [`Model::compute`] for more information.
+    pub fn evaluate_indexed(
+        &self,
+        parameters: &[f64],
+        indices: &[usize],
+    ) -> Result<Vec<f64>, RustitudeError> {
+        if self.model.contains_python_amplitudes {
+            return Err(RustitudeError::PythonError(
+                "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!"
+                    .to_string(),
+            ));
+        }
+        let pars: Vec<f64> = self
+            .model
+            .parameters
+            .iter()
+            .map(|p| p.index.map_or_else(|| p.initial, |i| parameters[i]))
+            .collect();
+        indices
+            .iter()
+            .map(|index| self.model.compute(&pars, &self.dataset.events[*index]))
+            .collect()
+    }
+
+    /// Evaluate the [`Model`] over the [`Dataset`] with the given free parameters.
+    ///
     /// This version uses a parallel loop over events.
     ///
     /// # Errors
@@ -78,56 +112,52 @@ impl Manager {
             .collect();
         self.dataset
             .events
-            .read_arc()
             .par_iter()
             .map(|event| self.model.compute(&pars, event))
             .collect_into_vec(&mut output);
         output.into_iter().collect()
     }
 
-    /// Find the normalization integral for the [`Model`] over the [`Dataset`] with the given
-    /// free parameters.
+    /// Evaluate the [`Model`] over the [`Dataset`] with the given free parameters.
+    ///
+    /// This method allows the user to supply a list of indices and will only evaluate events at
+    /// those indices. This can be used to evaluate only a subset of events or to resample events
+    /// with replacement, such as in a bootstrap.
+    ///
+    /// This version uses a parallel loop over events.
     ///
     /// # Errors
     ///
     /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
-    /// [`Model::norm_int`] for more information.
-    #[deprecated(
-        since = "0.7.1",
-        note = "Manager::evaluate is faster and should give equivalent results"
-    )]
-    pub fn norm_int(&self, parameters: &[f64]) -> Result<Vec<f64>, RustitudeError> {
-        self.dataset
-            .events
-            .read_arc()
-            .iter()
-            .map(|event: &Event| self.model.norm_int(parameters, event))
-            .collect()
-    }
-    /// Find the normalization integral for the [`Model`] over the [`Dataset`] with the given
-    /// free parameters. This version uses a parallel loop over events.
-    ///
-    /// # Errors
-    ///
-    /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
-    /// [`Model::norm_int`] for more information.
-    #[deprecated(
-        since = "0.7.1",
-        note = "Manager::par_evaluate is faster and should give equivalent results"
-    )]
-    pub fn par_norm_int(&self, parameters: &[f64]) -> Result<Vec<f64>, RustitudeError> {
+    /// [`Model::compute`] for more information.
+    pub fn par_evaluate_indexed(
+        &self,
+        parameters: &[f64],
+        indices: &[usize],
+    ) -> Result<Vec<f64>, RustitudeError> {
         if self.model.contains_python_amplitudes {
             return Err(RustitudeError::PythonError(
                 "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!"
                     .to_string(),
             ));
         }
-        let mut output = Vec::with_capacity(self.dataset.len());
-        self.dataset
-            .events
-            .read_arc()
+        let mut output = Vec::with_capacity(indices.len());
+        let pars: Vec<f64> = self
+            .model
+            .parameters
+            .iter()
+            .map(|p| p.index.map_or_else(|| p.initial, |i| parameters[i]))
+            .collect();
+        // indices
+        //     .par_iter()
+        //     .map(|index| self.model.compute(&pars, &self.dataset.events[*index]))
+        //     .collect_into_vec(&mut output);
+        let view: Vec<&Event> = indices
             .par_iter()
-            .map(|event: &Event| self.model.norm_int(parameters, event))
+            .map(|&index| &self.dataset.events[index])
+            .collect();
+        view.par_iter()
+            .map(|&event| self.model.compute(&pars, event))
             .collect_into_vec(&mut output);
         output.into_iter().collect()
     }
@@ -263,6 +293,11 @@ impl Manager {
     pub fn activate_all(&mut self) {
         self.model.activate_all()
     }
+    /// Activate only the specified [`Amplitude`]s while deactivating the rest. See
+    /// [`Model::isolate`] for more information.
+    pub fn isolate(&mut self, amplitudes: Vec<&str>) {
+        self.model.isolate(amplitudes);
+    }
     /// Deactivate an [`Amplitude`] by name. See [`Model::deactivate`] for more information.
     pub fn deactivate(&mut self, amplitude: &str) {
         self.model.deactivate(amplitude)
@@ -301,10 +336,10 @@ impl ExtendedLogLikelihood {
     pub fn evaluate(&self, parameters: &[f64]) -> Result<f64, RustitudeError> {
         let data_res = self.data_manager.evaluate(parameters)?;
         let data_weights = self.data_manager.dataset.weights();
-        let n_data = self.data_manager.dataset.len() as f64;
+        let n_data = data_weights.iter().sum::<f64>();
         let mc_norm_int = self.mc_manager.evaluate(parameters)?;
         let mc_weights = self.mc_manager.dataset.weights();
-        let n_mc = self.mc_manager.dataset.len() as f64;
+        let n_mc = mc_weights.iter().sum::<f64>();
         let ln_l = (data_res
             .iter()
             .zip(data_weights)
@@ -318,7 +353,48 @@ impl ExtendedLogLikelihood {
                     .sum::<f64>());
         Ok(-2.0 * ln_l)
     }
-    /// Evaluate the [`ExtendedLogLikelihood`] over the [`Dataset`] with the given free parameters
+
+    /// Evaluate the [`ExtendedLogLikelihood`] over the [`Dataset`] with the given free parameters.
+    ///
+    /// This method allows the user to supply two lists of indices and will only evaluate events at
+    /// those indices. This can be used to evaluate only a subset of events or to resample events
+    /// with replacement, such as in a bootstrap.
+    ///
+    /// # Errors
+    ///
+    /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
+    /// [`Model::compute`] for more information.
+    #[allow(clippy::suboptimal_flops)]
+    pub fn evaluate_indexed(
+        &self,
+        parameters: &[f64],
+        indices_data: &[usize],
+        indices_mc: &[usize],
+    ) -> Result<f64, RustitudeError> {
+        let data_res = self
+            .data_manager
+            .evaluate_indexed(parameters, indices_data)?;
+        let data_weights = self.data_manager.dataset.weights_indexed(indices_data);
+        let n_data = data_weights.iter().sum::<f64>();
+        let mc_norm_int = self.mc_manager.evaluate_indexed(parameters, indices_mc)?;
+        let mc_weights = self.mc_manager.dataset.weights_indexed(indices_mc);
+        let n_mc = mc_weights.iter().sum::<f64>();
+        let ln_l = (data_res
+            .iter()
+            .zip(data_weights)
+            .map(|(l, w)| w * l.ln())
+            .sum::<f64>())
+            - (n_data / n_mc)
+                * (mc_norm_int
+                    .iter()
+                    .zip(mc_weights)
+                    .map(|(l, w)| w * l)
+                    .sum::<f64>());
+        Ok(-2.0 * ln_l)
+    }
+
+    /// Evaluate the [`ExtendedLogLikelihood`] over the [`Dataset`] with the given free parameters.
+    ///
     /// This method also allows the user to input a maximum number of threads to use in the
     /// calculation, as it uses a parallel loop over events.
     ///
@@ -343,10 +419,10 @@ impl ExtendedLogLikelihood {
         create_pool(num_threads)?.install(|| {
             let data_res = self.data_manager.par_evaluate(parameters)?;
             let data_weights = self.data_manager.dataset.weights();
-            let n_data = self.data_manager.dataset.len() as f64;
+            let n_data = data_weights.iter().sum::<f64>();
             let mc_norm_int = self.mc_manager.par_evaluate(parameters)?;
             let mc_weights = self.mc_manager.dataset.weights();
-            let n_mc = self.mc_manager.dataset.len() as f64;
+            let n_mc = mc_weights.iter().sum::<f64>();
             let ln_l = (data_res
                 .par_iter()
                 .zip(data_weights)
@@ -362,8 +438,64 @@ impl ExtendedLogLikelihood {
         })
     }
 
-    /// Evaluate the unnormalized intensity function over the given [`Dataset`] with the given
-    /// free parameters.
+    /// Evaluate the [`ExtendedLogLikelihood`] over the [`Dataset`] with the given free parameters.
+    ///
+    /// This method allows the user to supply two lists of indices and will only evaluate events at
+    /// those indices. This can be used to evaluate only a subset of events or to resample events
+    /// with replacement, such as in a bootstrap.
+    ///
+    /// This method also allows the user to input a maximum number of threads to use in the
+    /// calculation, as it uses a parallel loop over events.
+    ///
+    /// # Errors
+    ///
+    /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
+    /// [`Model::compute`] for more information.
+    #[allow(clippy::suboptimal_flops)]
+    pub fn par_evaluate_indexed(
+        &self,
+        parameters: &[f64],
+        indices_data: &[usize],
+        indices_mc: &[usize],
+        num_threads: usize,
+    ) -> Result<f64, RustitudeError> {
+        if self.data_manager.model.contains_python_amplitudes
+            || self.mc_manager.model.contains_python_amplitudes
+        {
+            return Err(RustitudeError::PythonError(
+                "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!"
+                    .to_string(),
+            ));
+        }
+        create_pool(num_threads)?.install(|| {
+            let data_res = self
+                .data_manager
+                .par_evaluate_indexed(parameters, indices_data)?;
+            let data_weights = self.data_manager.dataset.weights_indexed(indices_data);
+            let n_data = data_weights.iter().sum::<f64>();
+            let mc_norm_int = self
+                .mc_manager
+                .par_evaluate_indexed(parameters, indices_mc)?;
+            let mc_weights = self.mc_manager.dataset.weights_indexed(indices_mc);
+            let n_mc = mc_weights.iter().sum::<f64>();
+            let ln_l = (data_res
+                .par_iter()
+                .zip(data_weights)
+                .map(|(l, w)| w * l.ln())
+                .sum::<f64>())
+                - (n_data / n_mc)
+                    * (mc_norm_int
+                        .par_iter()
+                        .zip(mc_weights)
+                        .map(|(l, w)| w * l)
+                        .sum::<f64>());
+            Ok(-2.0 * ln_l)
+        })
+    }
+
+    /// Evaluate the normalized intensity function over the given Monte-Carlo [`Dataset`] with the
+    /// given free parameters. This is intended to be used to plot a model over the dataset, usually
+    /// with the generated or accepted Monte-Carlo as the input.
     ///
     /// # Errors
     ///
@@ -373,14 +505,68 @@ impl ExtendedLogLikelihood {
     pub fn intensity(
         &self,
         parameters: &[f64],
-        dataset: &Dataset,
+        dataset_mc: &Dataset,
     ) -> Result<Vec<f64>, RustitudeError> {
-        let manager = Manager::new(&self.data_manager.model, dataset)?;
-        manager.evaluate(parameters)
+        let mc_manager = Manager::new(&self.data_manager.model, dataset_mc)?;
+        let data_len_weighted: f64 = self.data_manager.dataset.weights().iter().sum();
+        let mc_len_weighted: f64 = dataset_mc.weights().iter().sum();
+        mc_manager.evaluate(parameters).map(|r_vec| {
+            r_vec
+                .iter()
+                .zip(dataset_mc.events.iter())
+                .map(|(r, e)| r * data_len_weighted / mc_len_weighted * e.weight)
+                .collect()
+        })
     }
-    /// Evaluate the unnormalized intensity function over the given [`Dataset`] with the given
-    /// free parameters. This method also allows the user to input a maximum number of threads
-    /// to use in the calculation. This version uses a parallel loop over events.
+
+    /// Evaluate the normalized intensity function over the given Monte-Carlo [`Dataset`] with the
+    /// given free parameters. This is intended to be used to plot a model over the dataset, usually
+    /// with the generated or accepted Monte-Carlo as the input.
+    ///
+    /// This method allows the user to supply a list of indices and will only evaluate events at
+    /// those indices. This can be used to evaluate only a subset of events or to resample events
+    /// with replacement, such as in a bootstrap.
+    ///
+    /// # Errors
+    ///
+    /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
+    /// [`Model::compute`] for more information.
+    #[allow(clippy::suboptimal_flops)]
+    pub fn intensity_indexed(
+        &self,
+        parameters: &[f64],
+        dataset_mc: &Dataset,
+        indices_data: &[usize],
+        indices_mc: &[usize],
+    ) -> Result<Vec<f64>, RustitudeError> {
+        let mc_manager = Manager::new(&self.data_manager.model, dataset_mc)?;
+        let data_len_weighted = self
+            .data_manager
+            .dataset
+            .weights_indexed(indices_data)
+            .iter()
+            .sum::<f64>();
+        let mc_len_weighted = dataset_mc.weights_indexed(indices_mc).iter().sum::<f64>();
+        let view: Vec<&Event> = indices_mc
+            .par_iter()
+            .map(|&index| &mc_manager.dataset.events[index])
+            .collect();
+        mc_manager
+            .evaluate_indexed(parameters, indices_mc)
+            .map(|r_vec| {
+                r_vec
+                    .iter()
+                    .zip(view.iter())
+                    .map(|(r, e)| r * data_len_weighted / mc_len_weighted * e.weight)
+                    .collect()
+            })
+    }
+    /// Evaluate the normalized intensity function over the given [`Dataset`] with the given
+    /// free parameters. This is intended to be used to plot a model over the dataset, usually
+    /// with the generated or accepted Monte-Carlo as the input.
+    ///
+    /// This method also allows the user to input a maximum number of threads to use in the
+    /// calculation, as it uses a parallel loop over events.
     ///
     /// # Errors
     ///
@@ -402,64 +588,68 @@ impl ExtendedLogLikelihood {
             ));
         }
         let manager = Manager::new(&self.data_manager.model, dataset)?;
-        create_pool(num_threads)?.install(|| manager.par_evaluate(parameters))
-    }
-
-    /// Find the normalization integral for the [`Model`] over the [`Dataset`] with the given
-    /// free parameters.
-    ///
-    /// # Errors
-    ///
-    /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
-    /// [`Model::norm_int`] for more information.
-    #[deprecated(
-        since = "0.7.1",
-        note = "ExtendedLogLikelihood::evaluate is faster and should give equivalent results"
-    )]
-    pub fn norm_int(&self, parameters: &[f64], weighted: bool) -> Result<f64, RustitudeError> {
-        let mc_norm_int = self.mc_manager.norm_int(parameters)?;
-        if weighted {
-            let mc_weights = self.mc_manager.dataset.weights();
-            Ok(mc_norm_int.iter().zip(mc_weights).map(|(r, w)| r * w).sum())
-        } else {
-            Ok(mc_norm_int.iter().sum())
-        }
-    }
-    /// Find the normalization integral for the [`Model`] over the [`Dataset`] with the given
-    /// free parameters.
-    ///
-    /// # Errors
-    ///
-    /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
-    /// [`Model::norm_int`] for more information.
-    #[deprecated(
-        since = "0.7.1",
-        note = "ExtendedLogLikelihood::par_evaluate is faster and should give equivalent results"
-    )]
-    pub fn par_norm_int(
-        &self,
-        parameters: &[f64],
-        num_threads: usize,
-        weighted: bool,
-    ) -> Result<f64, RustitudeError> {
-        if self.data_manager.model.contains_python_amplitudes
-            || self.mc_manager.model.contains_python_amplitudes
-        {
-            return Err(RustitudeError::PythonError(
-                "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!"
-                    .to_string(),
-            ));
-        }
+        let data_len_weighted: f64 = self.data_manager.dataset.weights().iter().sum();
+        let ds_len_weighted: f64 = dataset.weights().iter().sum();
         create_pool(num_threads)?.install(|| {
-            let mc_norm_int = self.mc_manager.par_norm_int(parameters)?;
-            if weighted {
-                let mc_weights = self.mc_manager.dataset.weights();
-                Ok(mc_norm_int.iter().zip(mc_weights).map(|(r, w)| r * w).sum())
-            } else {
-                Ok(mc_norm_int.iter().sum())
-            }
+            manager.par_evaluate(parameters).map(|r_vec| {
+                r_vec
+                    .iter()
+                    .zip(dataset.events.iter())
+                    .map(|(r, e)| r * data_len_weighted / ds_len_weighted * e.weight)
+                    .collect()
+            })
         })
     }
+
+    /// Evaluate the normalized intensity function over the given Monte-Carlo [`Dataset`] with the
+    /// given free parameters. This is intended to be used to plot a model over the dataset, usually
+    /// with the generated or accepted Monte-Carlo as the input.
+    ///
+    /// This method allows the user to supply a list of indices and will only evaluate events at
+    /// those indices. This can be used to evaluate only a subset of events or to resample events
+    /// with replacement, such as in a bootstrap.
+    ///
+    /// This method also allows the user to input a maximum number of threads to use in the
+    /// calculation, as it uses a parallel loop over events.
+    ///
+    /// # Errors
+    ///
+    /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
+    /// [`Model::compute`] for more information.
+    #[allow(clippy::suboptimal_flops)]
+    pub fn par_intensity_indexed(
+        &self,
+        parameters: &[f64],
+        dataset_mc: &Dataset,
+        indices_data: &[usize],
+        indices_mc: &[usize],
+        num_threads: usize,
+    ) -> Result<Vec<f64>, RustitudeError> {
+        let mc_manager = Manager::new(&self.data_manager.model, dataset_mc)?;
+        let data_len_weighted = self
+            .data_manager
+            .dataset
+            .weights_indexed(indices_data)
+            .iter()
+            .sum::<f64>();
+        let mc_len_weighted = dataset_mc.weights_indexed(indices_mc).iter().sum::<f64>();
+        let view: Vec<&Event> = indices_mc
+            .par_iter()
+            .map(|&index| &mc_manager.dataset.events[index])
+            .collect();
+        create_pool(num_threads)?.install(|| {
+            mc_manager
+                .par_evaluate_indexed(parameters, indices_mc)
+                .map(|r_vec| {
+                    r_vec
+                        .par_iter()
+                        .zip(view.par_iter())
+                        .map(|(r, e)| r * data_len_weighted / mc_len_weighted * e.weight)
+                        .collect()
+                })
+        })
+    }
+
     /// Get a copy of an [`Amplitude`] in the [`Model`] by name.
     ///
     /// # Errors
@@ -603,6 +793,12 @@ impl ExtendedLogLikelihood {
     pub fn activate_all(&mut self) {
         self.data_manager.activate_all();
         self.mc_manager.activate_all()
+    }
+    /// Activate only the specified [`Amplitude`]s while deactivating the rest. See
+    /// [`Model::isolate`] for more information.
+    pub fn isolate(&mut self, amplitudes: Vec<&str>) {
+        self.data_manager.isolate(amplitudes.clone());
+        self.mc_manager.isolate(amplitudes);
     }
     /// Deactivate an [`Amplitude`] by name. See [`Model::deactivate`] for more information.
     pub fn deactivate(&mut self, amplitude: &str) {

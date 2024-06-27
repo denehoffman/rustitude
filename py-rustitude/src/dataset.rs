@@ -84,13 +84,7 @@ impl From<Dataset> for rust::Dataset {
 impl Dataset {
     #[getter]
     fn events(&self) -> Vec<Event> {
-        self.0
-            .events
-            .read_arc()
-            .iter()
-            .cloned()
-            .map(Event::from)
-            .collect()
+        self.0.events.iter().cloned().map(Event::from).collect()
     }
     #[getter]
     fn weights(&self) -> Vec<f64> {
@@ -103,18 +97,19 @@ impl Dataset {
     fn __getitem__(&self, idx: isize) -> PyResult<Py<Event>> {
         Ok(Python::with_gil(|py| Py::new(py, self.events()[idx as usize].clone())).unwrap())
     }
+
+    #[pyo3(signature = (range, bins, daughter_indices=None))]
     fn split_m(
         &self,
         range: (f64, f64),
         bins: usize,
         daughter_indices: Option<Vec<usize>>,
-    ) -> (Vec<Self>, Self, Self) {
-        let (binned_data, underflow, overflow) = self.0.split_m(range, bins, daughter_indices);
-        (
-            binned_data.into_iter().map(Dataset::from).collect(),
-            underflow.into(),
-            overflow.into(),
-        )
+    ) -> (Vec<Vec<usize>>, Vec<usize>, Vec<usize>) {
+        self.0.split_m(range, bins, daughter_indices)
+    }
+
+    fn get_bootstrap_indices(&self, seed: usize) -> Vec<usize> {
+        self.0.get_bootstrap_indices(seed)
     }
 
     #[staticmethod]

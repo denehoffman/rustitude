@@ -31,18 +31,17 @@ impl Node for BreitWigner {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         (self.m, (self.m1, (self.m2, (self.q, self.f)))) = dataset
             .events
-            .read()
             .par_iter()
             .map(|event| {
                 let p1: FourMomentum = self
                     .p1_indices
                     .iter()
-                    .map(|i| &event.daughter_p4s[*i])
+                    .map(|i| event.daughter_p4s[*i])
                     .sum();
                 let p2: FourMomentum = self
                     .p2_indices
                     .iter()
-                    .map(|i| &event.daughter_p4s[*i])
+                    .map(|i| event.daughter_p4s[*i])
                     .sum();
                 let m = (p1 + p2).m();
                 let m1 = p1.m();
@@ -214,7 +213,6 @@ impl Node for KMatrixF0 {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.2 = dataset
             .events
-            .read()
             .par_iter()
             .map(|event| {
                 let s = (event.daughter_p4s[0] + event.daughter_p4s[1]).m2();
@@ -296,7 +294,6 @@ impl Node for KMatrixF2 {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.2 = dataset
             .events
-            .read()
             .par_iter()
             .map(|event| {
                 let s = (event.daughter_p4s[0] + event.daughter_p4s[1]).m2();
@@ -372,7 +369,6 @@ impl Node for KMatrixA0 {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.2 = dataset
             .events
-            .read()
             .par_iter()
             .map(|event| {
                 let s = (event.daughter_p4s[0] + event.daughter_p4s[1]).m2();
@@ -444,7 +440,6 @@ impl Node for KMatrixA2 {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.2 = dataset
             .events
-            .read()
             .par_iter()
             .map(|event| {
                 let s = (event.daughter_p4s[0] + event.daughter_p4s[1]).m2();
@@ -516,7 +511,6 @@ impl Node for KMatrixRho {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.2 = dataset
             .events
-            .read()
             .par_iter()
             .map(|event| {
                 let s = (event.daughter_p4s[0] + event.daughter_p4s[1]).m2();
@@ -586,7 +580,6 @@ impl Node for KMatrixPi1 {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.2 = dataset
             .events
-            .read()
             .par_iter()
             .map(|event| {
                 let s = (event.daughter_p4s[0] + event.daughter_p4s[1]).m2();

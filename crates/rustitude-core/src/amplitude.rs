@@ -12,8 +12,7 @@
 //! We can then use [`Manager`](crate::manager::Manager)-like structs to handle computataion
 //! over [`Dataset`]s.
 use dyn_clone::DynClone;
-use itertools::{iproduct, Itertools};
-use nalgebra::ComplexField;
+use itertools::Itertools;
 use num::complex::Complex64;
 use rayon::prelude::*;
 use std::{
@@ -60,7 +59,7 @@ impl Parameter {
             name: name.to_string(),
             index: Some(index),
             fixed_index: None,
-            initial: 0.0,
+            initial: 1.0,
             bounds: (f64::NEG_INFINITY, f64::INFINITY),
         }
     }
@@ -154,7 +153,7 @@ impl Display for Parameter {
 /// impl Node for Ylm {
 ///     fn parameters(&self) -> Vec<String> { vec![] }
 ///     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
-///         self.1 = dataset.events.read()
+///         self.1 = dataset.events
 ///             .par_iter()
 ///             .map(|event| {
 ///                 let resonance = event.daughter_p4s[0] + event.daughter_p4s[1];
@@ -667,38 +666,6 @@ impl AsTree for CohSum {
     }
 }
 impl CohSum {
-    /// Function which returns a sum of all cross terms inside a coherent sum.
-    ///
-    /// Take the following coherent sum, where $`\vec{p}`$ are input parameters $`e`$ is an
-    /// event, and $`f_i`$ is the $`i`$th term in the sum:
-    ///
-    /// ```math
-    /// \left| \sum_{i\in\text{terms}} f_i(\vec{p}, e) \right|^2
-    /// ```
-    ///
-    /// This function will then return
-    ///
-    /// ```math
-    /// \sum_{i\in\text{terms}} \sum_{j\in\text{terms}} f_i(\vec{p}, e) f_j^*(\vec{p}, e)
-    /// ```
-    ///
-    /// This should be used to compute normalization integrals. Note that if on of the terms is
-    /// [`None`], this function will not add any products which contain that term. This can be used
-    /// to turn terms on and off.
-    #[deprecated(
-        since = "0.7.1",
-        note = "CohSum::compute is faster and should give equivalent results"
-    )]
-    pub fn norm_int(&self, cache: &[Option<Complex64>]) -> Option<f64> {
-        let results = self.0.iter().map(|al| al.compute(cache));
-        Some(
-            iproduct!(results.clone(), results)
-                .filter_map(|(a, b)| Some(a? * b?.conjugate()))
-                .sum::<Complex64>()
-                .re,
-        )
-    }
-
     /// Shortcut for computation using a cache of precomputed values. This method will return
     /// [`None`] if the cache value at the corresponding [`Amplitude`]'s
     /// [`Amplitude::cache_position`] is also [`None`], otherwise it just returns the corresponding
@@ -745,7 +712,7 @@ impl Debug for Model {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Model [ ")?;
         for op in &self.cohsums {
-            write!(f, "{} ", op)?;
+            write!(f, "{:?} ", op)?;
         }
         write!(f, "]")
     }
@@ -839,36 +806,6 @@ impl Model {
             .iter()
             .filter_map(|cohsum| cohsum.compute(&cache))
             .sum::<f64>())
-    }
-    /// Computes the result of evaluating the terms in the model with the given [`Parameter`]s for
-    /// the given [`Event`] by summing the result of [`CohSum::norm_int`] for each [`CohSum`]
-    /// contained in the [`Model`].
-    ///
-    /// # Errors
-    ///
-    /// This method yields a [`RustitudeError`] if any of the [`Amplitude::calculate`] steps fail.
-    #[deprecated(
-        since = "0.7.1",
-        note = "Model::compute is faster and should give equivalent results"
-    )]
-    pub fn norm_int(&self, parameters: &[f64], event: &Event) -> Result<f64, RustitudeError> {
-        let cache: Vec<Option<Complex64>> = self
-            .amplitudes
-            .iter()
-            .map(|amp| {
-                if amp.active {
-                    amp.calculate(parameters, event).map(Some)
-                } else {
-                    Ok(None)
-                }
-            })
-            .collect::<Result<Vec<Option<Complex64>>, RustitudeError>>()?;
-        Ok(self
-            .cohsums
-            .iter()
-            .map(|cohsum| cohsum.norm_int(&cache))
-            .sum::<Option<f64>>()
-            .unwrap_or_default())
     }
     /// Registers the [`Model`] with the [`Dataset`] by [`Amplitude::register`]ing each
     /// [`Amplitude`] and setting the proper cache position and parameter starting index.
@@ -1131,6 +1068,13 @@ impl Model {
                 .for_each(|amp| amp.active = true)
         });
     }
+    /// Activate only the specified [`Amplitude`]s while deactivating the rest.
+    pub fn isolate(&mut self, amplitudes: Vec<&str>) {
+        self.deactivate_all();
+        for amplitude in amplitudes {
+            self.activate(amplitude);
+        }
+    }
     /// Deactivates an [`Amplitude`] in the [`Model`] by name.
     pub fn deactivate(&mut self, amplitude: &str) {
         self.amplitudes.iter_mut().for_each(|amp| {
@@ -1355,12 +1299,7 @@ where
     F: Fn(&Event) -> f64 + Send + Sync + Copy,
 {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
-        self.calculated_variable = dataset
-            .events
-            .read()
-            .par_iter()
-            .map(self.variable)
-            .collect();
+        self.calculated_variable = dataset.events.par_iter().map(self.variable).collect();
         Ok(())
     }
 

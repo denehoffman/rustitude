@@ -41,6 +41,14 @@ impl Parameter {
         self.0.fixed_index
     }
     #[getter]
+    fn free(&self) -> bool {
+        self.0.index.is_some()
+    }
+    #[getter]
+    fn fixed(&self) -> bool {
+        self.0.index.is_none()
+    }
+    #[getter]
     fn initial(&self) -> f64 {
         self.0.initial
     }
@@ -578,6 +586,10 @@ impl Model {
     }
     fn activate_all(&mut self) {
         self.0.activate_all()
+    }
+    fn isolate(&mut self, amplitudes: Vec<String>) {
+        self.0
+            .isolate(amplitudes.iter().map(|s| s.as_ref()).collect())
     }
     fn deactivate(&mut self, amplitude: &str) {
         self.0.deactivate(amplitude)

@@ -10,9 +10,6 @@ use std::{
     ops::{Add, Sub},
 };
 
-#[cfg(feature = "simd")]
-use std::simd::prelude::*;
-
 /// Struct which holds energy and three-momentum as a four-vector.
 ///
 /// A four-momentum structure with helpful methods for boosts.
@@ -28,28 +25,8 @@ use std::simd::prelude::*;
 /// let vec_a = FourMomentum::new(1.3, 0.2, 0.3, 0.1);
 /// let vec_b = FourMomentum::new(4.2, 0.5, 0.4, 0.5);
 /// ```
-#[cfg(not(feature = "simd"))]
 #[derive(Debug, Clone, PartialEq, Copy, Default)]
 pub struct FourMomentum([f64; 4]);
-
-/// Struct which holds energy and three-momentum as a four-vector.
-///
-/// A four-momentum structure with helpful methods for boosts.
-///
-/// This is the basic structure of a Lorentz four-vector
-/// of the form $`(E, \vec{p})`$ where $`E`$ is the energy and $`\vec{p}`$ is the
-/// momentum.
-///
-/// # Examples
-/// ```
-/// use rustitude_core::prelude::*;
-///
-/// let vec_a = FourMomentum::new(1.3, 0.2, 0.3, 0.1);
-/// let vec_b = FourMomentum::new(4.2, 0.5, 0.4, 0.5);
-/// ```
-#[cfg(feature = "simd")]
-#[derive(Debug, Clone, PartialEq, Copy, Default)]
-pub struct FourMomentum(f64x4);
 
 impl Eq for FourMomentum {}
 
@@ -67,22 +44,12 @@ impl Display for FourMomentum {
 }
 
 impl FourMomentum {
-    #[cfg(not(feature = "simd"))]
     #[allow(clippy::missing_const_for_fn)]
     pub fn new(e: f64, px: f64, py: f64, pz: f64) -> Self {
         //! Create a new [`FourMomentum`] from energy and momentum components.
         //!
         //! Components are listed in the order $` (E, p_x, p_y, p_z) `$
         Self([e, px, py, pz])
-    }
-
-    #[cfg(feature = "simd")]
-    #[allow(clippy::missing_const_for_fn)]
-    pub fn new(e: f64, px: f64, py: f64, pz: f64) -> Self {
-        //! Create a new [`FourMomentum`] from energy and momentum components.
-        //!
-        //! Components are listed in the order $` (E, p_x, p_y, p_z) `$
-        Self([e, px, py, pz].into())
     }
 
     /// Returns the energy of the given [`FourMomentum`].
@@ -243,70 +210,30 @@ impl From<&FourMomentum> for Vector4<f64> {
     }
 }
 
-#[cfg(not(feature = "simd"))]
 impl From<Vector4<f64>> for FourMomentum {
     fn from(value: Vector4<f64>) -> Self {
         Self([value[0], value[1], value[2], value[3]])
     }
 }
 
-#[cfg(feature = "simd")]
-impl From<Vector4<f64>> for FourMomentum {
-    fn from(value: Vector4<f64>) -> Self {
-        Self(Simd::from_array([value[0], value[1], value[2], value[3]]))
-    }
-}
-
-#[cfg(not(feature = "simd"))]
 impl From<&Vector4<f64>> for FourMomentum {
     fn from(value: &Vector4<f64>) -> Self {
         Self([value[0], value[1], value[2], value[3]])
     }
 }
 
-#[cfg(feature = "simd")]
-impl From<&Vector4<f64>> for FourMomentum {
-    fn from(value: &Vector4<f64>) -> Self {
-        Self(Simd::from_array([value[0], value[1], value[2], value[3]]))
-    }
-}
-
-#[cfg(not(feature = "simd"))]
 impl From<Vec<f64>> for FourMomentum {
     fn from(value: Vec<f64>) -> Self {
         Self([value[0], value[1], value[2], value[3]])
     }
 }
 
-#[cfg(feature = "simd")]
-impl From<Vec<f64>> for FourMomentum {
-    fn from(value: Vec<f64>) -> Self {
-        Self(Simd::from_array([value[0], value[1], value[2], value[3]]))
-    }
-}
-
-#[cfg(not(feature = "simd"))]
 impl From<&Vec<f64>> for FourMomentum {
     fn from(value: &Vec<f64>) -> Self {
         Self([value[0], value[1], value[2], value[3]])
     }
 }
 
-#[cfg(feature = "simd")]
-impl From<&Vec<f64>> for FourMomentum {
-    fn from(value: &Vec<f64>) -> Self {
-        Self(Simd::from_array([value[0], value[1], value[2], value[3]]))
-    }
-}
-
-#[cfg(feature = "simd")]
-impl From<FourMomentum> for f64x4 {
-    fn from(value: FourMomentum) -> Self {
-        value.0
-    }
-}
-
-#[cfg(not(feature = "simd"))]
 impl Add for FourMomentum {
     type Output = Self;
     fn add(self, rhs: Self) -> Self::Output {
@@ -319,14 +246,6 @@ impl Add for FourMomentum {
     }
 }
 
-#[cfg(feature = "simd")]
-impl Add for FourMomentum {
-    type Output = FourMomentum;
-    fn add(self, rhs: Self) -> Self::Output {
-        FourMomentum(self.0 + rhs.0)
-    }
-}
-
 impl Add for &FourMomentum {
     type Output = <FourMomentum as Add>::Output;
     fn add(self, rhs: &FourMomentum) -> Self::Output {
@@ -334,7 +253,6 @@ impl Add for &FourMomentum {
     }
 }
 
-#[cfg(not(feature = "simd"))]
 impl Sub for FourMomentum {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self::Output {
@@ -347,14 +265,6 @@ impl Sub for FourMomentum {
     }
 }
 
-#[cfg(feature = "simd")]
-impl Sub for FourMomentum {
-    type Output = FourMomentum;
-    fn sub(self, rhs: Self) -> Self::Output {
-        FourMomentum(self.0 - rhs.0)
-    }
-}
-
 impl Sub for &FourMomentum {
     type Output = <FourMomentum as Sub>::Output;
     fn sub(self, rhs: &FourMomentum) -> Self::Output {
@@ -362,8 +272,55 @@ impl Sub for &FourMomentum {
     }
 }
 
-impl<'a> std::iter::Sum<&'a Self> for FourMomentum {
-    fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
-        iter.fold(Self::default(), |a, b| a + *b)
+impl std::iter::Sum<Self> for FourMomentum {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Self::default(), |a, b| a + b)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::assert_is_close;
+    use crate::utils::*;
+    #[test]
+    fn test_set_components() {
+        let mut p = FourMomentum::default();
+        p.set_e(1.0);
+        p.set_px(2.0);
+        p.set_py(3.0);
+        p.set_pz(4.0);
+        assert_is_close!(p.e(), 1.0);
+        assert_is_close!(p.px(), 2.0);
+        assert_is_close!(p.py(), 3.0);
+        assert_is_close!(p.pz(), 4.0);
+    }
+
+    #[test]
+    fn test_sum() {
+        let a = FourMomentum::new(0.1, 0.2, 0.3, 0.4);
+        let b = FourMomentum::new(1.0, 2.0, 3.0, 4.0);
+        let c = FourMomentum::new(10.0, 20.0, 30.0, 40.0);
+        let d: FourMomentum = [a, b, c].into_iter().sum();
+        assert_is_close!(d.e(), 11.1);
+        assert_is_close!(d.px(), 22.2);
+        assert_is_close!(d.py(), 33.3);
+        assert_is_close!(d.pz(), 44.4);
+    }
+
+    #[test]
+    fn test_ops() {
+        let a = FourMomentum::new(0.1, 0.2, 0.3, 0.4);
+        let b = FourMomentum::new(1.0, 2.0, 3.0, 4.0);
+        let c = a + b;
+        let d = b - a;
+        assert_is_close!(c.e(), 1.1);
+        assert_is_close!(c.px(), 2.2);
+        assert_is_close!(c.py(), 3.3);
+        assert_is_close!(c.pz(), 4.4);
+        assert_is_close!(d.e(), 0.9);
+        assert_is_close!(d.px(), 1.8);
+        assert_is_close!(d.py(), 2.7);
+        assert_is_close!(d.pz(), 3.6);
     }
 }
