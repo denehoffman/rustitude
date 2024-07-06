@@ -19,7 +19,7 @@ impl From<rust::FourMomentum> for FourMomentum {
 #[pymethods]
 impl FourMomentum {
     #[new]
-    pub fn new(e: f64, px: f64, py: f64, pz: f64) -> Self {
+    pub fn new(e: f32, px: f32, py: f32, pz: f32) -> Self {
         Self(rust::FourMomentum::new(e, px, py, pz))
     }
     fn __repr__(&self) -> String {
@@ -30,27 +30,27 @@ impl FourMomentum {
         self.0.to_string()
     }
     #[getter]
-    fn e(&self) -> f64 {
+    fn e(&self) -> f32 {
         self.0.e()
     }
     #[getter]
-    fn px(&self) -> f64 {
+    fn px(&self) -> f32 {
         self.0.px()
     }
     #[getter]
-    fn py(&self) -> f64 {
+    fn py(&self) -> f32 {
         self.0.py()
     }
     #[getter]
-    fn pz(&self) -> f64 {
+    fn pz(&self) -> f32 {
         self.0.pz()
     }
     #[getter]
-    fn m(&self) -> f64 {
+    fn m(&self) -> f32 {
         self.0.m()
     }
     #[getter]
-    fn m2(&self) -> f64 {
+    fn m2(&self) -> f32 {
         self.0.m2()
     }
     fn boost_along(&self, other: Self) -> Self {

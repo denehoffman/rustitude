@@ -28,11 +28,11 @@
 //! ```ignore
 //! pub struct Event {
 //!     pub index: usize,                    // Position of event within dataset
-//!     pub weight: f64,                     // Event weight
+//!     pub weight: f32,                     // Event weight
 //!     pub beam_p4: FourMomentum,           // Beam four-momentum
 //!     pub recoil_p4: FourMomentum,         // Recoil four-momentum
 //!     pub daughter_p4s: Vec<FourMomentum>, // Four-momenta of final state particles sans recoil
-//!     pub eps: Vector3<f64>,               // Beam polarization vector
+//!     pub eps: Vector3<f32>,               // Beam polarization vector
 //! }
 //! ```
 //!
@@ -81,8 +81,8 @@
 //! use rustitude_core::prelude::*
 //! struct ComplexScalar;
 //! impl Node for ComplexScalar {
-//!     fn calculate(&self, parameters: &[f64], _event: &Event) -> Result<Complex64, RustitudeError> {
-//!         Ok(Complex64::new(parameters[0], parameters[1]))
+//!     fn calculate(&self, parameters: &[f32], _event: &Event) -> Result<Complex32, RustitudeError> {
+//!         Ok(Complex32::new(parameters[0], parameters[1]))
 //!     }
 //!
 //!     fn parameters(&self) -> Vec<String> {
@@ -99,9 +99,9 @@
 //!
 //! #[derive(Default)]
 //! pub struct OmegaDalitz {
-//!     dalitz_z: Vec<f64>,
-//!     dalitz_sin3theta: Vec<f64>,
-//!     lambda: Vec<f64>,
+//!     dalitz_z: Vec<f32>,
+//!     dalitz_sin3theta: Vec<f32>,
+//!     lambda: Vec<f32>,
 //! }
 //!
 //! impl Node for OmegaDalitz {
@@ -123,17 +123,17 @@
 //!                 let m3pi = (2.0 * pip.m()) + pi0.m();
 //!                 let dalitz_d = 2.0 * omega.m() * (omega.m() - m3pi);
 //!                 let dalitz_sc = (1.0 / 3.0) * (omega.m2() + pip.m2() + pim.m2() + pi0.m2());
-//!                 let dalitz_x = f64::sqrt(3.0) * (dalitz_t - dalitz_u) / dalitz_d;
+//!                 let dalitz_x = f32::sqrt(3.0) * (dalitz_t - dalitz_u) / dalitz_d;
 //!                 let dalitz_y = 3.0 * (dalitz_sc - dalitz_s) / dalitz_d;
 //!
 //!                 let dalitz_z = dalitz_x * dalitz_x + dalitz_y * dalitz_y;
-//!                 let dalitz_sin3theta = f64::sin(3.0 * f64::asin(dalitz_y / f64::sqrt(dalitz_z)));
+//!                 let dalitz_sin3theta = f32::sin(3.0 * f32::asin(dalitz_y / f32::sqrt(dalitz_z)));
 //!
 //!                 let pip_omega = pip.boost_along(&omega);
 //!                 let pim_omega = pim.boost_along(&omega);
 //!                 let pi_cross = pip_omega.momentum().cross(&pim_omega.momentum());
 //!
-//!                 let lambda = (4.0 / 3.0) * f64::abs(pi_cross.dot(&pi_cross))
+//!                 let lambda = (4.0 / 3.0) * f32::abs(pi_cross.dot(&pi_cross))
 //!                     / ((1.0 / 9.0) * (omega.m2() - (2.0 * pip.m() + pi0.m()).powi(2)).powi(2));
 //!
 //!                 (dalitz_z, (dalitz_sin3theta, lambda))
@@ -142,7 +142,7 @@
 //!         Ok(())
 //!     }
 //!
-//!     fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
+//!     fn calculate(&self, parameters: &[f32], event: &Event) -> Result<Complex32, RustitudeError> {
 //!         let dalitz_z = self.dalitz_z[event.index];
 //!         let dalitz_sin3theta = self.dalitz_sin3theta[event.index];
 //!         let lambda = self.lambda[event.index];
@@ -150,7 +150,7 @@
 //!         let beta = parameters[1];
 //!         let gamma = parameters[2];
 //!         let delta = parameters[3];
-//!         Ok(f64::sqrt(f64::abs(
+//!         Ok(f32::sqrt(f32::abs(
 //!             lambda
 //!                 * (1.0
 //!                     + 2.0 * alpha * dalitz_z
@@ -238,7 +238,7 @@
 //! link our [`Model`](crate::amplitude::Model) to a [`Dataset`](crate::dataset::Dataset). This is done using a
 //! [`Manager`](crate::manager::Manager). Finally, two [`Manager`](crate::manager::Manager)s may be combined into an
 //! [`ExtendedLogLikelihood`](crate::manager::ExtendedLogLikelihood). Both of these manager-like structs have an
-//! `evaluate` method that takes some parameters as a `&[f64]` (along with a [`usize`] for the
+//! `evaluate` method that takes some parameters as a `&[f32]` (along with a [`usize`] for the
 //! number of threads to use for the [`ExtendedLogLikelihood`](crate::manager::ExtendedLogLikelihood)).
 //!
 //! ```ignore
@@ -289,7 +289,7 @@ pub mod prelude {
     pub use crate::four_momentum::FourMomentum;
     pub use crate::manager::{ExtendedLogLikelihood, Manager};
     pub use nalgebra::Vector3;
-    pub use num_complex::Complex64;
+    pub use num_complex::Complex32;
 }
 
 pub mod errors {
@@ -364,43 +364,28 @@ pub mod utils {
         Event {
             index: 0,
             weight: -0.48,
-            beam_p4: FourMomentum::new(8.747920989990234, 0.0, 0.0, 8.747920989990234),
-            recoil_p4: FourMomentum::new(
-                1.0409027338027954,
-                0.11911032348871231,
-                0.37394723296165466,
-                0.22158582508563995,
-            ),
+            beam_p4: FourMomentum::new(8.747_921, 0.0, 0.0, 8.747_921),
+            recoil_p4: FourMomentum::new(1.040_902_7, 0.119_110_32, 0.373_947_23, 0.221_585_83),
             daughter_p4s: vec![
-                FourMomentum::new(
-                    3.136247158050537,
-                    -0.11177468299865723,
-                    0.2934262752532959,
-                    3.080557346343994,
-                ),
-                FourMomentum::new(
-                    5.509043216705322,
-                    -0.007335639093071222,
-                    -0.667373538017273,
-                    5.445777893066406,
-                ),
+                FourMomentum::new(3.136_247_2, -0.111_774_68, 0.293_426_28, 3.080_557_3),
+                FourMomentum::new(5.509_043, -0.007_335_639, -0.667_373_54, 5.445_778),
             ],
-            eps: Vector3::from([0.3851095736026764, 0.022205278277397156, 0.0]),
+            eps: Vector3::from([0.385_109_57, 0.022_205_278, 0.0]),
         }
     }
 
     /// Checks if two floating point numbers are essentially equal.
     /// See [https://floating-point-gui.de/errors/comparison/](https://floating-point-gui.de/errors/comparison/).
-    pub fn is_close(a: f64, b: f64, epsilon: f64) -> bool {
-        let abs_a = f64::abs(a);
-        let abs_b = f64::abs(b);
-        let diff = f64::abs(a - b);
+    pub fn is_close(a: f32, b: f32, epsilon: f32) -> bool {
+        let abs_a = f32::abs(a);
+        let abs_b = f32::abs(b);
+        let diff = f32::abs(a - b);
         if a == b {
             true
-        } else if a == 0.0 || b == 0.0 || (abs_a + abs_b < f64::MIN_POSITIVE) {
-            diff < (epsilon * f64::MIN_POSITIVE)
+        } else if a == 0.0 || b == 0.0 || (abs_a + abs_b < f32::MIN_POSITIVE) {
+            diff < (epsilon * f32::MIN_POSITIVE)
         } else {
-            diff / f64::min(abs_a + abs_b, f64::MAX) < epsilon
+            diff / f32::min(abs_a + abs_b, f32::MAX) < epsilon
         }
     }
 
@@ -410,7 +395,7 @@ pub mod utils {
         ($given:expr, $expected:expr) => {
             match (&($given), &($expected)) {
                 (given, expected) => assert!(
-                    is_close(*given, *expected, 1e-7),
+                    $crate::utils::is_close(*given, *expected, 1e-7),
                     "assert_is_close!({}, {})
 
     a = {:?}
@@ -427,7 +412,7 @@ pub mod utils {
         ($given:expr, $expected:expr, $eps:expr) => {
             match (&($given), &($expected), &($eps)) {
                 (given, expected, eps) => assert!(
-                    is_close(*given, *expected, *eps),
+                    $crate::utils::is_close(*given, *expected, *eps),
                     "assert_is_close!({}, {}, {})
 
     a = {:?}

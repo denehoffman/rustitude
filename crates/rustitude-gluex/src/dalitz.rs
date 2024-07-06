@@ -3,9 +3,9 @@ use rustitude_core::prelude::*;
 
 #[derive(Default, Clone)]
 pub struct OmegaDalitz {
-    dalitz_z: Vec<f64>,
-    dalitz_sin3theta: Vec<f64>,
-    lambda: Vec<f64>,
+    dalitz_z: Vec<f32>,
+    dalitz_sin3theta: Vec<f32>,
+    lambda: Vec<f32>,
 }
 
 impl Node for OmegaDalitz {
@@ -26,17 +26,17 @@ impl Node for OmegaDalitz {
                 let m3pi = (2.0 * pip.m()) + pi0.m();
                 let dalitz_d = 2.0 * omega.m() * (omega.m() - m3pi);
                 let dalitz_sc = (1.0 / 3.0) * (omega.m2() + pip.m2() + pim.m2() + pi0.m2());
-                let dalitz_x = f64::sqrt(3.0) * (dalitz_t - dalitz_u) / dalitz_d;
+                let dalitz_x = f32::sqrt(3.0) * (dalitz_t - dalitz_u) / dalitz_d;
                 let dalitz_y = 3.0 * (dalitz_sc - dalitz_s) / dalitz_d;
 
                 let dalitz_z = dalitz_x * dalitz_x + dalitz_y * dalitz_y;
-                let dalitz_sin3theta = f64::sin(3.0 * f64::asin(dalitz_y / f64::sqrt(dalitz_z)));
+                let dalitz_sin3theta = f32::sin(3.0 * f32::asin(dalitz_y / f32::sqrt(dalitz_z)));
 
                 let pip_omega = pip.boost_along(&omega);
                 let pim_omega = pim.boost_along(&omega);
                 let pi_cross = pip_omega.momentum().cross(&pim_omega.momentum());
 
-                let lambda = (4.0 / 3.0) * f64::abs(pi_cross.dot(&pi_cross))
+                let lambda = (4.0 / 3.0) * f32::abs(pi_cross.dot(&pi_cross))
                     / ((1.0 / 9.0) * (omega.m2() - (2.0 * pip.m() + pi0.m()).powi(2)).powi(2));
 
                 (dalitz_z, (dalitz_sin3theta, lambda))
@@ -45,7 +45,7 @@ impl Node for OmegaDalitz {
         Ok(())
     }
 
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
+    fn calculate(&self, parameters: &[f32], event: &Event) -> Result<Complex32, RustitudeError> {
         let dalitz_z = self.dalitz_z[event.index];
         let dalitz_sin3theta = self.dalitz_sin3theta[event.index];
         let lambda = self.lambda[event.index];
@@ -53,7 +53,7 @@ impl Node for OmegaDalitz {
         let beta = parameters[1];
         let gamma = parameters[2];
         let delta = parameters[3];
-        Ok(f64::sqrt(f64::abs(
+        Ok(f32::sqrt(f32::abs(
             lambda
                 * (1.0
                     + 2.0 * alpha * dalitz_z

@@ -54,11 +54,11 @@ impl Manager {
             .collect()
     }
     #[getter]
-    fn bounds(&self) -> Vec<(f64, f64)> {
+    fn bounds(&self) -> Vec<(f32, f32)> {
         self.0.get_bounds()
     }
     #[getter]
-    fn initial(&self) -> Vec<f64> {
+    fn initial(&self) -> Vec<f32> {
         self.0.get_initial()
     }
     #[getter]
@@ -75,7 +75,7 @@ impl Manager {
         .map_err(PyErr::from)
     }
     #[pyo3(name = "__call__")]
-    fn call(&self, parameters: Vec<f64>) -> PyResult<Vec<f64>> {
+    fn call(&self, parameters: Vec<f32>) -> PyResult<Vec<f32>> {
         if self.0.model.contains_python_amplitudes {
             return Err(PyRuntimeError::new_err(
                 "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!",
@@ -84,7 +84,7 @@ impl Manager {
         self.0.par_evaluate(&parameters).map_err(PyErr::from)
     }
     #[pyo3(signature = (parameters, *, indices = None))]
-    fn evaluate(&self, parameters: Vec<f64>, indices: Option<Vec<usize>>) -> PyResult<Vec<f64>> {
+    fn evaluate(&self, parameters: Vec<f32>, indices: Option<Vec<usize>>) -> PyResult<Vec<f32>> {
         if let Some(inds) = indices {
             self.0
                 .evaluate_indexed(&parameters, &inds)
@@ -96,9 +96,9 @@ impl Manager {
     #[pyo3(signature = (parameters, *, indices = None))]
     fn par_evaluate(
         &self,
-        parameters: Vec<f64>,
+        parameters: Vec<f32>,
         indices: Option<Vec<usize>>,
-    ) -> PyResult<Vec<f64>> {
+    ) -> PyResult<Vec<f32>> {
         if self.0.model.contains_python_amplitudes {
             return Err(PyRuntimeError::new_err(
                 "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!",
@@ -138,18 +138,18 @@ impl Manager {
             .constrain(amplitude_1, parameter_1, amplitude_2, parameter_2)
             .map_err(PyErr::from)
     }
-    fn fix(&mut self, amplitude: &str, parameter: &str, value: f64) -> PyResult<()> {
+    fn fix(&mut self, amplitude: &str, parameter: &str, value: f32) -> PyResult<()> {
         self.0.fix(amplitude, parameter, value).map_err(PyErr::from)
     }
     fn free(&mut self, amplitude: &str, parameter: &str) -> PyResult<()> {
         self.0.free(amplitude, parameter).map_err(PyErr::from)
     }
-    fn set_bounds(&mut self, amplitude: &str, parameter: &str, bounds: (f64, f64)) -> PyResult<()> {
+    fn set_bounds(&mut self, amplitude: &str, parameter: &str, bounds: (f32, f32)) -> PyResult<()> {
         self.0
             .set_bounds(amplitude, parameter, bounds)
             .map_err(PyErr::from)
     }
-    fn set_initial(&mut self, amplitude: &str, parameter: &str, value: f64) -> PyResult<()> {
+    fn set_initial(&mut self, amplitude: &str, parameter: &str, value: f32) -> PyResult<()> {
         self.0
             .set_initial(amplitude, parameter, value)
             .map_err(PyErr::from)
@@ -223,11 +223,11 @@ impl ExtendedLogLikelihood {
             .collect()
     }
     #[getter]
-    fn bounds(&self) -> Vec<(f64, f64)> {
+    fn bounds(&self) -> Vec<(f32, f32)> {
         self.0.get_bounds()
     }
     #[getter]
-    fn initial(&self) -> Vec<f64> {
+    fn initial(&self) -> Vec<f32> {
         self.0.get_initial()
     }
     #[getter]
@@ -241,11 +241,11 @@ impl ExtendedLogLikelihood {
     #[pyo3(signature = (parameters, *, indices_data = None, indices_mc = None, num_threads = 1))]
     fn evaluate(
         &self,
-        parameters: Vec<f64>,
+        parameters: Vec<f32>,
         indices_data: Option<Vec<usize>>,
         indices_mc: Option<Vec<usize>>,
         num_threads: usize,
-    ) -> PyResult<f64> {
+    ) -> PyResult<f32> {
         if num_threads > 1 {
             if self.0.data_manager.model.contains_python_amplitudes
                 || self.0.mc_manager.model.contains_python_amplitudes
@@ -295,12 +295,12 @@ impl ExtendedLogLikelihood {
     #[pyo3(signature = (parameters, dataset, *, indices_data = None, indices_mc = None, num_threads = 1))]
     fn intensity(
         &self,
-        parameters: Vec<f64>,
+        parameters: Vec<f32>,
         dataset: Dataset,
         indices_data: Option<Vec<usize>>,
         indices_mc: Option<Vec<usize>>,
         num_threads: usize,
-    ) -> PyResult<Vec<f64>> {
+    ) -> PyResult<Vec<f32>> {
         if num_threads > 1 {
             if self.0.data_manager.model.contains_python_amplitudes
                 || self.0.mc_manager.model.contains_python_amplitudes
@@ -362,11 +362,11 @@ impl ExtendedLogLikelihood {
     #[pyo3(name = "__call__", signature = (parameters, *, indices_data = None, indices_mc = None, num_threads = 1))]
     fn call(
         &self,
-        parameters: Vec<f64>,
+        parameters: Vec<f32>,
         indices_data: Option<Vec<usize>>,
         indices_mc: Option<Vec<usize>>,
         num_threads: usize,
-    ) -> PyResult<f64> {
+    ) -> PyResult<f32> {
         self.evaluate(parameters, indices_data, indices_mc, num_threads)
     }
     fn get_amplitude(&self, amplitude_name: &str) -> PyResult<Amplitude> {
@@ -395,18 +395,18 @@ impl ExtendedLogLikelihood {
             .constrain(amplitude_1, parameter_1, amplitude_2, parameter_2)
             .map_err(PyErr::from)
     }
-    fn fix(&mut self, amplitude: &str, parameter: &str, value: f64) -> PyResult<()> {
+    fn fix(&mut self, amplitude: &str, parameter: &str, value: f32) -> PyResult<()> {
         self.0.fix(amplitude, parameter, value).map_err(PyErr::from)
     }
     fn free(&mut self, amplitude: &str, parameter: &str) -> PyResult<()> {
         self.0.free(amplitude, parameter).map_err(PyErr::from)
     }
-    fn set_bounds(&mut self, amplitude: &str, parameter: &str, bounds: (f64, f64)) -> PyResult<()> {
+    fn set_bounds(&mut self, amplitude: &str, parameter: &str, bounds: (f32, f32)) -> PyResult<()> {
         self.0
             .set_bounds(amplitude, parameter, bounds)
             .map_err(PyErr::from)
     }
-    fn set_initial(&mut self, amplitude: &str, parameter: &str, value: f64) -> PyResult<()> {
+    fn set_initial(&mut self, amplitude: &str, parameter: &str, value: f32) -> PyResult<()> {
         self.0
             .set_initial(amplitude, parameter, value)
             .map_err(PyErr::from)

@@ -49,11 +49,11 @@ impl Parameter {
         self.0.index.is_none()
     }
     #[getter]
-    fn initial(&self) -> f64 {
+    fn initial(&self) -> f32 {
         self.0.initial
     }
     #[getter]
-    fn bounds(&self) -> (f64, f64) {
+    fn bounds(&self) -> (f32, f32) {
         self.0.bounds
     }
     fn __str__(&self) -> String {
@@ -173,9 +173,9 @@ impl PyNode {
     }
     pub fn calculate(
         &self,
-        parameters: Vec<f64>,
+        parameters: Vec<f32>,
         event: crate::dataset::Event,
-    ) -> Result<rustitude_core::prelude::Complex64, PyErr> {
+    ) -> Result<rustitude_core::prelude::Complex32, PyErr> {
         rust::Node::calculate(self, &parameters, &event.into()).map_err(PyErr::from)
     }
     pub fn parameters(&self) -> Vec<String> {
@@ -207,9 +207,9 @@ impl rust::Node for PyNode {
 
     fn calculate(
         &self,
-        parameters: &[f64],
+        parameters: &[f32],
         event: &rustitude::prelude::Event,
-    ) -> Result<rustitude::prelude::Complex64, rustitude::prelude::RustitudeError> {
+    ) -> Result<rustitude::prelude::Complex32, rustitude::prelude::RustitudeError> {
         Python::with_gil(|py| {
             let py_parameters = PyList::new_bound(py, parameters);
             let py_event = crate::dataset::Event::from(event.clone());
@@ -219,7 +219,7 @@ impl rust::Node for PyNode {
                 .call_method1(py, "calculate", (py_parameters, py_event_obj))
             {
                 Ok(result) => {
-                    let complex: rustitude::prelude::Complex64 = result.extract(py)?;
+                    let complex: rustitude::prelude::Complex32 = result.extract(py)?;
                     Ok(complex)
                 }
                 Err(e) => Err(rustitude_core::errors::RustitudeError::from(e)),
@@ -522,11 +522,11 @@ impl Model {
             .collect()
     }
     #[getter]
-    fn bounds(&self) -> Vec<(f64, f64)> {
+    fn bounds(&self) -> Vec<(f32, f32)> {
         self.0.get_bounds()
     }
     #[getter]
-    fn initial(&self) -> Vec<f64> {
+    fn initial(&self) -> Vec<f32> {
         self.0.get_initial()
     }
     #[getter]
@@ -565,18 +565,18 @@ impl Model {
             .constrain(amplitude_1, parameter_1, amplitude_2, parameter_2)
             .map_err(PyErr::from)
     }
-    fn fix(&mut self, amplitude: &str, parameter: &str, value: f64) -> PyResult<()> {
+    fn fix(&mut self, amplitude: &str, parameter: &str, value: f32) -> PyResult<()> {
         self.0.fix(amplitude, parameter, value).map_err(PyErr::from)
     }
     fn free(&mut self, amplitude: &str, parameter: &str) -> PyResult<()> {
         self.0.free(amplitude, parameter).map_err(PyErr::from)
     }
-    fn set_bounds(&mut self, amplitude: &str, parameter: &str, bounds: (f64, f64)) -> PyResult<()> {
+    fn set_bounds(&mut self, amplitude: &str, parameter: &str, bounds: (f32, f32)) -> PyResult<()> {
         self.0
             .set_bounds(amplitude, parameter, bounds)
             .map_err(PyErr::from)
     }
-    fn set_initial(&mut self, amplitude: &str, parameter: &str, value: f64) -> PyResult<()> {
+    fn set_initial(&mut self, amplitude: &str, parameter: &str, value: f32) -> PyResult<()> {
         self.0
             .set_initial(amplitude, parameter, value)
             .map_err(PyErr::from)
@@ -612,7 +612,7 @@ fn pcscalar(name: &str) -> Amplitude {
     rust::pcscalar(name).into()
 }
 #[pyfunction(name = "PiecewiseM")]
-pub fn piecewise_m(name: &str, bins: usize, range: (f64, f64)) -> Amplitude {
+pub fn piecewise_m(name: &str, bins: usize, range: (f32, f32)) -> Amplitude {
     rust::piecewise_m(name, bins, range).into()
 }
 

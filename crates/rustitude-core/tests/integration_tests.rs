@@ -6,11 +6,11 @@ use rustitude_core::utils::*;
 fn test_masses() {
     let event = generate_test_event();
     assert_is_close!(event.beam_p4.m(), 0.0);
-    assert_is_close!(event.recoil_p4.m(), 0.9382720);
+    assert_is_close!(event.recoil_p4.m(), 0.938_272);
     assert_is_close!(event.daughter_p4s[0].m(), 0.497611, 1e-4);
     assert_is_close!(event.daughter_p4s[1].m(), 0.497611, 1e-4);
     let resonance: FourMomentum = event.daughter_p4s.into_iter().sum();
-    assert_is_close!(resonance.m(), 1.3742740);
+    assert_is_close!(resonance.m(), 1.374_273);
 }
 
 #[test]

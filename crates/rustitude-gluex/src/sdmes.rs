@@ -1,14 +1,14 @@
 use rayon::prelude::*;
 use rustitude_core::prelude::*;
 use sphrs::SHCoordinates;
-use std::f64::consts::PI;
+use std::f32::consts::PI;
 
 use crate::utils::Frame;
 
 #[derive(Clone)]
 pub struct TwoPiSDME {
     frame: Frame,
-    data: Vec<(f64, f64, f64, f64, f64, f64)>,
+    data: Vec<(f32, f32, f32, f32, f32, f32)>,
 }
 
 impl TwoPiSDME {
@@ -47,7 +47,7 @@ impl Node for TwoPiSDME {
                 (
                     p.theta_cos(),
                     p.theta().powi(2),
-                    f64::sin(2.0 * p.theta()),
+                    f32::sin(2.0 * p.theta()),
                     p.phi(),
                     big_phi,
                     pgamma,
@@ -57,7 +57,7 @@ impl Node for TwoPiSDME {
         Ok(())
     }
 
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
+    fn calculate(&self, parameters: &[f32], event: &Event) -> Result<Complex32, RustitudeError> {
         let (costheta, sinsqtheta, sin2theta, phi, big_phi, pgamma) = self.data[event.index];
         let pol_angle = event.eps[0].acos();
         let r_big_phi = pol_angle * 0.017453293 + big_phi;
@@ -71,20 +71,20 @@ impl Node for TwoPiSDME {
         let rho_102 = parameters[7];
         let rho_1n12 = parameters[8];
 
-        Ok(f64::sqrt(f64::abs(
+        Ok(f32::sqrt(f32::abs(
             (3.0 / (4.0 * PI))
                 * (0.5 * (1.0 - rho_000) + 0.5 * (3.0 * rho_000 - 1.0) * costheta * costheta
-                    - f64::sqrt(2.0) * rho_100 * sin2theta * f64::cos(phi)
-                    - rho_1n10 * f64::cos(2.0 * phi))
+                    - f32::sqrt(2.0) * rho_100 * sin2theta * f32::cos(phi)
+                    - rho_1n10 * f32::cos(2.0 * phi))
                 - pgamma
-                    * f64::cos(2.0 * r_big_phi)
+                    * f32::cos(2.0 * r_big_phi)
                     * (rho_111 * sinsqtheta + rho_001 * costheta * costheta
-                        - f64::sqrt(2.0) * rho_101 * sin2theta * f64::cos(phi)
-                        - rho_1n11 * sinsqtheta * f64::cos(2.0 * phi))
+                        - f32::sqrt(2.0) * rho_101 * sin2theta * f32::cos(phi)
+                        - rho_1n11 * sinsqtheta * f32::cos(2.0 * phi))
                 - pgamma
-                    * f64::sin(2.0 * r_big_phi)
-                    * (f64::sqrt(2.0) * rho_102 * sin2theta * f64::sin(phi)
-                        + rho_1n12 * sinsqtheta * f64::sin(2.0 * phi)),
+                    * f32::sin(2.0 * r_big_phi)
+                    * (f32::sqrt(2.0) * rho_102 * sin2theta * f32::sin(phi)
+                        + rho_1n12 * sinsqtheta * f32::sin(2.0 * phi)),
         ))
         .into())
     }
@@ -107,7 +107,7 @@ impl Node for TwoPiSDME {
 #[derive(Clone)]
 pub struct ThreePiSDME {
     frame: Frame,
-    data: Vec<(f64, f64, f64, f64, f64, f64)>,
+    data: Vec<(f32, f32, f32, f32, f32, f32)>,
 }
 
 impl ThreePiSDME {
@@ -148,7 +148,7 @@ impl Node for ThreePiSDME {
                 (
                     p.theta_cos(),
                     p.theta().powi(2),
-                    f64::sin(2.0 * p.theta()),
+                    f32::sin(2.0 * p.theta()),
                     p.phi(),
                     big_phi,
                     pgamma,
@@ -158,7 +158,7 @@ impl Node for ThreePiSDME {
         Ok(())
     }
 
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
+    fn calculate(&self, parameters: &[f32], event: &Event) -> Result<Complex32, RustitudeError> {
         let (costheta, sinsqtheta, sin2theta, phi, big_phi, pgamma) = self.data[event.index];
         let pol_angle = event.eps[0].acos();
         let r_big_phi = pol_angle * 0.017453293 + big_phi;
@@ -172,20 +172,20 @@ impl Node for ThreePiSDME {
         let rho_102 = parameters[7];
         let rho_1n12 = parameters[8];
 
-        Ok(f64::sqrt(f64::abs(
+        Ok(f32::sqrt(f32::abs(
             (3.0 / (4.0 * PI))
                 * (0.5 * (1.0 - rho_000) + 0.5 * (3.0 * rho_000 - 1.0) * costheta * costheta
-                    - f64::sqrt(2.0) * rho_100 * sin2theta * f64::cos(phi)
-                    - rho_1n10 * f64::cos(2.0 * phi))
+                    - f32::sqrt(2.0) * rho_100 * sin2theta * f32::cos(phi)
+                    - rho_1n10 * f32::cos(2.0 * phi))
                 - pgamma
-                    * f64::cos(2.0 * r_big_phi)
+                    * f32::cos(2.0 * r_big_phi)
                     * (rho_111 * sinsqtheta + rho_001 * costheta * costheta
-                        - f64::sqrt(2.0) * rho_101 * sin2theta * f64::cos(phi)
-                        - rho_1n11 * sinsqtheta * f64::cos(2.0 * phi))
+                        - f32::sqrt(2.0) * rho_101 * sin2theta * f32::cos(phi)
+                        - rho_1n11 * sinsqtheta * f32::cos(2.0 * phi))
                 - pgamma
-                    * f64::sin(2.0 * r_big_phi)
-                    * (f64::sqrt(2.0) * rho_102 * sin2theta * f64::sin(phi)
-                        + rho_1n12 * sinsqtheta * f64::sin(2.0 * phi)),
+                    * f32::sin(2.0 * r_big_phi)
+                    * (f32::sqrt(2.0) * rho_102 * sin2theta * f32::sin(phi)
+                        + rho_1n12 * sinsqtheta * f32::sin(2.0 * phi)),
         ))
         .into())
     }

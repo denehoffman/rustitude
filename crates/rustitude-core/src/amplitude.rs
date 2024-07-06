@@ -13,7 +13,7 @@
 //! over [`Dataset`]s.
 use dyn_clone::DynClone;
 use itertools::Itertools;
-use num::complex::Complex64;
+use num::complex::Complex32;
 use rayon::prelude::*;
 use std::{
     collections::HashSet,
@@ -42,17 +42,17 @@ pub struct Parameter {
     pub fixed_index: Option<usize>,
     /// The initial value the parameter takes, or alternatively the value of the parameter if it is
     /// fixed in the fit.
-    pub initial: f64,
+    pub initial: f32,
     /// Bounds for the given parameter (defaults to +/- infinity). This is mostly optional and
     /// isn't used in any Rust code asside from being able to get and set it.
-    pub bounds: (f64, f64),
+    pub bounds: (f32, f32),
 }
 impl Parameter {
     /// Creates a new [`Parameter`] within an [`Amplitude`] using the name of the [`Amplitude`],
     /// the name of the [`Parameter`], and the index of the parameter within the [`Model`].
     ///
     /// By default, new [`Parameter`]s are free, have an initial value of `0.0`, and their bounds
-    /// are set to `(f64::NEG_INFINITY, f64::INFINITY)`.
+    /// are set to `(f32::NEG_INFINITY, f32::INFINITY)`.
     pub fn new(amplitude: &str, name: &str, index: usize) -> Self {
         Self {
             amplitude: amplitude.to_string(),
@@ -60,7 +60,7 @@ impl Parameter {
             index: Some(index),
             fixed_index: None,
             initial: 1.0,
-            bounds: (f64::NEG_INFINITY, f64::INFINITY),
+            bounds: (f32::NEG_INFINITY, f32::INFINITY),
         }
     }
 }
@@ -91,7 +91,7 @@ impl Display for Parameter {
 /// A trait which contains all the required methods for a functioning [`Amplitude`].
 ///
 /// The [`Node`] trait represents any mathematical structure which takes in some parameters and some
-/// [`Event`] data and computes a [`Complex64`] for each [`Event`]. This is the fundamental
+/// [`Event`] data and computes a [`Complex32`] for each [`Event`]. This is the fundamental
 /// building block of all analyses built with Rustitude. Nodes are intended to be optimized at the
 /// user level, so they should be implemented on structs which can store some precalculated data.
 ///
@@ -103,7 +103,7 @@ impl Display for Parameter {
 /// use rustitude_core::prelude::*;
 ///
 /// use nalgebra::{SMatrix, SVector};
-/// use num_complex::Complex64;
+/// use num_complex::Complex32;
 /// use rayon::prelude::*;
 /// use sphrs::SHEval;
 /// use sphrs::{ComplexSH, Coordinates};
@@ -144,7 +144,7 @@ impl Display for Parameter {
 /// }
 ///
 /// #[derive(Clone)]
-/// struct Ylm(Wave, Vec<Complex64>);
+/// struct Ylm(Wave, Vec<Complex32>);
 /// impl Ylm {
 ///     fn new(wave: Wave) -> Self {
 ///         Self(wave, Vec::default())
@@ -174,7 +174,7 @@ impl Display for Parameter {
 ///         Ok(())
 ///     }
 ///
-///     fn calculate(&self, _parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
+///     fn calculate(&self, _parameters: &[f32], event: &Event) -> Result<Complex32, RustitudeError> {
 ///         Ok(self.1[event.index])
 ///     }
 /// }
@@ -187,8 +187,8 @@ impl Display for Parameter {
 /// #[derive(Clone)]
 /// struct ComplexScalar;
 /// impl Node for ComplexScalar {
-///     fn calculate(&self, parameters: &[f64], _event: &Event) -> Result<Complex64, RustitudeError> {
-///         Ok(Complex64::new(parameters[0], parameters[1]))
+///     fn calculate(&self, parameters: &[f32], _event: &Event) -> Result<Complex32, RustitudeError> {
+///         Ok(Complex32::new(parameters[0], parameters[1]))
 ///     }
 ///
 ///     fn parameters(&self) -> Vec<String> {
@@ -212,12 +212,12 @@ pub trait Node: Sync + Send + DynClone {
         Ok(())
     }
 
-    /// A method which runs every time the amplitude is evaluated and produces a [`Complex64`].
+    /// A method which runs every time the amplitude is evaluated and produces a [`Complex32`].
     ///
     /// Because this method is run on every evaluation, it should be as lean as possible.
     /// Additionally, you should avoid [`rayon`]'s parallel loops inside this method since we
     /// already parallelize over the [`Dataset`]. This method expects a single [`Event`] as well as
-    /// a slice of [`f64`]s. This slice is guaranteed to have the same length and order as
+    /// a slice of [`f32`]s. This slice is guaranteed to have the same length and order as
     /// specified in the [`Node::parameters`] method, or it will be empty if that method returns
     /// [`None`].
     ///
@@ -225,7 +225,7 @@ pub trait Node: Sync + Send + DynClone {
     ///
     /// This function should be written to return a [`RustitudeError`] if any part of the
     /// calculation fails.
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError>;
+    fn calculate(&self, parameters: &[f32], event: &Event) -> Result<Complex32, RustitudeError>;
 
     /// A method which specifies the number and order of parameters used by the [`Node`].
     ///
@@ -271,7 +271,7 @@ pub trait AmpLike: DynClone + Send + Sync + Debug + Display + AsTree {
     /// Given a cache of complex values calculated from a list of amplitudes, this method will
     /// calculate the desired mathematical structure given by the [`AmpLike`] and any
     /// [`AmpLike`]s it contains.
-    fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64>;
+    fn compute(&self, cache: &[Option<Complex32>]) -> Option<Complex32>;
     /// This method returns clones of any [`AmpLike`]s wrapped by the given [`AmpLike`].
     fn get_cloned_terms(&self) -> Option<Vec<Box<dyn AmpLike>>> {
         None
@@ -355,8 +355,8 @@ pub trait AsTree {
 pub struct Amplitude {
     /// A name which uniquely identifies an [`Amplitude`] within a sum and group.
     pub name: String,
-    /// A [`Node`] which contains all of the operations needed to compute a [`Complex64`] from an
-    /// [`Event`] in a [`Dataset`], a [`Vec<f64>`] of parameter values, and possibly some
+    /// A [`Node`] which contains all of the operations needed to compute a [`Complex32`] from an
+    /// [`Event`] in a [`Dataset`], a [`Vec<f32>`] of parameter values, and possibly some
     /// precomputed values.
     pub node: Box<dyn Node>,
     /// Indicates whether the amplitude should be included in calculations or skipped.
@@ -436,7 +436,7 @@ impl Node for Amplitude {
         debug!("Precalculated amplitude {}", self.name);
         Ok(())
     }
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
+    fn calculate(&self, parameters: &[f32], event: &Event) -> Result<Complex32, RustitudeError> {
         let res = self.node.calculate(
             &parameters
                 [self.parameter_index_start..self.parameter_index_start + self.parameters.len()],
@@ -467,7 +467,7 @@ impl AmpLike for Amplitude {
         vec![self]
     }
 
-    fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
+    fn compute(&self, cache: &[Option<Complex32>]) -> Option<Complex32> {
         let res = cache[self.cache_position];
         debug!(
             "Computing {} from cache: {:?}",
@@ -500,8 +500,8 @@ impl AmpLike for Real {
         self.0.walk_mut()
     }
 
-    fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
-        let res: Option<Complex64> = self.0.compute(cache).map(|r| r.re.into());
+    fn compute(&self, cache: &[Option<Complex32>]) -> Option<Complex32> {
+        let res: Option<Complex32> = self.0.compute(cache).map(|r| r.re.into());
         debug!(
             "Computing {:?} from cache: {:?}",
             self,
@@ -544,8 +544,8 @@ impl AmpLike for Imag {
         self.0.walk_mut()
     }
 
-    fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
-        let res: Option<Complex64> = self.0.compute(cache).map(|r| r.im.into());
+    fn compute(&self, cache: &[Option<Complex32>]) -> Option<Complex32> {
+        let res: Option<Complex32> = self.0.compute(cache).map(|r| r.im.into());
         debug!(
             "Computing {:?} from cache: {:?}",
             self,
@@ -613,10 +613,10 @@ impl AmpLike for Product {
         self.0.iter_mut().flat_map(|op| op.walk_mut()).collect()
     }
 
-    fn compute(&self, cache: &[Option<Complex64>]) -> Option<Complex64> {
+    fn compute(&self, cache: &[Option<Complex32>]) -> Option<Complex32> {
         let mut values = self.0.iter().filter_map(|op| op.compute(cache)).peekable();
-        let res: Option<Complex64> = if values.peek().is_none() {
-            Some(Complex64::default())
+        let res: Option<Complex32> = if values.peek().is_none() {
+            Some(Complex32::default())
         } else {
             Some(values.product())
         };
@@ -671,12 +671,12 @@ impl CohSum {
     /// [`Amplitude::cache_position`] is also [`None`], otherwise it just returns the corresponding
     /// cached value. The computation is run across the [`CohSum`]'s terms, and the absolute square
     /// of the result is returned (coherent sum).
-    pub fn compute(&self, cache: &[Option<Complex64>]) -> Option<f64> {
+    pub fn compute(&self, cache: &[Option<Complex32>]) -> Option<f32> {
         Some(
             self.0
                 .iter()
                 .filter_map(|al| al.compute(cache))
-                .sum::<Complex64>()
+                .sum::<Complex32>()
                 .norm_sqr(),
         )
     }
@@ -784,13 +784,13 @@ impl Model {
     /// # Errors
     ///
     /// This method yields a [`RustitudeError`] if any of the [`Amplitude::calculate`] steps fail.
-    pub fn compute(&self, parameters: &[f64], event: &Event) -> Result<f64, RustitudeError> {
+    pub fn compute(&self, parameters: &[f32], event: &Event) -> Result<f32, RustitudeError> {
         // TODO: Stop reallocating?
 
-        // NOTE: This seems to be just as fast as using a Vec<Complex64> and replacing active
+        // NOTE: This seems to be just as fast as using a Vec<Complex32> and replacing active
         // amplitudes by multiplying their cached values by 0.0. Branch prediction doesn't get us
         // any performance here I guess.
-        let cache: Vec<Option<Complex64>> = self
+        let cache: Vec<Option<Complex32>> = self
             .amplitudes
             .iter()
             .map(|amp| {
@@ -800,12 +800,12 @@ impl Model {
                     Ok(None)
                 }
             })
-            .collect::<Result<Vec<Option<Complex64>>, RustitudeError>>()?;
+            .collect::<Result<Vec<Option<Complex32>>, RustitudeError>>()?;
         Ok(self
             .cohsums
             .iter()
             .filter_map(|cohsum| cohsum.compute(&cache))
-            .sum::<f64>())
+            .sum::<f32>())
     }
     /// Registers the [`Model`] with the [`Dataset`] by [`Amplitude::register`]ing each
     /// [`Amplitude`] and setting the proper cache position and parameter starting index.
@@ -933,7 +933,7 @@ impl Model {
         &mut self,
         amplitude: &str,
         parameter: &str,
-        value: f64,
+        value: f32,
     ) -> Result<(), RustitudeError> {
         let search_par = self.get_parameter(amplitude, parameter)?;
         let fixed_index = self.get_min_fixed_index();
@@ -976,7 +976,7 @@ impl Model {
         &mut self,
         amplitude: &str,
         parameter: &str,
-        bounds: (f64, f64),
+        bounds: (f32, f32),
     ) -> Result<(), RustitudeError> {
         let search_par = self.get_parameter(amplitude, parameter)?;
         if search_par.index.is_some() {
@@ -1003,7 +1003,7 @@ impl Model {
         &mut self,
         amplitude: &str,
         parameter: &str,
-        initial: f64,
+        initial: f32,
     ) -> Result<(), RustitudeError> {
         let search_par = self.get_parameter(amplitude, parameter)?;
         if search_par.index.is_some() {
@@ -1022,7 +1022,7 @@ impl Model {
         Ok(())
     }
     /// Returns a list of bounds of free [`Parameter`]s in the [`Model`].
-    pub fn get_bounds(&self) -> Vec<(f64, f64)> {
+    pub fn get_bounds(&self) -> Vec<(f32, f32)> {
         let any_fixed = if self.any_fixed() { 1 } else { 0 };
         self.group_by_index()
             .iter()
@@ -1031,7 +1031,7 @@ impl Model {
             .collect()
     }
     /// Returns a list of initial values of free [`Parameter`]s in the [`Model`].
-    pub fn get_initial(&self) -> Vec<f64> {
+    pub fn get_initial(&self) -> Vec<f32> {
         let any_fixed = if self.any_fixed() { 1 } else { 0 };
         self.group_by_index()
             .iter()
@@ -1160,8 +1160,8 @@ impl Node for Scalar {
     fn parameters(&self) -> Vec<String> {
         vec!["value".to_string()]
     }
-    fn calculate(&self, parameters: &[f64], _event: &Event) -> Result<Complex64, RustitudeError> {
-        Ok(Complex64::new(parameters[0], 0.0))
+    fn calculate(&self, parameters: &[f32], _event: &Event) -> Result<Complex32, RustitudeError> {
+        Ok(Complex32::new(parameters[0], 0.0))
     }
 }
 
@@ -1194,8 +1194,8 @@ pub fn scalar(name: &str) -> Amplitude {
 #[derive(Clone)]
 pub struct ComplexScalar;
 impl Node for ComplexScalar {
-    fn calculate(&self, parameters: &[f64], _event: &Event) -> Result<Complex64, RustitudeError> {
-        Ok(Complex64::new(parameters[0], parameters[1]))
+    fn calculate(&self, parameters: &[f32], _event: &Event) -> Result<Complex32, RustitudeError> {
+        Ok(Complex32::new(parameters[0], parameters[1]))
     }
 
     fn parameters(&self) -> Vec<String> {
@@ -1232,8 +1232,8 @@ pub fn cscalar(name: &str) -> Amplitude {
 #[derive(Clone)]
 pub struct PolarComplexScalar;
 impl Node for PolarComplexScalar {
-    fn calculate(&self, parameters: &[f64], _event: &Event) -> Result<Complex64, RustitudeError> {
-        Ok(parameters[0] * Complex64::cis(parameters[1]))
+    fn calculate(&self, parameters: &[f32], _event: &Event) -> Result<Complex32, RustitudeError> {
+        Ok(parameters[0] * Complex32::cis(parameters[1]))
     }
 
     fn parameters(&self) -> Vec<String> {
@@ -1263,26 +1263,26 @@ pub fn pcscalar(name: &str) -> Amplitude {
 #[derive(Clone)]
 pub struct Piecewise<F>
 where
-    F: Fn(&Event) -> f64 + Send + Sync + Copy,
+    F: Fn(&Event) -> f32 + Send + Sync + Copy,
 {
-    edges: Vec<(f64, f64)>,
+    edges: Vec<(f32, f32)>,
     variable: F,
-    calculated_variable: Vec<f64>,
+    calculated_variable: Vec<f32>,
 }
 
 impl<F> Piecewise<F>
 where
-    F: Fn(&Event) -> f64 + Send + Sync + Copy,
+    F: Fn(&Event) -> f32 + Send + Sync + Copy,
 {
     /// Create a new [`Piecewise`] struct from a number of bins, a range of values, and a callable
     /// which defines a variable over the [`Event`]s in a [`Dataset`].
-    pub fn new(bins: usize, range: (f64, f64), variable: F) -> Self {
-        let diff = (range.1 - range.0) / (bins as f64);
+    pub fn new(bins: usize, range: (f32, f32), variable: F) -> Self {
+        let diff = (range.1 - range.0) / (bins as f32);
         let edges = (0..bins)
             .map(|i| {
                 (
-                    (i as f64).mul_add(diff, range.0),
-                    ((i + 1) as f64).mul_add(diff, range.0),
+                    (i as f32).mul_add(diff, range.0),
+                    ((i + 1) as f32).mul_add(diff, range.0),
                 )
             })
             .collect();
@@ -1296,20 +1296,20 @@ where
 
 impl<F> Node for Piecewise<F>
 where
-    F: Fn(&Event) -> f64 + Send + Sync + Copy,
+    F: Fn(&Event) -> f32 + Send + Sync + Copy,
 {
     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
         self.calculated_variable = dataset.events.par_iter().map(self.variable).collect();
         Ok(())
     }
 
-    fn calculate(&self, parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
+    fn calculate(&self, parameters: &[f32], event: &Event) -> Result<Complex32, RustitudeError> {
         let val = self.calculated_variable[event.index];
         let opt_i_bin = self.edges.iter().position(|&(l, r)| val >= l && val <= r);
         opt_i_bin.map_or_else(
-            || Ok(Complex64::default()),
+            || Ok(Complex32::default()),
             |i_bin| {
-                Ok(Complex64::new(
+                Ok(Complex32::new(
                     parameters[i_bin * 2],
                     parameters[(i_bin * 2) + 1],
                 ))
@@ -1324,7 +1324,7 @@ where
     }
 }
 
-pub fn piecewise_m(name: &str, bins: usize, range: (f64, f64)) -> Amplitude {
+pub fn piecewise_m(name: &str, bins: usize, range: (f32, f32)) -> Amplitude {
     //! Creates a named [`Piecewise`] amplitude with the resonance mass as the binning variable.
     Amplitude::new(
         name,

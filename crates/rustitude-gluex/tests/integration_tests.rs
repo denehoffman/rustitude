@@ -19,17 +19,17 @@ fn test_ylm() -> Result<(), RustitudeError> {
     let manager = Manager::new(&Model::new(vec![y00.imag().as_cohsum()]), &dataset)?;
     assert_is_close!(manager.evaluate(&[])?[0], 0.0);
     let manager = Manager::new(&Model::new(vec![y11.real().as_cohsum()]), &dataset)?;
-    assert_is_close!(manager.evaluate(&[])?[0], 0.07321731);
+    assert_is_close!(manager.evaluate(&[])?[0], 0.07321755);
     let manager = Manager::new(&Model::new(vec![y11.imag().as_cohsum()]), &dataset)?;
-    assert_is_close!(manager.evaluate(&[])?[0], 0.02033001);
+    assert_is_close!(manager.evaluate(&[])?[0], 0.020_330_08);
     let manager = Manager::new(&Model::new(vec![y22.real().as_cohsum()]), &dataset)?;
-    assert_is_close!(manager.evaluate(&[])?[0], 0.07918444);
+    assert_is_close!(manager.evaluate(&[])?[0], 0.079_183_795);
     let manager = Manager::new(&Model::new(vec![y22.imag().as_cohsum()]), &dataset)?;
-    assert_is_close!(manager.evaluate(&[])?[0], 0.02198688);
+    assert_is_close!(manager.evaluate(&[])?[0], 0.021_986_704);
     let manager = Manager::new(&Model::new(vec![y33.real().as_cohsum()]), &dataset)?;
-    assert_is_close!(manager.evaluate(&[])?[0], 0.0004255249);
+    assert_is_close!(manager.evaluate(&[])?[0], 0.000_425_394_8);
     let manager = Manager::new(&Model::new(vec![y33.imag().as_cohsum()]), &dataset)?;
-    assert_is_close!(manager.evaluate(&[])?[0], 0.0001181541);
+    assert_is_close!(manager.evaluate(&[])?[0], 0.000_118_118_02);
     Ok(())
 }
 
@@ -49,33 +49,33 @@ fn test_zlm() -> Result<(), RustitudeError> {
     let manager = Manager::new(&Model::new(vec![z00p.imag().as_cohsum()]), &dataset)?;
     assert_is_close!(manager.evaluate(&[])?[0], 0.04262128);
     let manager = Manager::new(&Model::new(vec![z11p.real().as_cohsum()]), &dataset)?;
-    assert_is_close!(manager.evaluate(&[])?[0], 0.0018273925);
+    assert_is_close!(manager.evaluate(&[])?[0], 0.0018273992);
     let manager = Manager::new(&Model::new(vec![z11p.imag().as_cohsum()]), &dataset)?;
-    assert_is_close!(manager.evaluate(&[])?[0], 0.05665150);
+    assert_is_close!(manager.evaluate(&[])?[0], 0.056_651_685);
     let manager = Manager::new(&Model::new(vec![z22p.real().as_cohsum()]), &dataset)?;
-    assert_is_close!(manager.evaluate(&[])?[0], 0.0019763229);
+    assert_is_close!(manager.evaluate(&[])?[0], 0.001_976_306_6);
     let manager = Manager::new(&Model::new(vec![z22p.imag().as_cohsum()]), &dataset)?;
-    assert_is_close!(manager.evaluate(&[])?[0], 0.06126853);
+    assert_is_close!(manager.evaluate(&[])?[0], 0.061_268_03);
     let manager = Manager::new(&Model::new(vec![z33p.real().as_cohsum()]), &dataset)?;
-    assert_is_close!(manager.evaluate(&[])?[0], 0.000010620453);
+    assert_is_close!(manager.evaluate(&[])?[0], 0.000_010_617_216_5);
     let manager = Manager::new(&Model::new(vec![z33p.imag().as_cohsum()]), &dataset)?;
-    assert_is_close!(manager.evaluate(&[])?[0], 0.0003292476);
+    assert_is_close!(manager.evaluate(&[])?[0], 0.000_329_146_95);
     let manager = Manager::new(&Model::new(vec![z00n.real().as_cohsum()]), &dataset)?;
     assert_is_close!(manager.evaluate(&[])?[0], 0.006259242);
     let manager = Manager::new(&Model::new(vec![z00n.imag().as_cohsum()]), &dataset)?;
     assert_is_close!(manager.evaluate(&[])?[0], 0.09615357);
     let manager = Manager::new(&Model::new(vec![z11n.real().as_cohsum()]), &dataset)?;
-    assert_is_close!(manager.evaluate(&[])?[0], 0.0008100147);
+    assert_is_close!(manager.evaluate(&[])?[0], 0.000_810_017_7);
     let manager = Manager::new(&Model::new(vec![z11n.imag().as_cohsum()]), &dataset)?;
-    assert_is_close!(manager.evaluate(&[])?[0], 0.12780573);
+    assert_is_close!(manager.evaluate(&[])?[0], 0.127_806_13);
     let manager = Manager::new(&Model::new(vec![z22n.real().as_cohsum()]), &dataset)?;
-    assert_is_close!(manager.evaluate(&[])?[0], 0.0008760300);
+    assert_is_close!(manager.evaluate(&[])?[0], 0.000_876_022_74);
     let manager = Manager::new(&Model::new(vec![z22n.imag().as_cohsum()]), &dataset)?;
-    assert_is_close!(manager.evaluate(&[])?[0], 0.13822176);
+    assert_is_close!(manager.evaluate(&[])?[0], 0.138_220_62);
     let manager = Manager::new(&Model::new(vec![z33n.real().as_cohsum()]), &dataset)?;
-    assert_is_close!(manager.evaluate(&[])?[0], 0.000004707649);
+    assert_is_close!(manager.evaluate(&[])?[0], 0.000_004_706_215_3);
     let manager = Manager::new(&Model::new(vec![z33n.imag().as_cohsum()]), &dataset)?;
-    assert_is_close!(manager.evaluate(&[])?[0], 0.0007427823);
+    assert_is_close!(manager.evaluate(&[])?[0], 0.000_742_555_25);
     Ok(())
 }
 
@@ -86,43 +86,43 @@ fn test_f0() -> Result<(), RustitudeError> {
     let manager = Manager::new(&Model::new(vec![f0.real().as_cohsum()]), &dataset)?;
     assert_is_close!(
         manager.evaluate(&[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])?[0],
-        0.030680506
+        0.030_680_573
     );
     assert_is_close!(
         manager.evaluate(&[0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])?[0],
-        0.054357208
+        0.054_358_285
     );
     assert_is_close!(
         manager.evaluate(&[0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])?[0],
-        0.0027290857
+        0.002_729_235
     );
     assert_is_close!(
         manager.evaluate(&[0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])?[0],
-        0.0000011722429
+        0.000_001_174_522_7
     );
     assert_is_close!(
         manager.evaluate(&[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0])?[0],
-        0.122108042
+        0.122_109
     );
     assert_is_close!(
         manager.evaluate(&[0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0])?[0],
-        0.153889632
+        0.153_888_26
     );
     assert_is_close!(
         manager.evaluate(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])?[0],
-        0.003648740
+        0.003_648_736_3
     );
     assert_is_close!(
         manager.evaluate(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0])?[0],
-        0.0008152275
+        0.000_815_246
     );
     assert_is_close!(
         manager.evaluate(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0])?[0],
-        0.000078969229
+        0.000_078_956_4
     );
     assert_is_close!(
         manager.evaluate(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0])?[0],
-        0.017668038
+        0.017_668_229
     );
     assert_is_close!(
         manager.evaluate(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])?[0],
@@ -138,35 +138,35 @@ fn test_f2() -> Result<(), RustitudeError> {
     let manager = Manager::new(&Model::new(vec![f2.real().as_cohsum()]), &dataset)?;
     assert_is_close!(
         manager.evaluate(&[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])?[0],
-        0.079874652
+        0.079_874_024
     );
     assert_is_close!(
         manager.evaluate(&[0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])?[0],
-        0.116874084
+        0.116_876_364
     );
     assert_is_close!(
         manager.evaluate(&[0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0])?[0],
-        0.5885590974
+        0.588_550_03
     );
     assert_is_close!(
         manager.evaluate(&[0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0])?[0],
-        0.0255428643
+        0.025_541_838
     );
     assert_is_close!(
         manager.evaluate(&[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])?[0],
-        0.097405045
+        0.097_404_32
     );
     assert_is_close!(
         manager.evaluate(&[0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0])?[0],
-        0.004549439
+        0.004_549_420_4
     );
     assert_is_close!(
         manager.evaluate(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0])?[0],
-        0.011321180
+        0.011_321_053
     );
     assert_is_close!(
         manager.evaluate(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0])?[0],
-        0.007075583
+        0.007_075_636
     );
     assert_is_close!(
         manager.evaluate(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])?[0],
@@ -180,10 +180,10 @@ fn test_a0() -> Result<(), RustitudeError> {
     let dataset = Dataset::new(vec![generate_test_event()]);
     let a0 = KMatrixA0::new(1).into_amplitude("A0(1)");
     let manager = Manager::new(&Model::new(vec![a0.real().as_cohsum()]), &dataset)?;
-    assert_is_close!(manager.evaluate(&[1.0, 0.0, 0.0, 0.0])?[0], 0.084485367);
-    assert_is_close!(manager.evaluate(&[0.0, 1.0, 0.0, 0.0])?[0], 0.0099839209);
-    assert_is_close!(manager.evaluate(&[0.0, 0.0, 1.0, 0.0])?[0], 1.726739721);
-    assert_is_close!(manager.evaluate(&[0.0, 0.0, 0.0, 1.0])?[0], 1.299322808);
+    assert_is_close!(manager.evaluate(&[1.0, 0.0, 0.0, 0.0])?[0], 0.084_485_64);
+    assert_is_close!(manager.evaluate(&[0.0, 1.0, 0.0, 0.0])?[0], 0.009_983_987);
+    assert_is_close!(manager.evaluate(&[0.0, 0.0, 1.0, 0.0])?[0], 1.726_750_9);
+    assert_is_close!(manager.evaluate(&[0.0, 0.0, 0.0, 1.0])?[0], 1.299_370_9);
     assert_is_close!(manager.evaluate(&[0.0, 0.0, 0.0, 0.0])?[0], 0.0);
     Ok(())
 }
@@ -193,10 +193,10 @@ fn test_a2() -> Result<(), RustitudeError> {
     let dataset = Dataset::new(vec![generate_test_event()]);
     let a2 = KMatrixA2::new(1).into_amplitude("A2(1)");
     let manager = Manager::new(&Model::new(vec![a2.real().as_cohsum()]), &dataset)?;
-    assert_is_close!(manager.evaluate(&[1.0, 0.0, 0.0, 0.0])?[0], 0.34870050);
-    assert_is_close!(manager.evaluate(&[0.0, 1.0, 0.0, 0.0])?[0], 0.91958706);
-    assert_is_close!(manager.evaluate(&[0.0, 0.0, 1.0, 0.0])?[0], 0.005929765);
-    assert_is_close!(manager.evaluate(&[0.0, 0.0, 0.0, 1.0])?[0], 0.026281367);
+    assert_is_close!(manager.evaluate(&[1.0, 0.0, 0.0, 0.0])?[0], 0.348_697_72);
+    assert_is_close!(manager.evaluate(&[0.0, 1.0, 0.0, 0.0])?[0], 0.919_610_8);
+    assert_is_close!(manager.evaluate(&[0.0, 0.0, 1.0, 0.0])?[0], 0.005_930_149_5);
+    assert_is_close!(manager.evaluate(&[0.0, 0.0, 0.0, 1.0])?[0], 0.026_281_15);
     assert_is_close!(manager.evaluate(&[0.0, 0.0, 0.0, 0.0])?[0], 0.0);
     Ok(())
 }
@@ -206,10 +206,13 @@ fn test_rho() -> Result<(), RustitudeError> {
     let dataset = Dataset::new(vec![generate_test_event()]);
     let rho = KMatrixRho::new(1).into_amplitude("Rho(1)");
     let manager = Manager::new(&Model::new(vec![rho.real().as_cohsum()]), &dataset)?;
-    assert_is_close!(manager.evaluate(&[1.0, 0.0, 0.0, 0.0])?[0], 0.0007601991);
-    assert_is_close!(manager.evaluate(&[0.0, 1.0, 0.0, 0.0])?[0], 0.0007605480);
-    assert_is_close!(manager.evaluate(&[0.0, 0.0, 1.0, 0.0])?[0], 0.266948124);
-    assert_is_close!(manager.evaluate(&[0.0, 0.0, 0.0, 1.0])?[0], 0.029465809);
+    assert_is_close!(
+        manager.evaluate(&[1.0, 0.0, 0.0, 0.0])?[0],
+        0.000_760_193_04
+    );
+    assert_is_close!(manager.evaluate(&[0.0, 1.0, 0.0, 0.0])?[0], 0.000_760_549);
+    assert_is_close!(manager.evaluate(&[0.0, 0.0, 1.0, 0.0])?[0], 0.266_946_82);
+    assert_is_close!(manager.evaluate(&[0.0, 0.0, 0.0, 1.0])?[0], 0.029_465_48);
     assert_is_close!(manager.evaluate(&[0.0, 0.0, 0.0, 0.0])?[0], 0.0);
     Ok(())
 }
@@ -219,8 +222,8 @@ fn test_pi1() -> Result<(), RustitudeError> {
     let dataset = Dataset::new(vec![generate_test_event()]);
     let pi1 = KMatrixPi1::new(1).into_amplitude("Rho(1)");
     let manager = Manager::new(&Model::new(vec![pi1.real().as_cohsum()]), &dataset)?;
-    assert_is_close!(manager.evaluate(&[1.0, 0.0])?[0], 0.6947747815);
-    assert_is_close!(manager.evaluate(&[0.0, 1.0])?[0], 0.9365046503);
+    assert_is_close!(manager.evaluate(&[1.0, 0.0])?[0], 0.694_777_7);
+    assert_is_close!(manager.evaluate(&[0.0, 1.0])?[0], 0.936_495_9);
     assert_is_close!(manager.evaluate(&[0.0, 0.0])?[0], 0.0);
     Ok(())
 }

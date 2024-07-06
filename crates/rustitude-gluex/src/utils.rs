@@ -4,24 +4,24 @@ use factorial::Factorial;
 use rustitude_core::prelude::*;
 use sphrs::Coordinates;
 
-pub fn breakup_momentum(m0: f64, m1: f64, m2: f64) -> f64 {
-    f64::sqrt(f64::abs(
+pub fn breakup_momentum(m0: f32, m1: f32, m2: f32) -> f32 {
+    f32::sqrt(f32::abs(
         m0.powi(4) + m1.powi(4) + m2.powi(4)
             - 2.0 * (m0.powi(2) * m1.powi(2) + m0.powi(2) * m2.powi(2) + m1.powi(2) * m2.powi(2)),
     )) / (2.0 * m0)
 }
 
-pub fn blatt_weisskopf(m0: f64, m1: f64, m2: f64, l: usize) -> f64 {
+pub fn blatt_weisskopf(m0: f32, m1: f32, m2: f32, l: usize) -> f32 {
     let q = breakup_momentum(m0, m1, m2);
-    let z = q.powi(2) / f64::powi(0.1973, 2);
+    let z = q.powi(2) / f32::powi(0.1973, 2);
     match l {
         0 => 1.0,
-        1 => f64::sqrt((2.0 * z) / (z + 1.0)),
-        2 => f64::sqrt((13.0 * z.powi(2)) / ((z - 3.0).powi(2) + 9.0 * z)),
-        3 => f64::sqrt(
+        1 => f32::sqrt((2.0 * z) / (z + 1.0)),
+        2 => f32::sqrt((13.0 * z.powi(2)) / ((z - 3.0).powi(2) + 9.0 * z)),
+        3 => f32::sqrt(
             (277.0 * z.powi(3)) / (z * (z - 15.0).powi(2) + 9.0 * (2.0 * z - 5.0).powi(2)),
         ),
-        4 => f64::sqrt(
+        4 => f32::sqrt(
             (12746.0 * z.powi(4)) / (z.powi(2) - 45.0 * z + 105.0).powi(2)
                 + 25.0 * z * (2.0 * z - 21.0).powi(2),
         ),
@@ -29,41 +29,41 @@ pub fn blatt_weisskopf(m0: f64, m1: f64, m2: f64, l: usize) -> f64 {
     }
 }
 
-pub fn small_wigner_d_matrix(beta: f64, j: usize, m: isize, n: isize) -> f64 {
+pub fn small_wigner_d_matrix(beta: f32, j: usize, m: isize, n: isize) -> f32 {
     let jpm = (j as i32 + m as i32) as u32;
     let jmm = (j as i32 - m as i32) as u32;
     let jpn = (j as i32 + n as i32) as u32;
     let jmn = (j as i32 - n as i32) as u32;
     let prefactor =
-        f64::sqrt((jpm.factorial() * jmm.factorial() * jpn.factorial() * jmn.factorial()) as f64);
+        f32::sqrt((jpm.factorial() * jmm.factorial() * jpn.factorial() * jmn.factorial()) as f32);
     let s_min = isize::max(0, n - m) as usize;
     let s_max = isize::min(jpn as isize, jmm as isize) as usize;
-    let sum: f64 = (s_min..=s_max)
+    let sum: f32 = (s_min..=s_max)
         .map(|s| {
-            ((-1.0f64).powi(m as i32 - n as i32 + s as i32)
-                * (f64::cos(beta / 2.0)
+            ((-1.0f32).powi(m as i32 - n as i32 + s as i32)
+                * (f32::cos(beta / 2.0)
                     .powi(2 * (j as i32) + n as i32 - m as i32 - 2 * (s as i32)))
-                * (f64::sin(beta / 2.0).powi(m as i32 - n as i32 + 2 * s as i32)))
+                * (f32::sin(beta / 2.0).powi(m as i32 - n as i32 + 2 * s as i32)))
                 / ((jpm - s as u32).factorial()
                     * (s as u32).factorial()
                     * ((m - n + s as isize) as u32).factorial()
-                    * (jmm - s as u32).factorial()) as f64
+                    * (jmm - s as u32).factorial()) as f32
         })
         .sum();
     prefactor * sum
 }
 
 pub fn wigner_d_matrix(
-    alpha: f64,
-    beta: f64,
-    gamma: f64,
+    alpha: f32,
+    beta: f32,
+    gamma: f32,
     j: usize,
     m: isize,
     n: isize,
-) -> Complex64 {
-    Complex64::cis(-(m as f64) * alpha)
+) -> Complex32 {
+    Complex32::cis(-(m as f32) * alpha)
         * small_wigner_d_matrix(beta, j, m, n)
-        * Complex64::cis(-(n as f64) * gamma)
+        * Complex32::cis(-(n as f32) * gamma)
 }
 
 #[derive(Clone, Copy, Default)]
@@ -170,11 +170,11 @@ impl FromStr for Frame {
 impl Frame {
     pub fn coordinates(
         &self,
-        beam_res_vec: &Vector3<f64>,
-        recoil_res_vec: &Vector3<f64>,
-        daughter_res_vec: &Vector3<f64>,
+        beam_res_vec: &Vector3<f32>,
+        recoil_res_vec: &Vector3<f32>,
+        daughter_res_vec: &Vector3<f32>,
         event: &Event,
-    ) -> (Vector3<f64>, Vector3<f64>, Vector3<f64>, Coordinates<f64>) {
+    ) -> (Vector3<f32>, Vector3<f32>, Vector3<f32>, Coordinates<f32>) {
         match self {
             Frame::Helicity => {
                 let z = -recoil_res_vec.normalize();
