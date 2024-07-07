@@ -17,5 +17,9 @@ rayon = { workspace = true }
 rustitude-core = { workspace = true }
 sphrs = { workspace = true }
 
+[features]
+default = []
+float = ["rustitude-core/float"]
+
 [package.metadata.docs.rs]
 rustdoc-args = ["--html-in-header", "./docs-header.html"]

@@ -24,6 +24,10 @@ dyn-clone = { workspace = true }
 tracing = { workspace = true }
 fastrand = { workspace = true }
 
+[features]
+default = []
+float = []
+
 [dev-dependencies]
 sphrs = { workspace = true }
 

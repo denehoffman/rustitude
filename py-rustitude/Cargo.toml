@@ -12,8 +12,12 @@ crate-type = ["cdylib"]
 
 [dependencies]
 rayon = { workspace = true }
-rustitude = { workspace = true, default-features = true }
+rustitude = { workspace = true }
 rustitude-core = { workspace = true }
 rustitude-gluex = { workspace = true }
 nalgebra = { workspace = true }
 pyo3 = { workspace = true }
+
+[features]
+default = []
+float = ["rustitude/float", "rustitude-core/float", "rustitude-gluex/float"]

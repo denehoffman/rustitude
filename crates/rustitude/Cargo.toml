@@ -29,6 +29,7 @@ harness = false
 [features]
 default = ["gluex"]
 gluex = ["dep:rustitude-gluex"]
+float = ["rustitude-core/float", "rustitude-gluex/float"]
 
 [package.metadata.docs.rs]
 rustdoc-args = ["--html-in-header", "./docs-header.html"]
