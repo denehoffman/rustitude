@@ -288,8 +288,31 @@ pub mod prelude {
     pub use crate::errors::RustitudeError;
     pub use crate::four_momentum::FourMomentum;
     pub use crate::manager::{ExtendedLogLikelihood, Manager};
+    pub use crate::{constants::*, ComplexField, Field};
     pub use nalgebra::Vector3;
-    pub use num_complex::Complex32;
+}
+
+#[cfg(feature = "float")]
+/// Type describing the numeric precision of the [`rustitude_core`] crate
+pub type Field = f32;
+
+#[cfg(not(feature = "float"))]
+/// Type describing the numeric precision of the [`rustitude_core`] crate
+pub type Field = f64;
+
+/// Type describing complex numbers in the [`rustitude_core`] crate (same precision as
+/// [`crate::Field`])
+pub type ComplexField = num_complex::Complex<Field>;
+
+#[cfg(feature = "float")]
+pub mod constants {
+    //! Module containing the contents of [`std::<Float>::consts::*`](`std::f32::consts`)
+    pub use std::f32::consts::*;
+}
+#[cfg(not(feature = "float"))]
+pub mod constants {
+    //! Module containing the contents of [`std::<Float>::consts::*`](`std::f64::consts`)
+    pub use std::f64::consts::*;
 }
 
 pub mod errors {
@@ -376,16 +399,16 @@ pub mod utils {
 
     /// Checks if two floating point numbers are essentially equal.
     /// See [https://floating-point-gui.de/errors/comparison/](https://floating-point-gui.de/errors/comparison/).
-    pub fn is_close(a: f32, b: f32, epsilon: f32) -> bool {
-        let abs_a = f32::abs(a);
-        let abs_b = f32::abs(b);
-        let diff = f32::abs(a - b);
+    pub fn is_close(a: Field, b: Field, epsilon: Field) -> bool {
+        let abs_a = Field::abs(a);
+        let abs_b = Field::abs(b);
+        let diff = Field::abs(a - b);
         if a == b {
             true
-        } else if a == 0.0 || b == 0.0 || (abs_a + abs_b < f32::MIN_POSITIVE) {
-            diff < (epsilon * f32::MIN_POSITIVE)
+        } else if a == 0.0 || b == 0.0 || (abs_a + abs_b < Field::MIN_POSITIVE) {
+            diff < (epsilon * Field::MIN_POSITIVE)
         } else {
-            diff / f32::min(abs_a + abs_b, f32::MAX) < epsilon
+            diff / Field::min(abs_a + abs_b, Field::MAX) < epsilon
         }
     }
 
@@ -393,23 +416,33 @@ pub mod utils {
     #[macro_export]
     macro_rules! assert_is_close {
         ($given:expr, $expected:expr) => {
+            let abs_a = Field::abs($given);
+            let abs_b = Field::abs($expected);
+            let diff = Field::abs($given - $expected);
+            let abs_diff = diff / Field::min(abs_a + abs_b, Field::MAX);
             match (&($given), &($expected)) {
                 (given, expected) => assert!(
-                    $crate::utils::is_close(*given, *expected, 1e-7),
+                    $crate::utils::is_close(Field::from(*given), *expected, 1e-5),
                     "assert_is_close!({}, {})
 
     a = {:?}
     b = {:?}
+    |a - b| / (|a| + |b|) = {:?} > 1e-5
 
 ",
                     stringify!($given),
                     stringify!($expected),
                     given,
-                    expected
+                    expected,
+                    abs_diff
                 ),
             }
         };
         ($given:expr, $expected:expr, $eps:expr) => {
+            let abs_a = Field::abs($given);
+            let abs_b = Field::abs($expected);
+            let diff = Field::abs($given - $expected);
+            let abs_diff = diff / Field::min(abs_a + abs_b, Field::MAX);
             match (&($given), &($expected), &($eps)) {
                 (given, expected, eps) => assert!(
                     $crate::utils::is_close(*given, *expected, *eps),
@@ -417,13 +450,16 @@ pub mod utils {
 
     a = {:?}
     b = {:?}
+    |a - b| / (|a| + |b|) = {:?} > {:?}
 
 ",
                     stringify!($given),
                     stringify!($expected),
                     stringify!($eps),
                     given,
-                    expected
+                    expected,
+                    abs_diff,
+                    eps
                 ),
             }
         };

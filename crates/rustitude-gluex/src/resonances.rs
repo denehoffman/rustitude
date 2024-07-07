@@ -1,6 +1,5 @@
 use crate::utils::blatt_weisskopf;
 use crate::utils::breakup_momentum;
-use std::f32::consts::PI;
 
 use nalgebra::{SMatrix, SVector};
 use rayon::prelude::*;
@@ -11,11 +10,11 @@ pub struct BreitWigner {
     p1_indices: Vec<usize>,
     p2_indices: Vec<usize>,
     l: usize,
-    m: Vec<f32>,
-    m1: Vec<f32>,
-    m2: Vec<f32>,
-    q: Vec<f32>,
-    f: Vec<f32>,
+    m: Vec<Field>,
+    m1: Vec<Field>,
+    m2: Vec<Field>,
+    q: Vec<Field>,
+    f: Vec<Field>,
 }
 impl BreitWigner {
     pub fn new(p1_indices: &[usize], p2_indices: &[usize], l: usize) -> Self {
@@ -33,16 +32,8 @@ impl Node for BreitWigner {
             .events
             .par_iter()
             .map(|event| {
-                let p1: FourMomentum = self
-                    .p1_indices
-                    .iter()
-                    .map(|i| event.daughter_p4s[*i])
-                    .sum();
-                let p2: FourMomentum = self
-                    .p2_indices
-                    .iter()
-                    .map(|i| event.daughter_p4s[*i])
-                    .sum();
+                let p1: FourMomentum = self.p1_indices.iter().map(|i| event.daughter_p4s[*i]).sum();
+                let p2: FourMomentum = self.p2_indices.iter().map(|i| event.daughter_p4s[*i]).sum();
                 let m = (p1 + p2).m();
                 let m1 = p1.m();
                 let m2 = p2.m();
@@ -54,7 +45,11 @@ impl Node for BreitWigner {
         Ok(())
     }
 
-    fn calculate(&self, parameters: &[f32], event: &Event) -> Result<Complex32, RustitudeError> {
+    fn calculate(
+        &self,
+        parameters: &[Field],
+        event: &Event,
+    ) -> Result<ComplexField, RustitudeError> {
         let m = self.m[event.index];
         let m1 = self.m1[event.index];
         let m2 = self.m2[event.index];
@@ -65,7 +60,7 @@ impl Node for BreitWigner {
         let f0 = blatt_weisskopf(m0, m1, m2, self.l);
         let q0 = breakup_momentum(m0, m1, m2);
         let g = g0 * (m0 / m) * (q / q0) * (f.powi(2) / f0.powi(2));
-        Ok(f * (m0 * g0 / PI) / Complex32::new(m0.powi(2) - m.powi(2), -1.0 * m0 * g))
+        Ok(f * (m0 * g0 / PI) / ComplexField::new(m0.powi(2) - m.powi(2), -1.0 * m0 * g))
     }
 
     fn parameters(&self) -> Vec<String> {
@@ -75,33 +70,33 @@ impl Node for BreitWigner {
 
 #[derive(Clone, Copy)]
 pub struct AdlerZero {
-    pub s_0: f32,
-    pub s_norm: f32,
+    pub s_0: Field,
+    pub s_norm: Field,
 }
 #[derive(Clone)]
 struct KMatrixConstants<const C: usize, const R: usize> {
-    g: SMatrix<f32, C, R>,
-    c: SMatrix<f32, C, C>,
-    m1s: [f32; C],
-    m2s: [f32; C],
-    mrs: [f32; R],
+    g: SMatrix<Field, C, R>,
+    c: SMatrix<Field, C, C>,
+    m1s: [Field; C],
+    m2s: [Field; C],
+    mrs: [Field; R],
     adler_zero: Option<AdlerZero>,
     l: usize,
 }
 
 impl<const C: usize, const R: usize> KMatrixConstants<C, R> {
-    fn chi_plus(s: f32, m1: f32, m2: f32) -> f32 {
+    fn chi_plus(s: Field, m1: Field, m2: Field) -> Field {
         1.0 - ((m1 + m2) * (m1 + m2)) / s
     }
 
-    fn chi_minus(s: f32, m1: f32, m2: f32) -> f32 {
+    fn chi_minus(s: Field, m1: Field, m2: Field) -> Field {
         1.0 - ((m1 - m2) * (m1 - m2)) / s
     }
 
-    fn rho(s: f32, m1: f32, m2: f32) -> Complex32 {
-        Complex32::from(Self::chi_plus(s, m1, m2) * Self::chi_minus(s, m1, m2)).sqrt()
+    fn rho(s: Field, m1: Field, m2: Field) -> ComplexField {
+        ComplexField::from(Self::chi_plus(s, m1, m2) * Self::chi_minus(s, m1, m2)).sqrt()
     }
-    fn c_matrix(&self, s: f32) -> SMatrix<Complex32, C, C> {
+    fn c_matrix(&self, s: Field) -> SMatrix<ComplexField, C, C> {
         SMatrix::from_diagonal(&SVector::from_fn(|i, _| {
             Self::rho(s, self.m1s[i], self.m2s[i]) / PI
                 * ((Self::chi_plus(s, self.m1s[i], self.m2s[i])
@@ -114,39 +109,39 @@ impl<const C: usize, const R: usize> KMatrixConstants<C, R> {
                     * (self.m2s[i] / self.m1s[i]).ln()
         }))
     }
-    fn barrier_factor(s: f32, m1: f32, m2: f32, mr: f32, l: usize) -> f32 {
+    fn barrier_factor(s: Field, m1: Field, m2: Field, mr: Field, l: usize) -> Field {
         blatt_weisskopf(s.sqrt(), m1, m2, l) / blatt_weisskopf(mr, m1, m2, l)
     }
-    fn barrier_matrix(&self, s: f32) -> SMatrix<f32, C, R> {
+    fn barrier_matrix(&self, s: Field) -> SMatrix<Field, C, R> {
         SMatrix::from_fn(|i, a| {
             Self::barrier_factor(s, self.m1s[i], self.m2s[i], self.mrs[a], self.l)
         })
     }
 
-    fn k_matrix(&self, s: f32) -> SMatrix<Complex32, C, C> {
+    fn k_matrix(&self, s: Field) -> SMatrix<ComplexField, C, C> {
         let bf = self.barrier_matrix(s);
         SMatrix::from_fn(|i, j| {
             (0..R)
                 .map(|a| {
-                    Complex32::from(
+                    ComplexField::from(
                         bf[(i, a)]
                             * bf[(j, a)]
                             * (self.g[(i, a)] * self.g[(j, a)] / (self.mrs[a].powi(2) - s)
                                 + self.c[(i, j)]),
                     )
                 })
-                .sum::<Complex32>()
+                .sum::<ComplexField>()
                 * self.adler_zero.map_or(1.0, |az| (s - az.s_0) / az.s_norm)
         })
     }
 
-    fn pole_product(&self, _s: f32) -> f32 {
+    fn pole_product(&self, _s: Field) -> Field {
         1.0
         // (0..R).map(|a| (self.mrs[a].powi(2) - s)).sum()
     }
 
-    fn ikc_inv(&self, s: f32, channel: usize) -> SVector<Complex32, C> {
-        let i_mat = SMatrix::<Complex32, C, C>::identity();
+    fn ikc_inv(&self, s: Field, channel: usize) -> SVector<ComplexField, C> {
+        let i_mat = SMatrix::<ComplexField, C, C>::identity();
         let k_mat = self.k_matrix(s);
         let c_mat = self.c_matrix(s);
         let ikc_mat = (i_mat + k_mat * c_mat).scale(self.pole_product(s));
@@ -155,19 +150,19 @@ impl<const C: usize, const R: usize> KMatrixConstants<C, R> {
     }
 
     fn p_vector(
-        betas: &SVector<Complex32, R>,
-        pvector_constants: &SMatrix<Complex32, C, R>,
-    ) -> SVector<Complex32, C> {
-        SVector::<Complex32, C>::from_fn(|j, _| {
+        betas: &SVector<ComplexField, R>,
+        pvector_constants: &SMatrix<ComplexField, C, R>,
+    ) -> SVector<ComplexField, C> {
+        SVector::<ComplexField, C>::from_fn(|j, _| {
             (0..R).map(|a| betas[a] * pvector_constants[(j, a)]).sum()
         })
     }
 
     pub fn calculate_k_matrix(
-        betas: &SVector<Complex32, R>,
-        ikc_inv_vec: &SVector<Complex32, C>,
-        pvector_constants_mat: &SMatrix<Complex32, C, R>,
-    ) -> Complex32 {
+        betas: &SVector<ComplexField, R>,
+        ikc_inv_vec: &SVector<ComplexField, C>,
+        pvector_constants_mat: &SMatrix<ComplexField, C, R>,
+    ) -> ComplexField {
         ikc_inv_vec.dot(&Self::p_vector(betas, pvector_constants_mat))
     }
 }
@@ -175,21 +170,21 @@ impl<const C: usize, const R: usize> KMatrixConstants<C, R> {
 pub struct KMatrixF0(
     usize,
     KMatrixConstants<5, 5>,
-    Vec<(SVector<Complex32, 5>, SMatrix<Complex32, 5, 5>)>,
+    Vec<(SVector<ComplexField, 5>, SMatrix<ComplexField, 5, 5>)>,
 );
 #[rustfmt::skip]
 impl KMatrixF0 {
     pub fn new(channel: usize) -> Self {
         Self(channel,
              KMatrixConstants {
-                g: SMatrix::<f32, 5, 5>::new(
+                g: SMatrix::<Field, 5, 5>::new(
                      0.74987, 0.06401, -0.23417,  0.01270, -0.14242,  
                     -0.01257, 0.00204, -0.01032,  0.26700,  0.22780, 
                      0.27536, 0.77413,  0.72283,  0.09214,  0.15981,  
                     -0.15102, 0.50999,  0.11934,  0.02742,  0.16272, 
                      0.36103, 0.13112,  0.36792, -0.04025, -0.17397,
                 ),
-                c: SMatrix::<f32, 5, 5>::new(
+                c: SMatrix::<Field, 5, 5>::new(
                      0.03728, 0.00000, -0.01398, -0.02203,  0.01397,
                      0.00000, 0.00000,  0.00000,  0.00000,  0.00000,
                     -0.01398, 0.00000,  0.02349,  0.03101, -0.04003,
@@ -217,8 +212,8 @@ impl Node for KMatrixF0 {
             .map(|event| {
                 let s = (event.daughter_p4s[0] + event.daughter_p4s[1]).m2();
                 let barrier_mat = self.1.barrier_matrix(s);
-                let pvector_constants = SMatrix::<Complex32, 5, 5>::from_fn(|i, a| {
-                    Complex32::from(barrier_mat[(i, a)]) * self.1.g[(i, a)]
+                let pvector_constants = SMatrix::<ComplexField, 5, 5>::from_fn(|i, a| {
+                    ComplexField::from(barrier_mat[(i, a)]) * self.1.g[(i, a)]
                         / (self.1.mrs[a].powi(2) - s)
                         * self.1.pole_product(s)
                 });
@@ -227,13 +222,17 @@ impl Node for KMatrixF0 {
             .collect();
         Ok(())
     }
-    fn calculate(&self, parameters: &[f32], event: &Event) -> Result<Complex32, RustitudeError> {
-        let betas = SVector::<Complex32, 5>::new(
-            Complex32::new(parameters[0], parameters[1]),
-            Complex32::new(parameters[2], parameters[3]),
-            Complex32::new(parameters[4], parameters[5]),
-            Complex32::new(parameters[6], parameters[7]),
-            Complex32::new(parameters[8], parameters[9]),
+    fn calculate(
+        &self,
+        parameters: &[Field],
+        event: &Event,
+    ) -> Result<ComplexField, RustitudeError> {
+        let betas = SVector::<ComplexField, 5>::new(
+            ComplexField::new(parameters[0], parameters[1]),
+            ComplexField::new(parameters[2], parameters[3]),
+            ComplexField::new(parameters[4], parameters[5]),
+            ComplexField::new(parameters[6], parameters[7]),
+            ComplexField::new(parameters[8], parameters[9]),
         );
         let (ikc_inv_vec, pvector_constants_mat) = self.2[event.index];
         Ok(KMatrixConstants::calculate_k_matrix(
@@ -261,20 +260,20 @@ impl Node for KMatrixF0 {
 pub struct KMatrixF2(
     usize,
     KMatrixConstants<4, 4>,
-    Vec<(SVector<Complex32, 4>, SMatrix<Complex32, 4, 4>)>,
+    Vec<(SVector<ComplexField, 4>, SMatrix<ComplexField, 4, 4>)>,
 );
 #[rustfmt::skip]
 impl KMatrixF2 {
     pub fn new(channel: usize) -> Self {
         Self(channel,
              KMatrixConstants {
-                g: SMatrix::<f32, 4, 4>::new(
+                g: SMatrix::<Field, 4, 4>::new(
                      0.40033, 0.01820, -0.06709, -0.49924,
                      0.15479, 0.17300,  0.22941,  0.19295,
                     -0.08900, 0.32393, -0.43133,  0.27975, 
                     -0.00113, 0.15256,  0.23721, -0.03987,
                 ),
-                c: SMatrix::<f32, 4, 4>::new(
+                c: SMatrix::<Field, 4, 4>::new(
                     -0.04319, 0.00000,  0.00984,  0.01028,
                      0.00000, 0.00000,  0.00000,  0.00000,
                      0.00984, 0.00000, -0.07344,  0.05533,
@@ -298,8 +297,8 @@ impl Node for KMatrixF2 {
             .map(|event| {
                 let s = (event.daughter_p4s[0] + event.daughter_p4s[1]).m2();
                 let barrier_mat = self.1.barrier_matrix(s);
-                let pvector_constants = SMatrix::<Complex32, 4, 4>::from_fn(|i, a| {
-                    Complex32::from(barrier_mat[(i, a)]) * self.1.g[(i, a)]
+                let pvector_constants = SMatrix::<ComplexField, 4, 4>::from_fn(|i, a| {
+                    ComplexField::from(barrier_mat[(i, a)]) * self.1.g[(i, a)]
                         / (self.1.mrs[a].powi(2) - s)
                         * self.1.pole_product(s)
                 });
@@ -308,12 +307,16 @@ impl Node for KMatrixF2 {
             .collect();
         Ok(())
     }
-    fn calculate(&self, parameters: &[f32], event: &Event) -> Result<Complex32, RustitudeError> {
-        let betas = SVector::<Complex32, 4>::new(
-            Complex32::new(parameters[0], parameters[1]),
-            Complex32::new(parameters[2], parameters[3]),
-            Complex32::new(parameters[4], parameters[5]),
-            Complex32::new(parameters[6], parameters[7]),
+    fn calculate(
+        &self,
+        parameters: &[Field],
+        event: &Event,
+    ) -> Result<ComplexField, RustitudeError> {
+        let betas = SVector::<ComplexField, 4>::new(
+            ComplexField::new(parameters[0], parameters[1]),
+            ComplexField::new(parameters[2], parameters[3]),
+            ComplexField::new(parameters[4], parameters[5]),
+            ComplexField::new(parameters[6], parameters[7]),
         );
         let (ikc_inv_vec, pvector_constants_mat) = self.2[event.index];
         Ok(KMatrixConstants::calculate_k_matrix(
@@ -340,18 +343,18 @@ impl Node for KMatrixF2 {
 pub struct KMatrixA0(
     usize,
     KMatrixConstants<2, 2>,
-    Vec<(SVector<Complex32, 2>, SMatrix<Complex32, 2, 2>)>,
+    Vec<(SVector<ComplexField, 2>, SMatrix<ComplexField, 2, 2>)>,
 );
 #[rustfmt::skip]
 impl KMatrixA0 {
     pub fn new(channel: usize) -> Self {
         Self(channel,
              KMatrixConstants {
-                g: SMatrix::<f32, 2, 2>::new(
+                g: SMatrix::<Field, 2, 2>::new(
                      0.43215, 0.19000,
                     -0.28825, 0.43372
                 ),
-                c: SMatrix::<f32, 2, 2>::new(
+                c: SMatrix::<Field, 2, 2>::new(
                     0.00000, 0.00000,
                     0.00000, 0.00000
                 ),
@@ -373,8 +376,8 @@ impl Node for KMatrixA0 {
             .map(|event| {
                 let s = (event.daughter_p4s[0] + event.daughter_p4s[1]).m2();
                 let barrier_mat = self.1.barrier_matrix(s);
-                let pvector_constants = SMatrix::<Complex32, 2, 2>::from_fn(|i, a| {
-                    Complex32::from(barrier_mat[(i, a)]) * self.1.g[(i, a)]
+                let pvector_constants = SMatrix::<ComplexField, 2, 2>::from_fn(|i, a| {
+                    ComplexField::from(barrier_mat[(i, a)]) * self.1.g[(i, a)]
                         / (self.1.mrs[a].powi(2) - s)
                         * self.1.pole_product(s)
                 });
@@ -383,10 +386,14 @@ impl Node for KMatrixA0 {
             .collect();
         Ok(())
     }
-    fn calculate(&self, parameters: &[f32], event: &Event) -> Result<Complex32, RustitudeError> {
-        let betas = SVector::<Complex32, 2>::new(
-            Complex32::new(parameters[0], parameters[1]),
-            Complex32::new(parameters[2], parameters[3]),
+    fn calculate(
+        &self,
+        parameters: &[Field],
+        event: &Event,
+    ) -> Result<ComplexField, RustitudeError> {
+        let betas = SVector::<ComplexField, 2>::new(
+            ComplexField::new(parameters[0], parameters[1]),
+            ComplexField::new(parameters[2], parameters[3]),
         );
         let (ikc_inv_vec, pvector_constants_mat) = self.2[event.index];
         Ok(KMatrixConstants::calculate_k_matrix(
@@ -409,19 +416,19 @@ impl Node for KMatrixA0 {
 pub struct KMatrixA2(
     usize,
     KMatrixConstants<3, 2>,
-    Vec<(SVector<Complex32, 3>, SMatrix<Complex32, 3, 2>)>,
+    Vec<(SVector<ComplexField, 3>, SMatrix<ComplexField, 3, 2>)>,
 );
 #[rustfmt::skip]
 impl KMatrixA2 {
     pub fn new(channel: usize) -> Self {
         Self(channel,
              KMatrixConstants {
-                g: SMatrix::<f32, 3, 2>::new(
+                g: SMatrix::<Field, 3, 2>::new(
                      0.30073, 0.68567,
                      0.21426, 0.12543, 
                     -0.09162, 0.00184
                 ),
-                c: SMatrix::<f32, 3, 3>::new(
+                c: SMatrix::<Field, 3, 3>::new(
                     -0.40184,  0.00033, -0.08707,
                      0.00033, -0.21416, -0.06193,
                     -0.08707, -0.06193, -0.17435,
@@ -444,8 +451,8 @@ impl Node for KMatrixA2 {
             .map(|event| {
                 let s = (event.daughter_p4s[0] + event.daughter_p4s[1]).m2();
                 let barrier_mat = self.1.barrier_matrix(s);
-                let pvector_constants = SMatrix::<Complex32, 3, 2>::from_fn(|i, a| {
-                    Complex32::from(barrier_mat[(i, a)]) * self.1.g[(i, a)]
+                let pvector_constants = SMatrix::<ComplexField, 3, 2>::from_fn(|i, a| {
+                    ComplexField::from(barrier_mat[(i, a)]) * self.1.g[(i, a)]
                         / (self.1.mrs[a].powi(2) - s)
                         * self.1.pole_product(s)
                 });
@@ -454,10 +461,14 @@ impl Node for KMatrixA2 {
             .collect();
         Ok(())
     }
-    fn calculate(&self, parameters: &[f32], event: &Event) -> Result<Complex32, RustitudeError> {
-        let betas = SVector::<Complex32, 2>::new(
-            Complex32::new(parameters[0], parameters[1]),
-            Complex32::new(parameters[2], parameters[3]),
+    fn calculate(
+        &self,
+        parameters: &[Field],
+        event: &Event,
+    ) -> Result<ComplexField, RustitudeError> {
+        let betas = SVector::<ComplexField, 2>::new(
+            ComplexField::new(parameters[0], parameters[1]),
+            ComplexField::new(parameters[2], parameters[3]),
         );
         let (ikc_inv_vec, pvector_constants_mat) = self.2[event.index];
         Ok(KMatrixConstants::calculate_k_matrix(
@@ -480,19 +491,19 @@ impl Node for KMatrixA2 {
 pub struct KMatrixRho(
     usize,
     KMatrixConstants<3, 2>,
-    Vec<(SVector<Complex32, 3>, SMatrix<Complex32, 3, 2>)>,
+    Vec<(SVector<ComplexField, 3>, SMatrix<ComplexField, 3, 2>)>,
 );
 #[rustfmt::skip]
 impl KMatrixRho {
     pub fn new(channel: usize) -> Self {
         Self(channel,
              KMatrixConstants {
-                g: SMatrix::<f32, 3, 2>::new(
+                g: SMatrix::<Field, 3, 2>::new(
                     0.28023, 0.16318,
                     0.01806, 0.53879, 
                     0.06501, 0.00495,
                 ),
-                c: SMatrix::<f32, 3, 3>::new(
+                c: SMatrix::<Field, 3, 3>::new(
                     -0.06948, 0.00000,  0.07958,
                      0.00000, 0.00000,  0.00000,
                      0.07958, 0.00000, -0.60000,
@@ -515,8 +526,8 @@ impl Node for KMatrixRho {
             .map(|event| {
                 let s = (event.daughter_p4s[0] + event.daughter_p4s[1]).m2();
                 let barrier_mat = self.1.barrier_matrix(s);
-                let pvector_constants = SMatrix::<Complex32, 3, 2>::from_fn(|i, a| {
-                    Complex32::from(barrier_mat[(i, a)]) * self.1.g[(i, a)]
+                let pvector_constants = SMatrix::<ComplexField, 3, 2>::from_fn(|i, a| {
+                    ComplexField::from(barrier_mat[(i, a)]) * self.1.g[(i, a)]
                         / (self.1.mrs[a].powi(2) - s)
                         * self.1.pole_product(s)
                 });
@@ -525,10 +536,14 @@ impl Node for KMatrixRho {
             .collect();
         Ok(())
     }
-    fn calculate(&self, parameters: &[f32], event: &Event) -> Result<Complex32, RustitudeError> {
-        let betas = SVector::<Complex32, 2>::new(
-            Complex32::new(parameters[0], parameters[1]),
-            Complex32::new(parameters[2], parameters[3]),
+    fn calculate(
+        &self,
+        parameters: &[Field],
+        event: &Event,
+    ) -> Result<ComplexField, RustitudeError> {
+        let betas = SVector::<ComplexField, 2>::new(
+            ComplexField::new(parameters[0], parameters[1]),
+            ComplexField::new(parameters[2], parameters[3]),
         );
         let (ikc_inv_vec, pvector_constants_mat) = self.2[event.index];
         Ok(KMatrixConstants::calculate_k_matrix(
@@ -551,18 +566,18 @@ impl Node for KMatrixRho {
 pub struct KMatrixPi1(
     usize,
     KMatrixConstants<2, 1>,
-    Vec<(SVector<Complex32, 2>, SMatrix<Complex32, 2, 1>)>,
+    Vec<(SVector<ComplexField, 2>, SMatrix<ComplexField, 2, 1>)>,
 );
 #[rustfmt::skip]
 impl KMatrixPi1 {
     pub fn new(channel: usize) -> Self {
         Self(channel,
              KMatrixConstants {
-                g: SMatrix::<f32, 2, 1>::new(
+                g: SMatrix::<Field, 2, 1>::new(
                     0.80564,
                     1.04595
                 ),
-                c: SMatrix::<f32, 2, 2>::new(
+                c: SMatrix::<Field, 2, 2>::new(
                     1.05000,  0.15163,
                     0.15163, -0.24611,
                 ),
@@ -584,8 +599,8 @@ impl Node for KMatrixPi1 {
             .map(|event| {
                 let s = (event.daughter_p4s[0] + event.daughter_p4s[1]).m2();
                 let barrier_mat = self.1.barrier_matrix(s);
-                let pvector_constants = SMatrix::<Complex32, 2, 1>::from_fn(|i, a| {
-                    Complex32::from(barrier_mat[(i, a)]) * self.1.g[(i, a)]
+                let pvector_constants = SMatrix::<ComplexField, 2, 1>::from_fn(|i, a| {
+                    ComplexField::from(barrier_mat[(i, a)]) * self.1.g[(i, a)]
                         / (self.1.mrs[a].powi(2) - s)
                         * self.1.pole_product(s)
                 });
@@ -594,8 +609,13 @@ impl Node for KMatrixPi1 {
             .collect();
         Ok(())
     }
-    fn calculate(&self, parameters: &[f32], event: &Event) -> Result<Complex32, RustitudeError> {
-        let betas = SVector::<Complex32, 1>::new(Complex32::new(parameters[0], parameters[1]));
+    fn calculate(
+        &self,
+        parameters: &[Field],
+        event: &Event,
+    ) -> Result<ComplexField, RustitudeError> {
+        let betas =
+            SVector::<ComplexField, 1>::new(ComplexField::new(parameters[0], parameters[1]));
         let (ikc_inv_vec, pvector_constants_mat) = self.2[event.index];
         Ok(KMatrixConstants::calculate_k_matrix(
             &betas,
