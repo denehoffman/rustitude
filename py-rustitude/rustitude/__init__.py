@@ -10,7 +10,15 @@ from iminuit import Minuit
 from scipy.optimize import OptimizeResult
 import scipy.optimize as opt
 
-from ._rustitude import amplitude, dataset, four_momentum, gluex, manager, __version__
+from ._rustitude import (
+    amplitude,
+    dataset,
+    four_momentum,
+    gluex,
+    manager,
+    __version__,
+    __rustitude_precision__,
+)
 from .amplitude import (
     CScalar,
     PCScalar,
@@ -31,9 +39,11 @@ from .manager import ExtendedLogLikelihood, Manager
 from abc import ABCMeta, abstractmethod
 
 __version__: str = __version__
+__rustitude_precision__: str = __rustitude_precision__
 
 __all__ = [
     '__version__',
+    '__rustitude_precision__',
     'dataset',
     'manager',
     'amplitude',
