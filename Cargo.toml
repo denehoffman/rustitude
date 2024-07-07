@@ -29,6 +29,7 @@ pyo3 = { version = "0.22.0", features = [
   "num-complex",
   "abi3-py37",
   "py-clone",
+  "auto-initialize",
 ] }
 thiserror = "1.0.61"
 factorial = "0.4.0"
