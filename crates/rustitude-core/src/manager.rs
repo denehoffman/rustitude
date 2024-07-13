@@ -577,7 +577,7 @@ impl ExtendedLogLikelihood {
     pub fn par_intensity(
         &self,
         parameters: &[Field],
-        dataset: &Dataset,
+        dataset_mc: &Dataset,
         num_threads: usize,
     ) -> Result<Vec<Field>, RustitudeError> {
         if self.data_manager.model.contains_python_amplitudes
@@ -588,15 +588,15 @@ impl ExtendedLogLikelihood {
                     .to_string(),
             ));
         }
-        let manager = Manager::new(&self.data_manager.model, dataset)?;
+        let mc_manager = Manager::new(&self.data_manager.model, dataset_mc)?;
         let data_len_weighted: Field = self.data_manager.dataset.weights().iter().sum();
-        let ds_len_weighted: Field = dataset.weights().iter().sum();
+        let mc_len_weighted: Field = dataset_mc.weights().iter().sum();
         create_pool(num_threads)?.install(|| {
-            manager.par_evaluate(parameters).map(|r_vec| {
+            mc_manager.par_evaluate(parameters).map(|r_vec| {
                 r_vec
                     .iter()
-                    .zip(dataset.events.iter())
-                    .map(|(r, e)| r * data_len_weighted / ds_len_weighted * e.weight)
+                    .zip(dataset_mc.events.iter())
+                    .map(|(r, e)| r * data_len_weighted / mc_len_weighted * e.weight)
                     .collect()
             })
         })
