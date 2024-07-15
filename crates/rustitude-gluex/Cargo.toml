@@ -6,7 +6,7 @@ authors = { workspace = true }
 description = "GlueX Amplitudes for Rustitude"
 repository = { workspace = true }
 homepage = { workspace = true }
-license-file = { workspace = true }
+license-file = "../../LICENSE"
 readme = "README.md"
 
 [dependencies]
