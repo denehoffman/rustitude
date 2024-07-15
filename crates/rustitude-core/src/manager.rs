@@ -287,7 +287,12 @@ impl Manager {
     }
 
     /// Activate an [`Amplitude`] by name. See [`Model::activate`] for more information.
-    pub fn activate(&mut self, amplitude: &str) {
+    ///
+    /// # Errors
+    ///
+    /// This function will return a [`RustitudeError::AmplitudeNotFoundError`] if the given
+    /// amplitude is not present in the [`Model`].
+    pub fn activate(&mut self, amplitude: &str) -> Result<(), RustitudeError> {
         self.model.activate(amplitude)
     }
     /// Activate all [`Amplitude`]s by name. See [`Model::activate_all`] for more information.
@@ -296,11 +301,21 @@ impl Manager {
     }
     /// Activate only the specified [`Amplitude`]s while deactivating the rest. See
     /// [`Model::isolate`] for more information.
-    pub fn isolate(&mut self, amplitudes: Vec<&str>) {
-        self.model.isolate(amplitudes);
+    ///
+    /// # Errors
+    ///
+    /// This function will return a [`RustitudeError::AmplitudeNotFoundError`] if a given
+    /// amplitude is not present in the [`Model`].
+    pub fn isolate(&mut self, amplitudes: Vec<&str>) -> Result<(), RustitudeError> {
+        self.model.isolate(amplitudes)
     }
     /// Deactivate an [`Amplitude`] by name. See [`Model::deactivate`] for more information.
-    pub fn deactivate(&mut self, amplitude: &str) {
+    ///
+    /// # Errors
+    ///
+    /// This function will return a [`RustitudeError::AmplitudeNotFoundError`] if the given
+    /// amplitude is not present in the [`Model`].
+    pub fn deactivate(&mut self, amplitude: &str) -> Result<(), RustitudeError> {
         self.model.deactivate(amplitude)
     }
     /// Deactivate all [`Amplitude`]s by name. See [`Model::deactivate_all`] for more information.
@@ -786,8 +801,13 @@ impl ExtendedLogLikelihood {
     }
 
     /// Activate an [`Amplitude`] by name. See [`Model::activate`] for more information.
-    pub fn activate(&mut self, amplitude: &str) {
-        self.data_manager.activate(amplitude);
+    ///
+    /// # Errors
+    ///
+    /// This function will return a [`RustitudeError::AmplitudeNotFoundError`] if the given
+    /// amplitude is not present in the [`Model`].
+    pub fn activate(&mut self, amplitude: &str) -> Result<(), RustitudeError> {
+        self.data_manager.activate(amplitude)?;
         self.mc_manager.activate(amplitude)
     }
     /// Activates all [`Amplitude`]s by name. See [`Model::activate_all`] for more information.
@@ -797,13 +817,23 @@ impl ExtendedLogLikelihood {
     }
     /// Activate only the specified [`Amplitude`]s while deactivating the rest. See
     /// [`Model::isolate`] for more information.
-    pub fn isolate(&mut self, amplitudes: Vec<&str>) {
-        self.data_manager.isolate(amplitudes.clone());
-        self.mc_manager.isolate(amplitudes);
+    ///
+    /// # Errors
+    ///
+    /// This function will return a [`RustitudeError::AmplitudeNotFoundError`] if a given
+    /// amplitude is not present in the [`Model`].
+    pub fn isolate(&mut self, amplitudes: Vec<&str>) -> Result<(), RustitudeError> {
+        self.data_manager.isolate(amplitudes.clone())?;
+        self.mc_manager.isolate(amplitudes)
     }
     /// Deactivate an [`Amplitude`] by name. See [`Model::deactivate`] for more information.
-    pub fn deactivate(&mut self, amplitude: &str) {
-        self.data_manager.deactivate(amplitude);
+    ///
+    /// # Errors
+    ///
+    /// This function will return a [`RustitudeError::AmplitudeNotFoundError`] if the given
+    /// amplitude is not present in the [`Model`].
+    pub fn deactivate(&mut self, amplitude: &str) -> Result<(), RustitudeError> {
+        self.data_manager.deactivate(amplitude)?;
         self.mc_manager.deactivate(amplitude)
     }
     /// Deactivates all [`Amplitude`]s by name. See [`Model::deactivate_all`] for more information.

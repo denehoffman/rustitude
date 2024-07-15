@@ -164,18 +164,19 @@ impl Manager {
             .set_initial(amplitude, parameter, value)
             .map_err(PyErr::from)
     }
-    fn activate(&mut self, amplitude: &str) {
-        self.0.activate(amplitude)
+    fn activate(&mut self, amplitude: &str) -> PyResult<()> {
+        self.0.activate(amplitude).map_err(PyErr::from)
     }
     fn activate_all(&mut self) {
         self.0.activate_all()
     }
-    fn isolate(&mut self, amplitudes: Vec<String>) {
+    fn isolate(&mut self, amplitudes: Vec<String>) -> PyResult<()> {
         self.0
             .isolate(amplitudes.iter().map(|s| s.as_ref()).collect())
+            .map_err(PyErr::from)
     }
-    fn deactivate(&mut self, amplitude: &str) {
-        self.0.deactivate(amplitude)
+    fn deactivate(&mut self, amplitude: &str) -> PyResult<()> {
+        self.0.deactivate(amplitude).map_err(PyErr::from)
     }
     fn deactivate_all(&mut self) {
         self.0.deactivate_all()
@@ -426,18 +427,19 @@ impl ExtendedLogLikelihood {
             .set_initial(amplitude, parameter, value)
             .map_err(PyErr::from)
     }
-    fn activate(&mut self, amplitude: &str) {
-        self.0.activate(amplitude)
+    fn activate(&mut self, amplitude: &str) -> PyResult<()> {
+        self.0.activate(amplitude).map_err(PyErr::from)
     }
     fn activate_all(&mut self) {
         self.0.activate_all()
     }
-    fn isolate(&mut self, amplitudes: Vec<String>) {
+    fn isolate(&mut self, amplitudes: Vec<String>) -> PyResult<()> {
         self.0
             .isolate(amplitudes.iter().map(|s| s.as_ref()).collect())
+            .map_err(PyErr::from)
     }
-    fn deactivate(&mut self, amplitude: &str) {
-        self.0.deactivate(amplitude)
+    fn deactivate(&mut self, amplitude: &str) -> PyResult<()> {
+        self.0.deactivate(amplitude).map_err(PyErr::from)
     }
     fn deactivate_all(&mut self) {
         self.0.deactivate_all()

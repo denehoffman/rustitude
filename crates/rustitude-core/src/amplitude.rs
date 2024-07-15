@@ -1051,7 +1051,17 @@ impl Model {
         self.get_min_free_index().unwrap_or(0)
     }
     /// Activates an [`Amplitude`] in the [`Model`] by name.
-    pub fn activate(&mut self, amplitude: &str) {
+    ///
+    /// # Errors
+    ///
+    /// This function will return a [`RustitudeError::AmplitudeNotFoundError`] if the given
+    /// amplitude is not present in the [`Model`].
+    pub fn activate(&mut self, amplitude: &str) -> Result<(), RustitudeError> {
+        if !self.amplitudes.iter().any(|a| a.name == amplitude) {
+            return Err(RustitudeError::AmplitudeNotFoundError(
+                amplitude.to_string(),
+            ));
+        }
         self.amplitudes.iter_mut().for_each(|amp| {
             if amp.name == amplitude {
                 amp.active = true
@@ -1064,6 +1074,7 @@ impl Model {
                 }
             })
         });
+        Ok(())
     }
     /// Activates all [`Amplitude`]s in the [`Model`].
     pub fn activate_all(&mut self) {
@@ -1076,14 +1087,30 @@ impl Model {
         });
     }
     /// Activate only the specified [`Amplitude`]s while deactivating the rest.
-    pub fn isolate(&mut self, amplitudes: Vec<&str>) {
+    ///
+    /// # Errors
+    ///
+    /// This function will return a [`RustitudeError::AmplitudeNotFoundError`] if a given
+    /// amplitude is not present in the [`Model`].
+    pub fn isolate(&mut self, amplitudes: Vec<&str>) -> Result<(), RustitudeError> {
         self.deactivate_all();
         for amplitude in amplitudes {
-            self.activate(amplitude);
+            self.activate(amplitude)?;
         }
+        Ok(())
     }
     /// Deactivates an [`Amplitude`] in the [`Model`] by name.
-    pub fn deactivate(&mut self, amplitude: &str) {
+    ///
+    /// # Errors
+    ///
+    /// This function will return a [`RustitudeError::AmplitudeNotFoundError`] if the given
+    /// amplitude is not present in the [`Model`].
+    pub fn deactivate(&mut self, amplitude: &str) -> Result<(), RustitudeError> {
+        if !self.amplitudes.iter().any(|a| a.name == amplitude) {
+            return Err(RustitudeError::AmplitudeNotFoundError(
+                amplitude.to_string(),
+            ));
+        }
         self.amplitudes.iter_mut().for_each(|amp| {
             if amp.name == amplitude {
                 amp.active = false
@@ -1096,6 +1123,7 @@ impl Model {
                 }
             })
         });
+        Ok(())
     }
     /// Deactivates all [`Amplitude`]s in the [`Model`].
     pub fn deactivate_all(&mut self) {

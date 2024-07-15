@@ -30,24 +30,24 @@ mod f64_tests {
         );
         // |1|^2 = 1
         manager.deactivate_all();
-        manager.activate("a");
+        manager.activate("a")?;
         assert_is_close!(manager.evaluate(&[1.0, 10.0, 100.0, 2.0, 1000.0])?[0], 1.0);
         // |1 + 10|^2 = 121
-        manager.activate("b");
+        manager.activate("b")?;
         assert_is_close!(
             manager.evaluate(&[1.0, 10.0, 100.0, 2.0, 1000.0])?[0],
             121.0
         );
         // |1 + 10|^2 + |100|^2 = 121 + 10000 = 10121
-        manager.activate("c");
+        manager.activate("c")?;
         assert_is_close!(
             manager.evaluate(&[1.0, 10.0, 100.0, 2.0, 1000.0])?[0],
             10121.0
         );
         // |1 + 10|^2 + |2|^2 = 121 + 4 = 125
-        manager.deactivate("c");
-        manager.deactivate("c"); // this shouldn't cause problems
-        manager.activate("d");
+        manager.deactivate("c")?;
+        manager.deactivate("c")?; // this shouldn't cause problems
+        manager.activate("d")?;
         assert_is_close!(
             manager.evaluate(&[1.0, 10.0, 100.0, 2.0, 1000.0])?[0],
             125.0
@@ -94,24 +94,24 @@ mod f32_tests {
         );
         // |1|^2 = 1
         manager.deactivate_all();
-        manager.activate("a");
+        manager.activate("a")?;
         assert_is_close!(manager.evaluate(&[1.0, 10.0, 100.0, 2.0, 1000.0])?[0], 1.0);
         // |1 + 10|^2 = 121
-        manager.activate("b");
+        manager.activate("b")?;
         assert_is_close!(
             manager.evaluate(&[1.0, 10.0, 100.0, 2.0, 1000.0])?[0],
             121.0
         );
         // |1 + 10|^2 + |100|^2 = 121 + 10000 = 10121
-        manager.activate("c");
+        manager.activate("c")?;
         assert_is_close!(
             manager.evaluate(&[1.0, 10.0, 100.0, 2.0, 1000.0])?[0],
             10121.0
         );
         // |1 + 10|^2 + |2|^2 = 121 + 4 = 125
-        manager.deactivate("c");
-        manager.deactivate("c"); // this shouldn't cause problems
-        manager.activate("d");
+        manager.deactivate("c")?;
+        manager.deactivate("c")?; // this shouldn't cause problems
+        manager.activate("d")?;
         assert_is_close!(
             manager.evaluate(&[1.0, 10.0, 100.0, 2.0, 1000.0])?[0],
             125.0
