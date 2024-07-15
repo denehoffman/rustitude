@@ -67,8 +67,7 @@ We can now use the minimizer interface to create some fit objects. Let's use Min
    ms = [rt.minimizer(nll,
                       method="Minuit",
                       indices_data=indices_data,
-                      indices_mc=indices_mc,
-                      num_threads=8)
+                      indices_mc=indices_mc)
          for indices_data, indices_mc in zip(ds_data_split, ds_accmc_split)]
    
 Run the fits (with the Migrad algorithm)!
@@ -86,32 +85,28 @@ Now we collect the results. We can sum the intensities for each event in each bi
    intensity_tot = [sum(nll.intensity(list(m.values),
                                       ds_accmc,
                                       indices_data=indices_data,
-                                      indices_mc=indices_mc,
-                                      num_threads=8))
+                                      indices_mc=indices_mc))
                     for m, indices_data, indices_mc in zip(ms, ds_data_split, ds_accmc_split)]
 
    nll.isolate(["Z00+", "S0+"])
    intensity_s0p = [sum(nll.intensity(list(m.values),
                                       ds_accmc,
                                       indices_data=indices_data,
-                                      indices_mc=indices_mc,
-                                      num_threads=8))
+                                      indices_mc=indices_mc))
                     for m, indices_data, indices_mc in zip(ms, ds_data_split, ds_accmc_split)]
 
    nll.isolate(["Z1-1+", "P-1+"])
    intensity_pm1p = [sum(nll.intensity(list(m.values),
                                        ds_accmc,
                                        indices_data=indices_data,
-                                       indices_mc=indices_mc,
-                                       num_threads=8))
+                                       indices_mc=indices_mc))
                      for m, indices_data, indices_mc in zip(ms, ds_data_split, ds_accmc_split)]
 
    nll.isolate(["Z22-", "D2-"])
    intensity_d2m = [sum(nll.intensity(list(m.values),
                                       ds_accmc,
                                       indices_data=indices_data,
-                                      indices_mc=indices_mc,
-                                      num_threads=8))
+                                      indices_mc=indices_mc))
                     for m, indices_data, indices_mc in zip(ms, ds_data_split, ds_accmc_split)]
 
 Finally, we can plot the results:

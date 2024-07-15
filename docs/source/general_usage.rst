@@ -108,10 +108,6 @@ Here's a complex example that demonstrates many of rustitude's features:
     import numpy as np
     import scipy
     import matplotlib.pyplot as plt
-    import multiprocessing
-
-    num_threads = multiprocessing.cpu_count()
-    print(f"Using {num_threads} threads")
 
     # Define resonances and harmonics
     f0p = gluex.resonances.KMatrixF0("f0+", channel=2)
@@ -171,14 +167,14 @@ Here's a complex example that demonstrates many of rustitude's features:
             nll.set_initial(parameter.amplitude, parameter.name, rng.random() * 100)
 
     # With the default 'method=None' argument, this will use scipy.optimize.minimize's default algorithm:
-    m = rt.minimizer(nll, num_threads=num_threads)
+    m = rt.minimizer(nll)
     res = m()
 
     # Process results
     print(f"Fit Result:\n{res}")
     fit_pars = res.x
     masses = [(event.daughter_p4s[0] + event.daughter_p4s[1]).m for event in ds.events]
-    fit_weights_mc = nll.intensity(fit_pars, ds_mc, num_threads=num_threads)
+    fit_weights_mc = nll.intensity(fit_pars, ds_mc)
     masses_mc = [(event.daughter_p4s[0] + event.daughter_p4s[1]).m for event in ds_mc.events]
 
     # Plot results
@@ -186,3 +182,5 @@ Here's a complex example that demonstrates many of rustitude's features:
     plt.hist(masses_mc, bins=40, range=(1.0, 2.0), weights=np.array(fit_weights_mc), label="fit", histtype='step')
     plt.legend()
     plt.savefig("result.png")
+
+Automatic parallelism over the CPU can be disabled via function calls which support it (for example, ``nll([10.0] * mod.n_free, parallel=False)`` would run without parallel processing), and the number of CPUs used can be controlled via the ``RAYON_NUM_THREADS`` environment variable, which can be set before the code is run or modified inside the code (for example, ``os.environ['RAYON_NUM_THREADS] = '5'`` would ensure only five threads are used past that point in the code). By default, an unset value or the value of ``'0'`` will use all available cores.
