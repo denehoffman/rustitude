@@ -126,25 +126,35 @@ impl<const C: usize, const R: usize> KMatrixConstants<C, R> {
                     ComplexField::from(
                         bf[(i, a)]
                             * bf[(j, a)]
-                            * (self.g[(i, a)] * self.g[(j, a)] / (self.mrs[a].powi(2) - s)
-                                + self.c[(i, j)]),
-                    )
+                            * (self.g[(i, a)] * self.g[(j, a)]
+                                + (self.c[(i, j)]) * (self.mrs[a].powi(2) - s)),
+                    ) * self.pole_product_remainder(s, a)
                 })
                 .sum::<ComplexField>()
                 * self.adler_zero.map_or(1.0, |az| (s - az.s_0) / az.s_norm)
         })
     }
 
-    fn pole_product(&self, _s: Field) -> Field {
-        1.0
-        // (0..R).map(|a| (self.mrs[a].powi(2) - s)).sum()
+    fn pole_product_remainder(&self, s: Field, a_i: usize) -> Field {
+        (0..R)
+            .filter_map(|a| {
+                if a != a_i {
+                    Some(self.mrs[a].powi(2) - s)
+                } else {
+                    None
+                }
+            })
+            .product()
+    }
+    fn pole_product(&self, s: Field) -> Field {
+        (0..R).map(|a| (self.mrs[a].powi(2) - s)).product()
     }
 
     fn ikc_inv(&self, s: Field, channel: usize) -> SVector<ComplexField, C> {
-        let i_mat = SMatrix::<ComplexField, C, C>::identity();
+        let i_mat = SMatrix::<ComplexField, C, C>::identity().scale(self.pole_product(s));
         let k_mat = self.k_matrix(s);
         let c_mat = self.c_matrix(s);
-        let ikc_mat = (i_mat + k_mat * c_mat).scale(self.pole_product(s));
+        let ikc_mat = i_mat + k_mat * c_mat;
         let ikc_inv_mat = ikc_mat.try_inverse().unwrap();
         ikc_inv_mat.row(channel).transpose()
     }
@@ -213,9 +223,9 @@ impl Node for KMatrixF0 {
                 let s = (event.daughter_p4s[0] + event.daughter_p4s[1]).m2();
                 let barrier_mat = self.1.barrier_matrix(s);
                 let pvector_constants = SMatrix::<ComplexField, 5, 5>::from_fn(|i, a| {
-                    ComplexField::from(barrier_mat[(i, a)]) * self.1.g[(i, a)]
-                        / (self.1.mrs[a].powi(2) - s)
-                        * self.1.pole_product(s)
+                    ComplexField::from(barrier_mat[(i, a)])
+                        * self.1.g[(i, a)]
+                        * self.1.pole_product_remainder(s, a)
                 });
                 (self.1.ikc_inv(s, self.0), pvector_constants)
             })
@@ -298,9 +308,9 @@ impl Node for KMatrixF2 {
                 let s = (event.daughter_p4s[0] + event.daughter_p4s[1]).m2();
                 let barrier_mat = self.1.barrier_matrix(s);
                 let pvector_constants = SMatrix::<ComplexField, 4, 4>::from_fn(|i, a| {
-                    ComplexField::from(barrier_mat[(i, a)]) * self.1.g[(i, a)]
-                        / (self.1.mrs[a].powi(2) - s)
-                        * self.1.pole_product(s)
+                    ComplexField::from(barrier_mat[(i, a)])
+                        * self.1.g[(i, a)]
+                        * self.1.pole_product_remainder(s, a)
                 });
                 (self.1.ikc_inv(s, self.0), pvector_constants)
             })
@@ -377,9 +387,9 @@ impl Node for KMatrixA0 {
                 let s = (event.daughter_p4s[0] + event.daughter_p4s[1]).m2();
                 let barrier_mat = self.1.barrier_matrix(s);
                 let pvector_constants = SMatrix::<ComplexField, 2, 2>::from_fn(|i, a| {
-                    ComplexField::from(barrier_mat[(i, a)]) * self.1.g[(i, a)]
-                        / (self.1.mrs[a].powi(2) - s)
-                        * self.1.pole_product(s)
+                    ComplexField::from(barrier_mat[(i, a)])
+                        * self.1.g[(i, a)]
+                        * self.1.pole_product_remainder(s, a)
                 });
                 (self.1.ikc_inv(s, self.0), pvector_constants)
             })
@@ -452,9 +462,9 @@ impl Node for KMatrixA2 {
                 let s = (event.daughter_p4s[0] + event.daughter_p4s[1]).m2();
                 let barrier_mat = self.1.barrier_matrix(s);
                 let pvector_constants = SMatrix::<ComplexField, 3, 2>::from_fn(|i, a| {
-                    ComplexField::from(barrier_mat[(i, a)]) * self.1.g[(i, a)]
-                        / (self.1.mrs[a].powi(2) - s)
-                        * self.1.pole_product(s)
+                    ComplexField::from(barrier_mat[(i, a)])
+                        * self.1.g[(i, a)]
+                        * self.1.pole_product_remainder(s, a)
                 });
                 (self.1.ikc_inv(s, self.0), pvector_constants)
             })
@@ -527,9 +537,9 @@ impl Node for KMatrixRho {
                 let s = (event.daughter_p4s[0] + event.daughter_p4s[1]).m2();
                 let barrier_mat = self.1.barrier_matrix(s);
                 let pvector_constants = SMatrix::<ComplexField, 3, 2>::from_fn(|i, a| {
-                    ComplexField::from(barrier_mat[(i, a)]) * self.1.g[(i, a)]
-                        / (self.1.mrs[a].powi(2) - s)
-                        * self.1.pole_product(s)
+                    ComplexField::from(barrier_mat[(i, a)])
+                        * self.1.g[(i, a)]
+                        * self.1.pole_product_remainder(s, a)
                 });
                 (self.1.ikc_inv(s, self.0), pvector_constants)
             })
@@ -600,9 +610,9 @@ impl Node for KMatrixPi1 {
                 let s = (event.daughter_p4s[0] + event.daughter_p4s[1]).m2();
                 let barrier_mat = self.1.barrier_matrix(s);
                 let pvector_constants = SMatrix::<ComplexField, 2, 1>::from_fn(|i, a| {
-                    ComplexField::from(barrier_mat[(i, a)]) * self.1.g[(i, a)]
-                        / (self.1.mrs[a].powi(2) - s)
-                        * self.1.pole_product(s)
+                    ComplexField::from(barrier_mat[(i, a)])
+                        * self.1.g[(i, a)]
+                        * self.1.pole_product_remainder(s, a)
                 });
                 (self.1.ikc_inv(s, self.0), pvector_constants)
             })
