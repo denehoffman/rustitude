@@ -6,7 +6,7 @@ authors = { workspace = true }
 description = { workspace = true }
 repository = { workspace = true }
 homepage = { workspace = true }
-license-file = { workspace = true }
+license-file = "../../LICENSE"
 readme = "../../README.md"
 
 [dependencies]
@@ -29,6 +29,7 @@ harness = false
 [features]
 default = ["gluex"]
 gluex = ["dep:rustitude-gluex"]
+float = ["rustitude-core/float", "rustitude-gluex/float"]
 
 [package.metadata.docs.rs]
 rustdoc-args = ["--html-in-header", "./docs-header.html"]

@@ -1,5 +1,6 @@
 use pyo3::prelude::*;
 use rustitude_core::four_momentum as rust;
+use rustitude_core::Field;
 
 #[pyclass]
 #[derive(Debug, Clone, PartialEq, Copy, Default)]
@@ -19,7 +20,7 @@ impl From<rust::FourMomentum> for FourMomentum {
 #[pymethods]
 impl FourMomentum {
     #[new]
-    pub fn new(e: f64, px: f64, py: f64, pz: f64) -> Self {
+    pub fn new(e: Field, px: Field, py: Field, pz: Field) -> Self {
         Self(rust::FourMomentum::new(e, px, py, pz))
     }
     fn __repr__(&self) -> String {
@@ -30,27 +31,27 @@ impl FourMomentum {
         self.0.to_string()
     }
     #[getter]
-    fn e(&self) -> f64 {
+    fn e(&self) -> Field {
         self.0.e()
     }
     #[getter]
-    fn px(&self) -> f64 {
+    fn px(&self) -> Field {
         self.0.px()
     }
     #[getter]
-    fn py(&self) -> f64 {
+    fn py(&self) -> Field {
         self.0.py()
     }
     #[getter]
-    fn pz(&self) -> f64 {
+    fn pz(&self) -> Field {
         self.0.pz()
     }
     #[getter]
-    fn m(&self) -> f64 {
+    fn m(&self) -> Field {
         self.0.m()
     }
     #[getter]
-    fn m2(&self) -> f64 {
+    fn m2(&self) -> Field {
         self.0.m2()
     }
     fn boost_along(&self, other: Self) -> Self {

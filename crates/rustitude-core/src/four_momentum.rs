@@ -2,8 +2,9 @@
 //!
 //! This module contains a helper struct, [`FourMomentum`], which contains useful methods and
 //! manipulations for physics four-vectors representing momentum coordinates. In particular,
-//! this struct has the same layout as a `[f64; 4]` with components identified as
+//! this struct has the same layout as a `[Field; 4]` with components identified as
 //! $`(E, p_x, p_y, p_z)`$.
+use crate::Field;
 use nalgebra::{Matrix4, Vector3, Vector4};
 use std::{
     fmt::Display,
@@ -26,7 +27,7 @@ use std::{
 /// let vec_b = FourMomentum::new(4.2, 0.5, 0.4, 0.5);
 /// ```
 #[derive(Debug, Clone, PartialEq, Copy, Default)]
-pub struct FourMomentum([f64; 4]);
+pub struct FourMomentum([Field; 4]);
 
 impl Eq for FourMomentum {}
 
@@ -45,7 +46,7 @@ impl Display for FourMomentum {
 
 impl FourMomentum {
     #[allow(clippy::missing_const_for_fn)]
-    pub fn new(e: f64, px: f64, py: f64, pz: f64) -> Self {
+    pub fn new(e: Field, px: Field, py: Field, pz: Field) -> Self {
         //! Create a new [`FourMomentum`] from energy and momentum components.
         //!
         //! Components are listed in the order $` (E, p_x, p_y, p_z) `$
@@ -54,39 +55,39 @@ impl FourMomentum {
 
     /// Returns the energy of the given [`FourMomentum`].
     #[allow(clippy::missing_const_for_fn)]
-    pub fn e(&self) -> f64 {
+    pub fn e(&self) -> Field {
         self.0[0]
     }
     /// Returns the momentum along the $`x`$-axis of the given [`FourMomentum`].
     #[allow(clippy::missing_const_for_fn)]
-    pub fn px(&self) -> f64 {
+    pub fn px(&self) -> Field {
         self.0[1]
     }
     /// Returns the momentum along the $`y`$-axis of the given [`FourMomentum`].
     #[allow(clippy::missing_const_for_fn)]
-    pub fn py(&self) -> f64 {
+    pub fn py(&self) -> Field {
         self.0[2]
     }
     /// Returns the momentum along the $`z`$-axis of the given [`FourMomentum`].
     #[allow(clippy::missing_const_for_fn)]
-    pub fn pz(&self) -> f64 {
+    pub fn pz(&self) -> Field {
         self.0[3]
     }
 
     /// Sets the energy of the given [`FourMomentum`].
-    pub fn set_e(&mut self, value: f64) {
+    pub fn set_e(&mut self, value: Field) {
         self.0[0] = value;
     }
     /// Sets the momentum along the $`x`$-axis of the given [`FourMomentum`].
-    pub fn set_px(&mut self, value: f64) {
+    pub fn set_px(&mut self, value: Field) {
         self.0[1] = value;
     }
     /// Sets the momentum along the $`x`$-axis of the given [`FourMomentum`].
-    pub fn set_py(&mut self, value: f64) {
+    pub fn set_py(&mut self, value: Field) {
         self.0[2] = value;
     }
     /// Sets the momentum along the $`x`$-axis of the given [`FourMomentum`].
-    pub fn set_pz(&mut self, value: f64) {
+    pub fn set_pz(&mut self, value: Field) {
         self.0[3] = value;
     }
 
@@ -103,7 +104,7 @@ impl FourMomentum {
     ///
     /// ```
     #[allow(clippy::suboptimal_flops)]
-    pub fn m2(&self) -> f64 {
+    pub fn m2(&self) -> Field {
         self.e().powi(2) - self.px().powi(2) - self.py().powi(2) - self.pz().powi(2)
     }
 
@@ -114,7 +115,7 @@ impl FourMomentum {
     /// # See Also:
     ///
     /// [`FourMomentum::m2`]
-    pub fn m(&self) -> f64 {
+    pub fn m(&self) -> Field {
         self.m2().sqrt()
     }
 
@@ -125,22 +126,19 @@ impl FourMomentum {
     ///
     /// # Examples
     /// ```
-    /// #[macro_use]
-    /// use approx::*;
-    ///
     /// use rustitude_core::prelude::*;
     ///
     /// let vec_a = FourMomentum::new(20.0, 1.0, -3.2, 4.0);
     /// let vec_a_COM = vec_a.boost_along(&vec_a);
-    /// assert_abs_diff_eq!(vec_a_COM.px(), 0.0, epsilon = 1e-15);
-    /// assert_abs_diff_eq!(vec_a_COM.py(), 0.0, epsilon = 1e-15);
-    /// assert_abs_diff_eq!(vec_a_COM.pz(), 0.0, epsilon = 1e-15);
+    /// assert!(Field::abs(vec_a_COM.px()) < 1e-7);
+    /// assert!(Field::abs(vec_a_COM.py()) < 1e-7);
+    /// assert!(Field::abs(vec_a_COM.pz()) < 1e-7);
     /// ```
     pub fn boost_along(&self, other: &Self) -> Self {
         let m_boost = other.boost_matrix();
-        (m_boost * Vector4::<f64>::from(self)).into()
+        (m_boost * Vector4::<Field>::from(self)).into()
     }
-    /// Extract the 3-momentum as a [`nalgebra::Vector3<f64>`]
+    /// Extract the 3-momentum as a [`nalgebra::Vector3<Field>`]
     ///
     /// # Examples
     /// ```
@@ -150,14 +148,14 @@ impl FourMomentum {
     /// let vec_a = FourMomentum::new(20.0, 1.0, 0.2, -0.1);
     /// assert_eq!(vec_a.momentum(), Vector3::new(1.0, 0.2, -0.1));
     /// ```
-    pub fn momentum(&self) -> Vector3<f64> {
+    pub fn momentum(&self) -> Vector3<Field> {
         Vector3::new(self.px(), self.py(), self.pz())
     }
 
     /// Construct the 3-vector $`\vec{\beta}`$ where
     ///
     /// $` \vec{\beta} = \frac{\vec{p}}{E} `$
-    pub fn beta3(&self) -> Vector3<f64> {
+    pub fn beta3(&self) -> Vector3<Field> {
         self.momentum() / self.e()
     }
 
@@ -173,7 +171,7 @@ impl FourMomentum {
     /// ```
     /// where
     /// $`\vec{\beta} = \frac{\vec{p}}{E}`$ and $`\gamma = \frac{1}{\sqrt{1 - \vec{\beta}^2}}`$.
-    pub fn boost_matrix(&self) -> Matrix4<f64> {
+    pub fn boost_matrix(&self) -> Matrix4<Field> {
         let b = self.beta3();
         let b2 = b.dot(&b);
         let g = 1.0 / (1.0 - b2).sqrt();
@@ -198,38 +196,38 @@ impl FourMomentum {
     }
 }
 
-impl From<FourMomentum> for Vector4<f64> {
+impl From<FourMomentum> for Vector4<Field> {
     fn from(val: FourMomentum) -> Self {
         Self::new(val.e(), val.px(), val.py(), val.pz())
     }
 }
 
-impl From<&FourMomentum> for Vector4<f64> {
+impl From<&FourMomentum> for Vector4<Field> {
     fn from(val: &FourMomentum) -> Self {
         Self::new(val.e(), val.px(), val.py(), val.pz())
     }
 }
 
-impl From<Vector4<f64>> for FourMomentum {
-    fn from(value: Vector4<f64>) -> Self {
+impl From<Vector4<Field>> for FourMomentum {
+    fn from(value: Vector4<Field>) -> Self {
         Self([value[0], value[1], value[2], value[3]])
     }
 }
 
-impl From<&Vector4<f64>> for FourMomentum {
-    fn from(value: &Vector4<f64>) -> Self {
+impl From<&Vector4<Field>> for FourMomentum {
+    fn from(value: &Vector4<Field>) -> Self {
         Self([value[0], value[1], value[2], value[3]])
     }
 }
 
-impl From<Vec<f64>> for FourMomentum {
-    fn from(value: Vec<f64>) -> Self {
+impl From<Vec<Field>> for FourMomentum {
+    fn from(value: Vec<Field>) -> Self {
         Self([value[0], value[1], value[2], value[3]])
     }
 }
 
-impl From<&Vec<f64>> for FourMomentum {
-    fn from(value: &Vec<f64>) -> Self {
+impl From<&Vec<Field>> for FourMomentum {
+    fn from(value: &Vec<Field>) -> Self {
         Self([value[0], value[1], value[2], value[3]])
     }
 }
@@ -282,7 +280,6 @@ impl std::iter::Sum<Self> for FourMomentum {
 mod tests {
     use super::*;
     use crate::assert_is_close;
-    use crate::utils::*;
     #[test]
     fn test_set_components() {
         let mut p = FourMomentum::default();

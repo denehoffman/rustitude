@@ -107,7 +107,7 @@ Learn how rustitude can be used to fit mass-binned data.
 Writing Custom Nodes
 ^^^^^^^^^^^^^^^^^^^^
 
-Learn how to extend rustitude's functionality by creating your own custom Python nodes using the rustitude.PyNode abstract base class.
+Learn how to extend rustitude's functionality by creating your own custom Python nodes using the ``rustitude.PyNode`` abstract base class.
 
 Indices and tables
 ==================

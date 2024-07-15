@@ -39,7 +39,7 @@ pub fn criterion_kmatrix(c: &mut Criterion) {
     c.bench_function("kmatrix", |b| {
         b.iter(|| {
             let v = (0..model.get_n_free())
-                .map(|_| rand::random::<f64>() * 100.0)
+                .map(|_| rand::random::<Field>() * 100.0)
                 .collect::<Vec<_>>();
             criterion::black_box(m.par_evaluate(&v))
         })
@@ -49,9 +49,9 @@ pub fn criterion_kmatrix(c: &mut Criterion) {
     c.bench_function("kmatrix_nll", |b| {
         b.iter(|| {
             let v = (0..model.get_n_free())
-                .map(|_| rand::random::<f64>() * 100.0)
+                .map(|_| rand::random::<Field>() * 100.0)
                 .collect::<Vec<_>>();
-            criterion::black_box(nll.par_evaluate(&v, num_cpus::get()))
+            criterion::black_box(nll.par_evaluate(&v))
         })
     });
     let indices_data = (0..dataset.len()).collect::<Vec<usize>>();
@@ -59,14 +59,9 @@ pub fn criterion_kmatrix(c: &mut Criterion) {
     c.bench_function("kmatrix_nll_indexed", |b| {
         b.iter(|| {
             let v = (0..model.get_n_free())
-                .map(|_| rand::random::<f64>() * 100.0)
+                .map(|_| rand::random::<Field>() * 100.0)
                 .collect::<Vec<_>>();
-            criterion::black_box(nll.par_evaluate_indexed(
-                &v,
-                &indices_data,
-                &indices_mc,
-                num_cpus::get(),
-            ))
+            criterion::black_box(nll.par_evaluate_indexed(&v, &indices_data, &indices_mc))
         })
     });
 }

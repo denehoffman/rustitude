@@ -6,7 +6,8 @@ authors = { workspace = true }
 description = { workspace = true }
 repository = { workspace = true }
 homepage = { workspace = true }
-license-file = { workspace = true }
+license-file = "../../LICENSE"
+readme = "README.md"
 
 [dependencies]
 rayon = { workspace = true }
@@ -23,6 +24,10 @@ thiserror = { workspace = true }
 dyn-clone = { workspace = true }
 tracing = { workspace = true }
 fastrand = { workspace = true }
+
+[features]
+default = []
+float = []
 
 [dev-dependencies]
 sphrs = { workspace = true }

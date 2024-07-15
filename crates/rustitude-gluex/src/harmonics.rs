@@ -1,5 +1,3 @@
-use std::f64::consts::PI;
-
 use num_complex::ComplexFloat;
 use rayon::prelude::*;
 use rustitude_core::prelude::*;
@@ -11,7 +9,7 @@ use crate::utils::{Frame, Reflectivity, Wave};
 pub struct Ylm {
     wave: Wave,
     frame: Frame,
-    data: Vec<Complex64>,
+    data: Vec<ComplexField>,
 }
 impl Ylm {
     pub fn new(wave: Wave, frame: Frame) -> Self {
@@ -44,7 +42,11 @@ impl Node for Ylm {
         Ok(())
     }
 
-    fn calculate(&self, _parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
+    fn calculate(
+        &self,
+        _parameters: &[Field],
+        event: &Event,
+    ) -> Result<ComplexField, RustitudeError> {
         Ok(self.data[event.index])
     }
 }
@@ -54,7 +56,7 @@ pub struct Zlm {
     wave: Wave,
     reflectivity: Reflectivity,
     frame: Frame,
-    data: Vec<Complex64>,
+    data: Vec<ComplexField>,
 }
 impl Zlm {
     pub fn new(wave: Wave, reflectivity: Reflectivity, frame: Frame) -> Self {
@@ -83,7 +85,7 @@ impl Node for Zlm {
                     event,
                 );
                 let ylm = ComplexSH::Spherical.eval(self.wave.l(), self.wave.m(), &p);
-                let big_phi = f64::atan2(
+                let big_phi = Field::atan2(
                     y.dot(&event.eps),
                     event
                         .beam_p4
@@ -92,23 +94,27 @@ impl Node for Zlm {
                         .dot(&event.eps.cross(&y)),
                 );
                 let pgamma = event.eps.norm();
-                let phase = Complex64::cis(-big_phi);
+                let phase = ComplexField::cis(-big_phi);
                 let zlm = ylm * phase;
                 match self.reflectivity {
-                    Reflectivity::Positive => Complex64::new(
-                        f64::sqrt(1.0 + pgamma) * zlm.re,
-                        f64::sqrt(1.0 - pgamma) * zlm.im,
+                    Reflectivity::Positive => ComplexField::new(
+                        Field::sqrt(1.0 + pgamma) * zlm.re,
+                        Field::sqrt(1.0 - pgamma) * zlm.im,
                     ),
-                    Reflectivity::Negative => Complex64::new(
-                        f64::sqrt(1.0 - pgamma) * zlm.re,
-                        f64::sqrt(1.0 + pgamma) * zlm.im,
+                    Reflectivity::Negative => ComplexField::new(
+                        Field::sqrt(1.0 - pgamma) * zlm.re,
+                        Field::sqrt(1.0 + pgamma) * zlm.im,
                     ),
                 }
             })
             .collect();
         Ok(())
     }
-    fn calculate(&self, _parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
+    fn calculate(
+        &self,
+        _parameters: &[Field],
+        event: &Event,
+    ) -> Result<ComplexField, RustitudeError> {
         Ok(self.data[event.index])
     }
 }
@@ -117,7 +123,7 @@ impl Node for Zlm {
 pub struct OnePS {
     reflectivity: Reflectivity,
     frame: Frame,
-    data: Vec<Complex64>,
+    data: Vec<ComplexField>,
 }
 impl OnePS {
     pub fn new(reflectivity: Reflectivity, frame: Frame) -> Self {
@@ -153,15 +159,15 @@ impl Node for OnePS {
                         .dot(&event.eps.cross(&y)),
                 );
                 let pgamma = event.eps.norm();
-                let phase = Complex64::cis(-(pol_angle + big_phi));
+                let phase = ComplexField::cis(-(pol_angle + big_phi));
                 match self.reflectivity {
-                    Reflectivity::Positive => Complex64::new(
-                        f64::sqrt(1.0 + pgamma) * phase.re,
-                        f64::sqrt(1.0 - pgamma) * phase.im,
+                    Reflectivity::Positive => ComplexField::new(
+                        Field::sqrt(1.0 + pgamma) * phase.re,
+                        Field::sqrt(1.0 - pgamma) * phase.im,
                     ),
-                    Reflectivity::Negative => Complex64::new(
-                        f64::sqrt(1.0 - pgamma) * phase.re,
-                        f64::sqrt(1.0 + pgamma) * phase.im,
+                    Reflectivity::Negative => ComplexField::new(
+                        Field::sqrt(1.0 - pgamma) * phase.re,
+                        Field::sqrt(1.0 + pgamma) * phase.im,
                     ),
                 }
             })
@@ -169,7 +175,11 @@ impl Node for OnePS {
         Ok(())
     }
 
-    fn calculate(&self, _parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
+    fn calculate(
+        &self,
+        _parameters: &[Field],
+        event: &Event,
+    ) -> Result<ComplexField, RustitudeError> {
         Ok(self.data[event.index])
     }
 }
@@ -179,7 +189,7 @@ pub struct TwoPS {
     wave: Wave,
     reflectivity: Reflectivity,
     frame: Frame,
-    data: Vec<Complex64>,
+    data: Vec<ComplexField>,
 }
 impl TwoPS {
     pub fn new(wave: Wave, reflectivity: Reflectivity, frame: Frame) -> Self {
@@ -217,21 +227,25 @@ impl Node for TwoPS {
                     self.reflectivity as isize
                 } else {
                     -(self.reflectivity as isize)
-                }) as f64;
+                }) as Field;
                 let big_theta = match self.wave.m().cmp(&0) {
                     std::cmp::Ordering::Less => 0.0,
                     std::cmp::Ordering::Equal => 0.5,
-                    std::cmp::Ordering::Greater => f64::sqrt(0.5),
+                    std::cmp::Ordering::Greater => Field::sqrt(0.5),
                 };
                 let wigner_d_lm0_m =
-                    f64::sqrt(4.0 * PI / (2.0 * self.wave.l() as f64 + 1.0)) * ylm_m;
+                    Field::sqrt(4.0 * PI / (2.0 * self.wave.l() as Field + 1.0)) * ylm_m;
                 big_theta * ylm_p - m_refl * wigner_d_lm0_m
             })
             .collect();
         Ok(())
     }
 
-    fn calculate(&self, _parameters: &[f64], event: &Event) -> Result<Complex64, RustitudeError> {
+    fn calculate(
+        &self,
+        _parameters: &[Field],
+        event: &Event,
+    ) -> Result<ComplexField, RustitudeError> {
         Ok(self.data[event.index])
     }
 }

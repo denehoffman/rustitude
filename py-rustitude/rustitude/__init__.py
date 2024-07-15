@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from typing import Callable, Literal, Any, overload, Protocol
+from typing import Callable, Literal, Any, Protocol
 import numpy as np
 from numpy.typing import ArrayLike
 import uproot
@@ -10,7 +10,15 @@ from iminuit import Minuit
 from scipy.optimize import OptimizeResult
 import scipy.optimize as opt
 
-from ._rustitude import amplitude, dataset, four_momentum, gluex, manager, __version__
+from ._rustitude import (
+    amplitude,
+    dataset,
+    four_momentum,
+    gluex,
+    manager,
+    __version__,
+    __rustitude_precision__,
+)
 from .amplitude import (
     CScalar,
     PCScalar,
@@ -31,9 +39,11 @@ from .manager import ExtendedLogLikelihood, Manager
 from abc import ABCMeta, abstractmethod
 
 __version__: str = __version__
+__rustitude_precision__: str = __rustitude_precision__
 
 __all__ = [
     '__version__',
+    '__rustitude_precision__',
     'dataset',
     'manager',
     'amplitude',
@@ -111,18 +121,6 @@ class PyNode(metaclass=ABCMeta):
         pass
 
 
-@overload
-def minimizer(
-    ell: ExtendedLogLikelihood,
-    method: Literal['Minuit'],
-    *args: Any,
-    indices_data: list[int] | None = None,
-    indices_mc: list[int] | None = None,
-    num_threads: int = 1,
-    minimizer_kwargs: dict[str, Any] | None = None,
-) -> Minuit: ...
-
-
 ScipyOptMethods = Literal[
     'Nelder-Mead',
     'Powell',
@@ -152,37 +150,13 @@ class ScipyMinCallable(Protocol):
     ) -> OptimizeResult: ...
 
 
-@overload
-def minimizer(
-    ell: ExtendedLogLikelihood,
-    method: ScipyOptMethods,
-    *args: Any,
-    indices_data: list[int] | None = None,
-    indices_mc: list[int] | None = None,
-    num_threads: int = 1,
-    minimizer_kwargs: dict[str, Any] | None = None,
-) -> Callable[[], OptimizeResult]: ...
-
-
-@overload
-def minimizer(
-    ell: ExtendedLogLikelihood,
-    method: ScipyMinCallable,
-    *args: Any,
-    indices_data: list[int] | None = None,
-    indices_mc: list[int] | None = None,
-    num_threads: int = 1,
-    minimizer_kwargs: dict[str, Any] | None = None,
-) -> Callable[[], OptimizeResult]: ...
-
-
 def minimizer(
     ell: ExtendedLogLikelihood,
     method: Literal['Minuit'] | ScipyOptMethods | ScipyMinCallable | None = None,
     *args: Any,
     indices_data: list[int] | None = None,
     indices_mc: list[int] | None = None,
-    num_threads: int = 1,
+    parallel: bool = True,
     minimizer_kwargs: dict[str, Any] | None = None,
 ) -> Minuit | Callable[[], OptimizeResult]:
     bounds = []
@@ -200,7 +174,7 @@ def minimizer(
             bounds = None
 
         def fcn_scipy(x: ArrayLike, *args: Any):
-            return ell(x, indices_data=indices_data, indices_mc=indices_mc, num_threads=num_threads)
+            return ell(x, indices_data=indices_data, indices_mc=indices_mc, parallel=parallel)
 
         def fit() -> OptimizeResult:
             return opt.minimize(
@@ -217,7 +191,7 @@ def minimizer(
                 list(args),
                 indices_data=indices_data,
                 indices_mc=indices_mc,
-                num_threads=num_threads,
+                parallel=parallel,
             )
 
         minuit_par_names = [f'{p.amplitude} - {p.name}' for p in ell.parameters if p.free]

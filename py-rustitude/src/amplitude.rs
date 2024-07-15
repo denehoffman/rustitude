@@ -1,6 +1,7 @@
 use pyo3::{prelude::*, types::PyList};
 use rustitude_core::amplitude as rust;
 use rustitude_core::amplitude::AmpLike as rust_AmpLike;
+use rustitude_core::Field;
 use std::ops::{Add, Mul};
 
 #[pyclass]
@@ -49,11 +50,11 @@ impl Parameter {
         self.0.index.is_none()
     }
     #[getter]
-    fn initial(&self) -> f64 {
+    fn initial(&self) -> Field {
         self.0.initial
     }
     #[getter]
-    fn bounds(&self) -> (f64, f64) {
+    fn bounds(&self) -> (Field, Field) {
         self.0.bounds
     }
     fn __str__(&self) -> String {
@@ -173,9 +174,9 @@ impl PyNode {
     }
     pub fn calculate(
         &self,
-        parameters: Vec<f64>,
+        parameters: Vec<Field>,
         event: crate::dataset::Event,
-    ) -> Result<rustitude_core::prelude::Complex64, PyErr> {
+    ) -> Result<rustitude_core::prelude::ComplexField, PyErr> {
         rust::Node::calculate(self, &parameters, &event.into()).map_err(PyErr::from)
     }
     pub fn parameters(&self) -> Vec<String> {
@@ -207,9 +208,9 @@ impl rust::Node for PyNode {
 
     fn calculate(
         &self,
-        parameters: &[f64],
+        parameters: &[Field],
         event: &rustitude::prelude::Event,
-    ) -> Result<rustitude::prelude::Complex64, rustitude::prelude::RustitudeError> {
+    ) -> Result<rustitude::prelude::ComplexField, rustitude::prelude::RustitudeError> {
         Python::with_gil(|py| {
             let py_parameters = PyList::new_bound(py, parameters);
             let py_event = crate::dataset::Event::from(event.clone());
@@ -219,7 +220,7 @@ impl rust::Node for PyNode {
                 .call_method1(py, "calculate", (py_parameters, py_event_obj))
             {
                 Ok(result) => {
-                    let complex: rustitude::prelude::Complex64 = result.extract(py)?;
+                    let complex: rustitude::prelude::ComplexField = result.extract(py)?;
                     Ok(complex)
                 }
                 Err(e) => Err(rustitude_core::errors::RustitudeError::from(e)),
@@ -522,11 +523,11 @@ impl Model {
             .collect()
     }
     #[getter]
-    fn bounds(&self) -> Vec<(f64, f64)> {
+    fn bounds(&self) -> Vec<(Field, Field)> {
         self.0.get_bounds()
     }
     #[getter]
-    fn initial(&self) -> Vec<f64> {
+    fn initial(&self) -> Vec<Field> {
         self.0.get_initial()
     }
     #[getter]
@@ -565,34 +566,40 @@ impl Model {
             .constrain(amplitude_1, parameter_1, amplitude_2, parameter_2)
             .map_err(PyErr::from)
     }
-    fn fix(&mut self, amplitude: &str, parameter: &str, value: f64) -> PyResult<()> {
+    fn fix(&mut self, amplitude: &str, parameter: &str, value: Field) -> PyResult<()> {
         self.0.fix(amplitude, parameter, value).map_err(PyErr::from)
     }
     fn free(&mut self, amplitude: &str, parameter: &str) -> PyResult<()> {
         self.0.free(amplitude, parameter).map_err(PyErr::from)
     }
-    fn set_bounds(&mut self, amplitude: &str, parameter: &str, bounds: (f64, f64)) -> PyResult<()> {
+    fn set_bounds(
+        &mut self,
+        amplitude: &str,
+        parameter: &str,
+        bounds: (Field, Field),
+    ) -> PyResult<()> {
         self.0
             .set_bounds(amplitude, parameter, bounds)
             .map_err(PyErr::from)
     }
-    fn set_initial(&mut self, amplitude: &str, parameter: &str, value: f64) -> PyResult<()> {
+    fn set_initial(&mut self, amplitude: &str, parameter: &str, value: Field) -> PyResult<()> {
         self.0
             .set_initial(amplitude, parameter, value)
             .map_err(PyErr::from)
     }
-    fn activate(&mut self, amplitude: &str) {
-        self.0.activate(amplitude)
+    fn activate(&mut self, amplitude: &str) -> PyResult<()> {
+        self.0.activate(amplitude).map_err(PyErr::from)
     }
     fn activate_all(&mut self) {
         self.0.activate_all()
     }
-    fn isolate(&mut self, amplitudes: Vec<String>) {
+    fn isolate(&mut self, amplitudes: Vec<String>) -> PyResult<()> {
         self.0
             .isolate(amplitudes.iter().map(|s| s.as_ref()).collect())
+            .map_err(PyErr::from)
     }
-    fn deactivate(&mut self, amplitude: &str) {
-        self.0.deactivate(amplitude)
+    fn deactivate(&mut self, amplitude: &str) -> PyResult<()> {
+        self.0.deactivate(amplitude).map_err(PyErr::from)
     }
     fn deactivate_all(&mut self) {
         self.0.deactivate_all()
@@ -612,7 +619,7 @@ fn pcscalar(name: &str) -> Amplitude {
     rust::pcscalar(name).into()
 }
 #[pyfunction(name = "PiecewiseM")]
-pub fn piecewise_m(name: &str, bins: usize, range: (f64, f64)) -> Amplitude {
+pub fn piecewise_m(name: &str, bins: usize, range: (Field, Field)) -> Amplitude {
     rust::piecewise_m(name, bins, range).into()
 }
 

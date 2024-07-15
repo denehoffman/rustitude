@@ -120,9 +120,11 @@ m_mc = rt.Manager(mod, ds_mc)
 
 nll = rt.ExtendedLogLikelihood(m_data, m_mc)
 
-res = nll([10.0] * mod.n_free, num_threads=4) # automatic CPU parallelism without GIL
+res = nll([10.0] * mod.n_free) # automatic CPU parallelism without GIL
 print(res) # prints some value for the NLL
 ```
+
+Automatic parallelism over the CPU can be disabled via function calls which support it (for example, `nll([10.0] * mod.n_free, parallel=False)` would run without parallel processing), and the number of CPUs used can be controlled via the `RAYON_NUM_THREADS` environment variable, which can be set before the code is run or modified inside the code (for example, `os.environ['RAYON_NUM_THREADS] = '5'` would ensure only five threads are used past that point in the code). By default, an unset value or the value of `'0'` will use all available cores.
 
 See the [`rustitude-gluex`](https://github.com/denehoffman/rustitude/tree/main/crates/rustitude-gluex) package for some of the currently implemented amplitudes (derived from GlueX's [halld_sim](https://github.com/JeffersonLab/halld_sim) repo). There are also some helper methods `Scalar`, `CScalar`, and `PCScalar` to create amplitudes which represent a single free parameter, a single complex free parameter, and a single complex free parameter in polar coordinates respectively.
 

@@ -67,8 +67,7 @@ We can now use the minimizer interface to create some fit objects. Let's use Min
    ms = [rt.minimizer(nll,
                       method="Minuit",
                       indices_data=indices_data,
-                      indices_mc=indices_mc,
-                      num_threads=8)
+                      indices_mc=indices_mc)
          for indices_data, indices_mc in zip(ds_data_split, ds_accmc_split)]
    
 Run the fits (with the Migrad algorithm)!
@@ -86,32 +85,28 @@ Now we collect the results. We can sum the intensities for each event in each bi
    intensity_tot = [sum(nll.intensity(list(m.values),
                                       ds_accmc,
                                       indices_data=indices_data,
-                                      indices_mc=indices_mc,
-                                      num_threads=8))
+                                      indices_mc=indices_mc))
                     for m, indices_data, indices_mc in zip(ms, ds_data_split, ds_accmc_split)]
 
    nll.isolate(["Z00+", "S0+"])
    intensity_s0p = [sum(nll.intensity(list(m.values),
                                       ds_accmc,
                                       indices_data=indices_data,
-                                      indices_mc=indices_mc,
-                                      num_threads=8))
+                                      indices_mc=indices_mc))
                     for m, indices_data, indices_mc in zip(ms, ds_data_split, ds_accmc_split)]
 
    nll.isolate(["Z1-1+", "P-1+"])
    intensity_pm1p = [sum(nll.intensity(list(m.values),
                                        ds_accmc,
                                        indices_data=indices_data,
-                                       indices_mc=indices_mc,
-                                       num_threads=8))
+                                       indices_mc=indices_mc))
                      for m, indices_data, indices_mc in zip(ms, ds_data_split, ds_accmc_split)]
 
    nll.isolate(["Z22-", "D2-"])
    intensity_d2m = [sum(nll.intensity(list(m.values),
                                       ds_accmc,
                                       indices_data=indices_data,
-                                      indices_mc=indices_mc,
-                                      num_threads=8))
+                                      indices_mc=indices_mc))
                     for m, indices_data, indices_mc in zip(ms, ds_data_split, ds_accmc_split)]
 
 Finally, we can plot the results:
@@ -128,4 +123,4 @@ Finally, we can plot the results:
    plt.legend()
    plt.show()
 
-From here, we'd usually go through the process of modifying the model to produce the most sensible fit, and to really make a complete study, we might generate some sets of indices that can be thought of as bootstrapped data. If we were fitting all of the data at once, we could use the :code:`Dataset.get_bootstrap_indices(self, seed: int)` method to generate such a set, but here we might favor using native Python methods to resample the binned indices we generated above. Note that sorting said indices will probably lead to better performance. Bootstrapped indices can be used the exact same way as the indices were used above, and after collecting intensities from each bootstrap fit, we just need to find the standard deviation to put error bars on the plot we just made, but for now that will be an exercise for the user.
+From here, we'd usually go through the process of modifying the model to produce the most sensible fit, and to really make a complete study, we might generate some sets of indices that can be thought of as bootstrapped data. If we were fitting all of the data at once, we could use the ``Dataset.get_bootstrap_indices(self, seed: int)`` method to generate such a set, but here we might favor using native Python methods to resample the binned indices we generated above. Note that sorting said indices will probably lead to better performance. Bootstrapped indices can be used the exact same way as the indices were used above, and after collecting intensities from each bootstrap fit, we just need to find the standard deviation to put error bars on the plot we just made, but for now that will be an exercise for the user.
