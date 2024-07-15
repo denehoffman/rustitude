@@ -1,6 +1,10 @@
 from pathlib import Path
-from typing import Self, overload
+from typing import Any, Callable, Literal, Protocol, Self, overload
 from abc import ABCMeta, abstractmethod
+
+from iminuit import Minuit
+from numpy.typing import ArrayLike
+from scipy.optimize import OptimizeResult
 
 __version__: str
 
@@ -170,6 +174,72 @@ class Dataset:
 def open(
     file_name: str | Path, tree_name: str | None = None, *, pol_in_beam: bool = False
 ) -> Dataset: ...  # noqa: A001
+@overload
+def minimizer(
+    ell: ExtendedLogLikelihood,
+    method: Literal['Minuit'],
+    *args: Any,
+    indices_data: list[int] | None = None,
+    indices_mc: list[int] | None = None,
+    num_threads: int = 1,
+    minimizer_kwargs: dict[str, Any] | None = None,
+) -> Minuit: ...
+
+ScipyOptMethods = Literal[
+    'Nelder-Mead',
+    'Powell',
+    'CG',
+    'BFGS',
+    'Newton-CG',
+    'L-BFGS-B',
+    'TNC',
+    'COBYLA',
+    'COBYQA',
+    'SLSQP',
+    'trust-constr',
+    'dogleg',
+    'trust-ncg',
+    'trust-exact',
+    'trust-krylov',
+]
+
+class ScipyCallable(Protocol):
+    def __call__(self, x: ArrayLike, *args: Any) -> float: ...
+
+class ScipyMinCallable(Protocol):
+    def __call__(
+        self, fun: ScipyCallable, x0: ArrayLike, args: tuple[Any], **kwargs_and_options: Any
+    ) -> OptimizeResult: ...
+
+@overload
+def minimizer(
+    ell: ExtendedLogLikelihood,
+    method: ScipyOptMethods,
+    *args: Any,
+    indices_data: list[int] | None = None,
+    indices_mc: list[int] | None = None,
+    num_threads: int = 1,
+    minimizer_kwargs: dict[str, Any] | None = None,
+) -> Callable[[], OptimizeResult]: ...
+@overload
+def minimizer(
+    ell: ExtendedLogLikelihood,
+    method: ScipyMinCallable,
+    *args: Any,
+    indices_data: list[int] | None = None,
+    indices_mc: list[int] | None = None,
+    num_threads: int = 1,
+    minimizer_kwargs: dict[str, Any] | None = None,
+) -> Callable[[], OptimizeResult]: ...
+def minimizer(
+    ell: ExtendedLogLikelihood,
+    method: Literal['Minuit'] | ScipyOptMethods | ScipyMinCallable | None = None,
+    *args: Any,
+    indices_data: list[int] | None = None,
+    indices_mc: list[int] | None = None,
+    num_threads: int = 1,
+    minimizer_kwargs: dict[str, Any] | None = None,
+) -> Minuit | Callable[[], OptimizeResult]: ...
 
 class Manager:
     root: Amplitude

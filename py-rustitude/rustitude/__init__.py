@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from typing import Callable, Literal, Any, overload, Protocol
+from typing import Callable, Literal, Any, Protocol
 import numpy as np
 from numpy.typing import ArrayLike
 import uproot
@@ -121,18 +121,6 @@ class PyNode(metaclass=ABCMeta):
         pass
 
 
-@overload
-def minimizer(
-    ell: ExtendedLogLikelihood,
-    method: Literal['Minuit'],
-    *args: Any,
-    indices_data: list[int] | None = None,
-    indices_mc: list[int] | None = None,
-    num_threads: int = 1,
-    minimizer_kwargs: dict[str, Any] | None = None,
-) -> Minuit: ...
-
-
 ScipyOptMethods = Literal[
     'Nelder-Mead',
     'Powell',
@@ -160,30 +148,6 @@ class ScipyMinCallable(Protocol):
     def __call__(
         self, fun: ScipyCallable, x0: ArrayLike, args: tuple[Any], **kwargs_and_options: Any
     ) -> OptimizeResult: ...
-
-
-@overload
-def minimizer(
-    ell: ExtendedLogLikelihood,
-    method: ScipyOptMethods,
-    *args: Any,
-    indices_data: list[int] | None = None,
-    indices_mc: list[int] | None = None,
-    num_threads: int = 1,
-    minimizer_kwargs: dict[str, Any] | None = None,
-) -> Callable[[], OptimizeResult]: ...
-
-
-@overload
-def minimizer(
-    ell: ExtendedLogLikelihood,
-    method: ScipyMinCallable,
-    *args: Any,
-    indices_data: list[int] | None = None,
-    indices_mc: list[int] | None = None,
-    num_threads: int = 1,
-    minimizer_kwargs: dict[str, Any] | None = None,
-) -> Callable[[], OptimizeResult]: ...
 
 
 def minimizer(
