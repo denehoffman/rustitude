@@ -75,46 +75,41 @@ impl Manager {
         .map(Manager::from)
         .map_err(PyErr::from)
     }
-    #[pyo3(name = "__call__")]
-    fn call(&self, parameters: Vec<Field>) -> PyResult<Vec<Field>> {
-        if self.0.model.contains_python_amplitudes {
-            return Err(PyRuntimeError::new_err(
-                "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!",
-            ));
-        }
-        self.0.par_evaluate(&parameters).map_err(PyErr::from)
+    #[pyo3(name = "__call__", signature = (parameters, *, indices = None, parallel = true))]
+    fn call(
+        &self,
+        parameters: Vec<Field>,
+        indices: Option<Vec<usize>>,
+        parallel: bool,
+    ) -> PyResult<Vec<Field>> {
+        self.evaluate(parameters, indices, parallel)
     }
-    #[pyo3(signature = (parameters, *, indices = None))]
+    #[pyo3(signature = (parameters, *, indices = None, parallel = true))]
     fn evaluate(
         &self,
         parameters: Vec<Field>,
         indices: Option<Vec<usize>>,
+        parallel: bool,
     ) -> PyResult<Vec<Field>> {
-        if let Some(inds) = indices {
+        if parallel {
+            if self.0.model.contains_python_amplitudes {
+                return Err(PyRuntimeError::new_err(
+                    "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!",
+                ));
+            }
+            if let Some(inds) = indices {
+                self.0
+                    .par_evaluate_indexed(&parameters, &inds)
+                    .map_err(PyErr::from)
+            } else {
+                self.0.par_evaluate(&parameters).map_err(PyErr::from)
+            }
+        } else if let Some(inds) = indices {
             self.0
                 .evaluate_indexed(&parameters, &inds)
                 .map_err(PyErr::from)
         } else {
             self.0.evaluate(&parameters).map_err(PyErr::from)
-        }
-    }
-    #[pyo3(signature = (parameters, *, indices = None))]
-    fn par_evaluate(
-        &self,
-        parameters: Vec<Field>,
-        indices: Option<Vec<usize>>,
-    ) -> PyResult<Vec<Field>> {
-        if self.0.model.contains_python_amplitudes {
-            return Err(PyRuntimeError::new_err(
-                "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!",
-            ));
-        }
-        if let Some(inds) = indices {
-            self.0
-                .par_evaluate_indexed(&parameters, &inds)
-                .map_err(PyErr::from)
-        } else {
-            self.0.par_evaluate(&parameters).map_err(PyErr::from)
         }
     }
     fn get_amplitude(&self, amplitude_name: &str) -> PyResult<Amplitude> {
@@ -249,15 +244,15 @@ impl ExtendedLogLikelihood {
     fn new(data_manager: Manager, mc_manager: Manager) -> Self {
         rust::ExtendedLogLikelihood::new(data_manager.into(), mc_manager.into()).into()
     }
-    #[pyo3(signature = (parameters, *, indices_data = None, indices_mc = None, num_threads = 1))]
+    #[pyo3(signature = (parameters, *, indices_data = None, indices_mc = None, parallel = true))]
     fn evaluate(
         &self,
         parameters: Vec<Field>,
         indices_data: Option<Vec<usize>>,
         indices_mc: Option<Vec<usize>>,
-        num_threads: usize,
+        parallel: bool,
     ) -> PyResult<Field> {
-        if num_threads > 1 {
+        if parallel {
             if self.0.data_manager.model.contains_python_amplitudes
                 || self.0.mc_manager.model.contains_python_amplitudes
             {
@@ -266,22 +261,19 @@ impl ExtendedLogLikelihood {
                 ));
             }
             match (indices_data, indices_mc) {
-                (None, None) => self.0.par_evaluate(&parameters, num_threads),
+                (None, None) => self.0.par_evaluate(&parameters),
                 (None, Some(i_mc)) => self.0.par_evaluate_indexed(
                     &parameters,
                     &((0..self.0.data_manager.dataset.len()).collect::<Vec<usize>>()),
                     &i_mc,
-                    num_threads,
                 ),
                 (Some(i_data), None) => self.0.par_evaluate_indexed(
                     &parameters,
                     &i_data,
                     &((0..self.0.mc_manager.dataset.len()).collect::<Vec<usize>>()),
-                    num_threads,
                 ),
                 (Some(i_data), Some(i_mc)) => {
-                    self.0
-                        .par_evaluate_indexed(&parameters, &i_data, &i_mc, num_threads)
+                    self.0.par_evaluate_indexed(&parameters, &i_data, &i_mc)
                 }
             }
             .map_err(PyErr::from)
@@ -303,16 +295,16 @@ impl ExtendedLogLikelihood {
             .map_err(PyErr::from)
         }
     }
-    #[pyo3(signature = (parameters, dataset, *, indices_data = None, indices_mc = None, num_threads = 1))]
+    #[pyo3(signature = (parameters, dataset, *, indices_data = None, indices_mc = None, parallel = true))]
     fn intensity(
         &self,
         parameters: Vec<Field>,
         dataset: Dataset,
         indices_data: Option<Vec<usize>>,
         indices_mc: Option<Vec<usize>>,
-        num_threads: usize,
+        parallel: bool,
     ) -> PyResult<Vec<Field>> {
-        if num_threads > 1 {
+        if parallel {
             if self.0.data_manager.model.contains_python_amplitudes
                 || self.0.mc_manager.model.contains_python_amplitudes
             {
@@ -321,30 +313,23 @@ impl ExtendedLogLikelihood {
                 ));
             }
             match (indices_data, indices_mc) {
-                (None, None) => self
-                    .0
-                    .par_intensity(&parameters, &dataset.into(), num_threads),
+                (None, None) => self.0.par_intensity(&parameters, &dataset.into()),
                 (None, Some(i_mc)) => self.0.par_intensity_indexed(
                     &parameters,
                     &dataset.into(),
                     &((0..self.0.data_manager.dataset.len()).collect::<Vec<usize>>()),
                     &i_mc,
-                    num_threads,
                 ),
                 (Some(i_data), None) => self.0.par_intensity_indexed(
                     &parameters,
                     &dataset.into(),
                     &i_data,
                     &((0..self.0.mc_manager.dataset.len()).collect::<Vec<usize>>()),
-                    num_threads,
                 ),
-                (Some(i_data), Some(i_mc)) => self.0.par_intensity_indexed(
-                    &parameters,
-                    &dataset.into(),
-                    &i_data,
-                    &i_mc,
-                    num_threads,
-                ),
+                (Some(i_data), Some(i_mc)) => {
+                    self.0
+                        .par_intensity_indexed(&parameters, &dataset.into(), &i_data, &i_mc)
+                }
             }
             .map_err(PyErr::from)
         } else {
@@ -370,15 +355,15 @@ impl ExtendedLogLikelihood {
             .map_err(PyErr::from)
         }
     }
-    #[pyo3(name = "__call__", signature = (parameters, *, indices_data = None, indices_mc = None, num_threads = 1))]
+    #[pyo3(name = "__call__", signature = (parameters, *, indices_data = None, indices_mc = None, parallel = true))]
     fn call(
         &self,
         parameters: Vec<Field>,
         indices_data: Option<Vec<usize>>,
         indices_mc: Option<Vec<usize>>,
-        num_threads: usize,
+        parallel: bool,
     ) -> PyResult<Field> {
-        self.evaluate(parameters, indices_data, indices_mc, num_threads)
+        self.evaluate(parameters, indices_data, indices_mc, parallel)
     }
     fn get_amplitude(&self, amplitude_name: &str) -> PyResult<Amplitude> {
         self.0

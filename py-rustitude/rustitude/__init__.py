@@ -156,7 +156,7 @@ def minimizer(
     *args: Any,
     indices_data: list[int] | None = None,
     indices_mc: list[int] | None = None,
-    num_threads: int = 1,
+    parallel: bool = True,
     minimizer_kwargs: dict[str, Any] | None = None,
 ) -> Minuit | Callable[[], OptimizeResult]:
     bounds = []
@@ -174,7 +174,7 @@ def minimizer(
             bounds = None
 
         def fcn_scipy(x: ArrayLike, *args: Any):
-            return ell(x, indices_data=indices_data, indices_mc=indices_mc, num_threads=num_threads)
+            return ell(x, indices_data=indices_data, indices_mc=indices_mc, parallel=parallel)
 
         def fit() -> OptimizeResult:
             return opt.minimize(
@@ -191,7 +191,7 @@ def minimizer(
                 list(args),
                 indices_data=indices_data,
                 indices_mc=indices_mc,
-                num_threads=num_threads,
+                parallel=parallel,
             )
 
         minuit_par_names = [f'{p.amplitude} - {p.name}' for p in ell.parameters if p.free]

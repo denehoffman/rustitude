@@ -251,13 +251,10 @@ class Manager:
 
     def __init__(self, model: Model, dataset: Dataset) -> None: ...
     def __call__(
-        self, parameters: list[float], *, indices: list[int] | None = None
+        self, parameters: list[float], *, indices: list[int] | None = None, parallel: bool = True
     ) -> list[float]: ...
     def evaluate(
-        self, parameters: list[float], *, indices: list[int] | None = None
-    ) -> list[float]: ...
-    def par_evaluate(
-        self, parameters: list[float], *, indices: list[int] | None = None
+        self, parameters: list[float], *, indices: list[int] | None = None, parallel: bool = True
     ) -> list[float]: ...
     def fix(self, amplitude_1: str, parameter_1: str, value: float) -> None: ...
     def free(self, amplitude_1: str, parameter_1: str) -> None: ...
@@ -286,14 +283,14 @@ class ExtendedLogLikelihood:
         *,
         indices_data: list[float] | None = None,
         indices_mc: list[float] | None = None,
-        num_threads: int = 1,
+        parallel: bool = True,
     ) -> float: ...
     def evaluate(
         self,
         parameters: list[float],
         indices_data: list[int] | None = None,
         indices_mc: list[int] | None = None,
-        num_threads: int = 1,
+        parallel: bool = True,
     ) -> float: ...
     def intensity(
         self,
@@ -302,7 +299,7 @@ class ExtendedLogLikelihood:
         *,
         indices_data: list[int] | None = None,
         indices_mc: list[int] | None = None,
-        num_threads: int = 1,
+        parallel: bool = True,
     ) -> list[float]: ...
     def fix(self, amplitude_1: str, parameter_1: str, value: float) -> None: ...
     def free(self, amplitude_1: str, parameter_1: str) -> None: ...

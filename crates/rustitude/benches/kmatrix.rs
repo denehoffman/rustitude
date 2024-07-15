@@ -51,7 +51,7 @@ pub fn criterion_kmatrix(c: &mut Criterion) {
             let v = (0..model.get_n_free())
                 .map(|_| rand::random::<Field>() * 100.0)
                 .collect::<Vec<_>>();
-            criterion::black_box(nll.par_evaluate(&v, num_cpus::get()))
+            criterion::black_box(nll.par_evaluate(&v))
         })
     });
     let indices_data = (0..dataset.len()).collect::<Vec<usize>>();
@@ -61,12 +61,7 @@ pub fn criterion_kmatrix(c: &mut Criterion) {
             let v = (0..model.get_n_free())
                 .map(|_| rand::random::<Field>() * 100.0)
                 .collect::<Vec<_>>();
-            criterion::black_box(nll.par_evaluate_indexed(
-                &v,
-                &indices_data,
-                &indices_mc,
-                num_cpus::get(),
-            ))
+            criterion::black_box(nll.par_evaluate_indexed(&v, &indices_data, &indices_mc))
         })
     });
 }

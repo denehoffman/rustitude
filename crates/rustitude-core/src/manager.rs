@@ -5,7 +5,6 @@
 use rayon::prelude::*;
 
 use crate::{
-    create_pool,
     errors::RustitudeError,
     prelude::{Amplitude, Dataset, Event, Model, Parameter},
     Field,
@@ -419,11 +418,7 @@ impl ExtendedLogLikelihood {
     /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
     /// [`Model::compute`] for more information.
     #[allow(clippy::suboptimal_flops)]
-    pub fn par_evaluate(
-        &self,
-        parameters: &[Field],
-        num_threads: usize,
-    ) -> Result<Field, RustitudeError> {
+    pub fn par_evaluate(&self, parameters: &[Field]) -> Result<Field, RustitudeError> {
         if self.data_manager.model.contains_python_amplitudes
             || self.mc_manager.model.contains_python_amplitudes
         {
@@ -432,26 +427,24 @@ impl ExtendedLogLikelihood {
                     .to_string(),
             ));
         }
-        create_pool(num_threads)?.install(|| {
-            let data_res = self.data_manager.par_evaluate(parameters)?;
-            let data_weights = self.data_manager.dataset.weights();
-            let n_data = data_weights.iter().sum::<Field>();
-            let mc_norm_int = self.mc_manager.par_evaluate(parameters)?;
-            let mc_weights = self.mc_manager.dataset.weights();
-            let n_mc = mc_weights.iter().sum::<Field>();
-            let ln_l = (data_res
-                .par_iter()
-                .zip(data_weights)
-                .map(|(l, w)| w * l.ln())
-                .sum::<Field>())
-                - (n_data / n_mc)
-                    * (mc_norm_int
-                        .par_iter()
-                        .zip(mc_weights)
-                        .map(|(l, w)| w * l)
-                        .sum::<Field>());
-            Ok(-2.0 * ln_l)
-        })
+        let data_res = self.data_manager.par_evaluate(parameters)?;
+        let data_weights = self.data_manager.dataset.weights();
+        let n_data = data_weights.iter().sum::<Field>();
+        let mc_norm_int = self.mc_manager.par_evaluate(parameters)?;
+        let mc_weights = self.mc_manager.dataset.weights();
+        let n_mc = mc_weights.iter().sum::<Field>();
+        let ln_l = (data_res
+            .par_iter()
+            .zip(data_weights)
+            .map(|(l, w)| w * l.ln())
+            .sum::<Field>())
+            - (n_data / n_mc)
+                * (mc_norm_int
+                    .par_iter()
+                    .zip(mc_weights)
+                    .map(|(l, w)| w * l)
+                    .sum::<Field>());
+        Ok(-2.0 * ln_l)
     }
 
     /// Evaluate the [`ExtendedLogLikelihood`] over the [`Dataset`] with the given free parameters.
@@ -473,7 +466,6 @@ impl ExtendedLogLikelihood {
         parameters: &[Field],
         indices_data: &[usize],
         indices_mc: &[usize],
-        num_threads: usize,
     ) -> Result<Field, RustitudeError> {
         if self.data_manager.model.contains_python_amplitudes
             || self.mc_manager.model.contains_python_amplitudes
@@ -483,30 +475,28 @@ impl ExtendedLogLikelihood {
                     .to_string(),
             ));
         }
-        create_pool(num_threads)?.install(|| {
-            let data_res = self
-                .data_manager
-                .par_evaluate_indexed(parameters, indices_data)?;
-            let data_weights = self.data_manager.dataset.weights_indexed(indices_data);
-            let n_data = data_weights.iter().sum::<Field>();
-            let mc_norm_int = self
-                .mc_manager
-                .par_evaluate_indexed(parameters, indices_mc)?;
-            let mc_weights = self.mc_manager.dataset.weights_indexed(indices_mc);
-            let n_mc = mc_weights.iter().sum::<Field>();
-            let ln_l = (data_res
-                .par_iter()
-                .zip(data_weights)
-                .map(|(l, w)| w * l.ln())
-                .sum::<Field>())
-                - (n_data / n_mc)
-                    * (mc_norm_int
-                        .par_iter()
-                        .zip(mc_weights)
-                        .map(|(l, w)| w * l)
-                        .sum::<Field>());
-            Ok(-2.0 * ln_l)
-        })
+        let data_res = self
+            .data_manager
+            .par_evaluate_indexed(parameters, indices_data)?;
+        let data_weights = self.data_manager.dataset.weights_indexed(indices_data);
+        let n_data = data_weights.iter().sum::<Field>();
+        let mc_norm_int = self
+            .mc_manager
+            .par_evaluate_indexed(parameters, indices_mc)?;
+        let mc_weights = self.mc_manager.dataset.weights_indexed(indices_mc);
+        let n_mc = mc_weights.iter().sum::<Field>();
+        let ln_l = (data_res
+            .par_iter()
+            .zip(data_weights)
+            .map(|(l, w)| w * l.ln())
+            .sum::<Field>())
+            - (n_data / n_mc)
+                * (mc_norm_int
+                    .par_iter()
+                    .zip(mc_weights)
+                    .map(|(l, w)| w * l)
+                    .sum::<Field>());
+        Ok(-2.0 * ln_l)
     }
 
     /// Evaluate the normalized intensity function over the given Monte-Carlo [`Dataset`] with the
@@ -593,7 +583,6 @@ impl ExtendedLogLikelihood {
         &self,
         parameters: &[Field],
         dataset_mc: &Dataset,
-        num_threads: usize,
     ) -> Result<Vec<Field>, RustitudeError> {
         if self.data_manager.model.contains_python_amplitudes
             || self.mc_manager.model.contains_python_amplitudes
@@ -606,14 +595,12 @@ impl ExtendedLogLikelihood {
         let mc_manager = Manager::new(&self.data_manager.model, dataset_mc)?;
         let data_len_weighted: Field = self.data_manager.dataset.weights().iter().sum();
         let mc_len_weighted: Field = dataset_mc.weights().iter().sum();
-        create_pool(num_threads)?.install(|| {
-            mc_manager.par_evaluate(parameters).map(|r_vec| {
-                r_vec
-                    .iter()
-                    .zip(dataset_mc.events.iter())
-                    .map(|(r, e)| r * data_len_weighted / mc_len_weighted * e.weight)
-                    .collect()
-            })
+        mc_manager.par_evaluate(parameters).map(|r_vec| {
+            r_vec
+                .iter()
+                .zip(dataset_mc.events.iter())
+                .map(|(r, e)| r * data_len_weighted / mc_len_weighted * e.weight)
+                .collect()
         })
     }
 
@@ -639,7 +626,6 @@ impl ExtendedLogLikelihood {
         dataset_mc: &Dataset,
         indices_data: &[usize],
         indices_mc: &[usize],
-        num_threads: usize,
     ) -> Result<Vec<Field>, RustitudeError> {
         let mc_manager = Manager::new(&self.data_manager.model, dataset_mc)?;
         let data_len_weighted = self
@@ -653,17 +639,15 @@ impl ExtendedLogLikelihood {
             .par_iter()
             .map(|&index| &mc_manager.dataset.events[index])
             .collect();
-        create_pool(num_threads)?.install(|| {
-            mc_manager
-                .par_evaluate_indexed(parameters, indices_mc)
-                .map(|r_vec| {
-                    r_vec
-                        .par_iter()
-                        .zip(view.par_iter())
-                        .map(|(r, e)| r * data_len_weighted / mc_len_weighted * e.weight)
-                        .collect()
-                })
-        })
+        mc_manager
+            .par_evaluate_indexed(parameters, indices_mc)
+            .map(|r_vec| {
+                r_vec
+                    .par_iter()
+                    .zip(view.par_iter())
+                    .map(|(r, e)| r * data_len_weighted / mc_len_weighted * e.weight)
+                    .collect()
+            })
     }
 
     /// Get a copy of an [`Amplitude`] in the [`Model`] by name.

@@ -465,20 +465,3 @@ pub mod utils {
         };
     }
 }
-
-/// Creates a new thread pool.
-///
-/// This method uses [`rayon`] to create a thread pool with a given number of threads.
-///
-/// Arguments:
-/// * `num_threads`: Number of threads to use in the pool
-///
-/// # Errors
-///
-/// Will yield a [`errors::RustitudeError`] which forwards a [`rayon::ThreadPoolBuildError`] if
-/// there is any issue creating the thread pool.
-pub fn create_pool(num_threads: usize) -> Result<rayon::ThreadPool, errors::RustitudeError> {
-    Ok(rayon::ThreadPoolBuilder::new()
-        .num_threads(num_threads)
-        .build()?)
-}
