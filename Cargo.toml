@@ -10,6 +10,7 @@ authors = ["Nathaniel Dene Hoffman <dene@cmu.edu>"]
 description = "A library to create and operate models for particle physics amplitude analyses"
 repository = "https://github.com/denehoffman/rustitude/"
 homepage = "https://github.com/denehoffman/rustitude/"
+readme = "README.md"
 license-file = "LICENSE"
 
 [workspace.dependencies]
