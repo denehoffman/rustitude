@@ -7,6 +7,7 @@ from numpy.typing import ArrayLike
 from scipy.optimize import OptimizeResult
 
 __version__: str
+__rustitude_precision__: str
 
 class Parameter:
     amplitude: str
