@@ -1,6 +1,5 @@
 use pyo3::{exceptions::PyRuntimeError, prelude::*};
-use rustitude_core::manager as rust;
-use rustitude_core::Field;
+use rustitude_core as rust;
 
 use crate::{
     amplitude::{Amplitude, CohSum, Model, Parameter},
@@ -9,14 +8,14 @@ use crate::{
 
 #[pyclass]
 #[derive(Clone)]
-pub struct Manager(rust::Manager);
+pub struct Manager(rust::manager::Manager);
 
-impl From<rust::Manager> for Manager {
-    fn from(manager: rust::Manager) -> Self {
+impl From<rust::manager::Manager> for Manager {
+    fn from(manager: rust::manager::Manager) -> Self {
         Manager(manager)
     }
 }
-impl From<Manager> for rust::Manager {
+impl From<Manager> for rust::manager::Manager {
     fn from(manager: Manager) -> Self {
         manager.0
     }
@@ -55,11 +54,11 @@ impl Manager {
             .collect()
     }
     #[getter]
-    fn bounds(&self) -> Vec<(Field, Field)> {
+    fn bounds(&self) -> Vec<(rust::Field, rust::Field)> {
         self.0.get_bounds()
     }
     #[getter]
-    fn initial(&self) -> Vec<Field> {
+    fn initial(&self) -> Vec<rust::Field> {
         self.0.get_initial()
     }
     #[getter]
@@ -68,7 +67,7 @@ impl Manager {
     }
     #[new]
     fn new(model: Model, dataset: Dataset) -> PyResult<Self> {
-        rust::Manager::new(
+        rust::manager::Manager::new(
             &rustitude_core::amplitude::Model::from(model),
             &rustitude_core::dataset::Dataset::from(dataset),
         )
@@ -78,19 +77,19 @@ impl Manager {
     #[pyo3(name = "__call__", signature = (parameters, *, indices = None, parallel = true))]
     fn call(
         &self,
-        parameters: Vec<Field>,
+        parameters: Vec<rust::Field>,
         indices: Option<Vec<usize>>,
         parallel: bool,
-    ) -> PyResult<Vec<Field>> {
+    ) -> PyResult<Vec<rust::Field>> {
         self.evaluate(parameters, indices, parallel)
     }
     #[pyo3(signature = (parameters, *, indices = None, parallel = true))]
     fn evaluate(
         &self,
-        parameters: Vec<Field>,
+        parameters: Vec<rust::Field>,
         indices: Option<Vec<usize>>,
         parallel: bool,
-    ) -> PyResult<Vec<Field>> {
+    ) -> PyResult<Vec<rust::Field>> {
         if parallel {
             if self.0.model.contains_python_amplitudes {
                 return Err(PyRuntimeError::new_err(
@@ -138,7 +137,7 @@ impl Manager {
             .constrain(amplitude_1, parameter_1, amplitude_2, parameter_2)
             .map_err(PyErr::from)
     }
-    fn fix(&mut self, amplitude: &str, parameter: &str, value: Field) -> PyResult<()> {
+    fn fix(&mut self, amplitude: &str, parameter: &str, value: rust::Field) -> PyResult<()> {
         self.0.fix(amplitude, parameter, value).map_err(PyErr::from)
     }
     fn free(&mut self, amplitude: &str, parameter: &str) -> PyResult<()> {
@@ -148,13 +147,18 @@ impl Manager {
         &mut self,
         amplitude: &str,
         parameter: &str,
-        bounds: (Field, Field),
+        bounds: (rust::Field, rust::Field),
     ) -> PyResult<()> {
         self.0
             .set_bounds(amplitude, parameter, bounds)
             .map_err(PyErr::from)
     }
-    fn set_initial(&mut self, amplitude: &str, parameter: &str, value: Field) -> PyResult<()> {
+    fn set_initial(
+        &mut self,
+        amplitude: &str,
+        parameter: &str,
+        value: rust::Field,
+    ) -> PyResult<()> {
         self.0
             .set_initial(amplitude, parameter, value)
             .map_err(PyErr::from)
@@ -179,14 +183,14 @@ impl Manager {
 }
 
 #[pyclass]
-pub struct ExtendedLogLikelihood(rust::ExtendedLogLikelihood);
+pub struct ExtendedLogLikelihood(rust::manager::ExtendedLogLikelihood);
 
-impl From<rust::ExtendedLogLikelihood> for ExtendedLogLikelihood {
-    fn from(ell: rust::ExtendedLogLikelihood) -> Self {
+impl From<rust::manager::ExtendedLogLikelihood> for ExtendedLogLikelihood {
+    fn from(ell: rust::manager::ExtendedLogLikelihood) -> Self {
         ExtendedLogLikelihood(ell)
     }
 }
-impl From<ExtendedLogLikelihood> for rust::ExtendedLogLikelihood {
+impl From<ExtendedLogLikelihood> for rust::manager::ExtendedLogLikelihood {
     fn from(ell: ExtendedLogLikelihood) -> Self {
         ell.0
     }
@@ -229,11 +233,11 @@ impl ExtendedLogLikelihood {
             .collect()
     }
     #[getter]
-    fn bounds(&self) -> Vec<(Field, Field)> {
+    fn bounds(&self) -> Vec<(rust::Field, rust::Field)> {
         self.0.get_bounds()
     }
     #[getter]
-    fn initial(&self) -> Vec<Field> {
+    fn initial(&self) -> Vec<rust::Field> {
         self.0.get_initial()
     }
     #[getter]
@@ -242,16 +246,16 @@ impl ExtendedLogLikelihood {
     }
     #[new]
     fn new(data_manager: Manager, mc_manager: Manager) -> Self {
-        rust::ExtendedLogLikelihood::new(data_manager.into(), mc_manager.into()).into()
+        rust::manager::ExtendedLogLikelihood::new(data_manager.into(), mc_manager.into()).into()
     }
     #[pyo3(signature = (parameters, *, indices_data = None, indices_mc = None, parallel = true))]
     fn evaluate(
         &self,
-        parameters: Vec<Field>,
+        parameters: Vec<rust::Field>,
         indices_data: Option<Vec<usize>>,
         indices_mc: Option<Vec<usize>>,
         parallel: bool,
-    ) -> PyResult<Field> {
+    ) -> PyResult<rust::Field> {
         if parallel {
             if self.0.data_manager.model.contains_python_amplitudes
                 || self.0.mc_manager.model.contains_python_amplitudes
@@ -298,12 +302,12 @@ impl ExtendedLogLikelihood {
     #[pyo3(signature = (parameters, dataset, *, indices_data = None, indices_mc = None, parallel = true))]
     fn intensity(
         &self,
-        parameters: Vec<Field>,
+        parameters: Vec<rust::Field>,
         dataset: Dataset,
         indices_data: Option<Vec<usize>>,
         indices_mc: Option<Vec<usize>>,
         parallel: bool,
-    ) -> PyResult<Vec<Field>> {
+    ) -> PyResult<Vec<rust::Field>> {
         if parallel {
             if self.0.data_manager.model.contains_python_amplitudes
                 || self.0.mc_manager.model.contains_python_amplitudes
@@ -358,11 +362,11 @@ impl ExtendedLogLikelihood {
     #[pyo3(name = "__call__", signature = (parameters, *, indices_data = None, indices_mc = None, parallel = true))]
     fn call(
         &self,
-        parameters: Vec<Field>,
+        parameters: Vec<rust::Field>,
         indices_data: Option<Vec<usize>>,
         indices_mc: Option<Vec<usize>>,
         parallel: bool,
-    ) -> PyResult<Field> {
+    ) -> PyResult<rust::Field> {
         self.evaluate(parameters, indices_data, indices_mc, parallel)
     }
     fn get_amplitude(&self, amplitude_name: &str) -> PyResult<Amplitude> {
@@ -391,7 +395,7 @@ impl ExtendedLogLikelihood {
             .constrain(amplitude_1, parameter_1, amplitude_2, parameter_2)
             .map_err(PyErr::from)
     }
-    fn fix(&mut self, amplitude: &str, parameter: &str, value: Field) -> PyResult<()> {
+    fn fix(&mut self, amplitude: &str, parameter: &str, value: rust::Field) -> PyResult<()> {
         self.0.fix(amplitude, parameter, value).map_err(PyErr::from)
     }
     fn free(&mut self, amplitude: &str, parameter: &str) -> PyResult<()> {
@@ -401,13 +405,18 @@ impl ExtendedLogLikelihood {
         &mut self,
         amplitude: &str,
         parameter: &str,
-        bounds: (Field, Field),
+        bounds: (rust::Field, rust::Field),
     ) -> PyResult<()> {
         self.0
             .set_bounds(amplitude, parameter, bounds)
             .map_err(PyErr::from)
     }
-    fn set_initial(&mut self, amplitude: &str, parameter: &str, value: Field) -> PyResult<()> {
+    fn set_initial(
+        &mut self,
+        amplitude: &str,
+        parameter: &str,
+        value: rust::Field,
+    ) -> PyResult<()> {
         self.0
             .set_initial(amplitude, parameter, value)
             .map_err(PyErr::from)
