@@ -242,6 +242,7 @@ def minimizer(
 ) -> Minuit | Callable[[], OptimizeResult]: ...
 
 class Manager:
+    model: Model
     root: Amplitude
     amplitudes: list[Amplitude]
     parameters: list[Parameter]
@@ -269,6 +270,8 @@ class Manager:
     def deactivate_all(self) -> None: ...
 
 class ExtendedLogLikelihood:
+    data_manager: Manager
+    mc_manager: Manager
     root: Amplitude
     amplitudes: list[Amplitude]
     parameters: list[Parameter]

@@ -23,6 +23,12 @@ impl From<Manager> for rust::manager::Manager {
 
 #[pymethods]
 impl Manager {
+    fn __str__(&self) -> String {
+        format!("{}", self.0)
+    }
+    fn __repr__(&self) -> String {
+        format!("{:?}", self.0)
+    }
     #[getter]
     fn cohsums(&self) -> Vec<CohSum> {
         self.0
@@ -32,6 +38,14 @@ impl Manager {
             .into_iter()
             .map(CohSum::from)
             .collect()
+    }
+    #[getter]
+    fn model(&self) -> Model {
+        self.0.model.clone().into()
+    }
+    #[getter]
+    fn dataset(&self) -> Dataset {
+        self.0.dataset.clone().into()
     }
     #[getter]
     fn amplitudes(&self) -> Vec<Amplitude> {
@@ -198,6 +212,22 @@ impl From<ExtendedLogLikelihood> for rust::manager::ExtendedLogLikelihood {
 
 #[pymethods]
 impl ExtendedLogLikelihood {
+    fn __str__(&self) -> String {
+        format!("{}", self.0)
+    }
+    fn __repr__(&self) -> String {
+        format!("{:?}", self.0)
+    }
+    #[getter]
+    fn data_manager(&self) -> Manager {
+        self.0.data_manager.clone().into()
+    }
+
+    #[getter]
+    fn mc_manager(&self) -> Manager {
+        self.0.mc_manager.clone().into()
+    }
+
     #[getter]
     fn cohsums(&self) -> Vec<CohSum> {
         self.0
