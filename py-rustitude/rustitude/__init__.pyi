@@ -244,6 +244,7 @@ def minimizer(
 
 class Manager:
     model: Model
+    dataset: Dataset
     root: Amplitude
     amplitudes: list[Amplitude]
     parameters: list[Parameter]

@@ -2,6 +2,7 @@
 //! method. This module also holds a [`ExtendedLogLikelihood`] struct which holds two [`Manager`]s
 //! and, as the name suggests, calculates an extended log-likelihood using a very basic method over
 //! data and (accepted) Monte-Carlo.
+use std::fmt::{Debug, Display};
 use rayon::prelude::*;
 
 use crate::{
@@ -18,6 +19,18 @@ pub struct Manager {
     pub model: Model,
     /// The associated [`Dataset`].
     pub dataset: Dataset,
+}
+impl Debug for Manager {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Manager [ ")?;
+        write!(f, "{:?} ", self.model)?;
+        write!(f, "]")
+    }
+}
+impl Display for Manager {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}", self.model)
+    }
 }
 impl Manager {
     /// Generates a new [`Manager`] from a [`Model`] and [`Dataset`].
@@ -326,11 +339,26 @@ impl Manager {
 /// The [`ExtendedLogLikelihood`] stores two [`Manager`]s, one for data and one for a Monte-Carlo
 /// dataset used for acceptance correction. These should probably have the same [`Manager`] in
 /// practice, but this is left to the user.
+#[derive(Clone)]
 pub struct ExtendedLogLikelihood {
     /// [`Manager`] for data
     pub data_manager: Manager,
     /// [`Manager`] for Monte-Carlo
     pub mc_manager: Manager,
+}
+impl Debug for ExtendedLogLikelihood {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ExtendedLogLikelihood [ ")?;
+        write!(f, "{:?} ", self.data_manager)?;
+        write!(f, "{:?} ", self.mc_manager)?;
+        write!(f, "]")
+    }
+}
+impl Display for ExtendedLogLikelihood {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}", self.data_manager)?;
+        writeln!(f, "{}", self.mc_manager)
+    }
 }
 impl ExtendedLogLikelihood {
     /// Create a new [`ExtendedLogLikelihood`] from a data and Monte-Carlo [`Manager`]s.
