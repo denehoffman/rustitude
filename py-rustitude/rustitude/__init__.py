@@ -34,7 +34,7 @@ from .amplitude import (
     Node,
 )
 from .dataset import Event, Dataset
-from .manager import ExtendedLogLikelihood, Manager
+from .manager import ExtendedLogLikelihood, Manager, NelderMead
 
 from abc import ABCMeta, abstractmethod
 
@@ -63,6 +63,7 @@ __all__ = [
     'PiecewiseM',
     'Parameter',
     'Model',
+    'NelderMead',
     'gluex',
     'Node',
     'PyNode',

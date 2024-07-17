@@ -2,7 +2,10 @@
 //! method. This module also holds a [`ExtendedLogLikelihood`] struct which holds two [`Manager`]s
 //! and, as the name suggests, calculates an extended log-likelihood using a very basic method over
 //! data and (accepted) Monte-Carlo.
+
 use std::fmt::{Debug, Display};
+
+use ganesh::prelude::Function;
 use rayon::prelude::*;
 
 use crate::{
@@ -852,5 +855,11 @@ impl ExtendedLogLikelihood {
     pub fn deactivate_all(&mut self) {
         self.data_manager.deactivate_all();
         self.mc_manager.deactivate_all()
+    }
+}
+
+impl Function<Field, (), RustitudeError> for ExtendedLogLikelihood {
+    fn evaluate(&self, x: &[Field], _args: Option<&()>) -> Result<Field, RustitudeError> {
+        self.par_evaluate(x)
     }
 }

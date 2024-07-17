@@ -38,6 +38,7 @@ fastrand = "2.1.0"
 num_cpus = "1.16.0"
 dyn-clone = "1.0.17"
 tracing = "0.1.40"
+ganesh = { path = "../ganesh" }
 
 [profile.release]
 lto = true

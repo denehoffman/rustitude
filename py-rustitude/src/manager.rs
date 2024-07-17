@@ -1,3 +1,5 @@
+use ganesh::algorithms::nelder_mead;
+use ganesh::core::Minimizer;
 use pyo3::{exceptions::PyRuntimeError, prelude::*};
 use rustitude_core as rust;
 
@@ -470,8 +472,96 @@ impl ExtendedLogLikelihood {
     }
 }
 
+#[pyclass]
+pub struct NelderMead(nelder_mead::NelderMead<rust::Field, (), rust::errors::RustitudeError>);
+
+impl From<nelder_mead::NelderMead<rust::Field, (), rust::errors::RustitudeError>> for NelderMead {
+    fn from(nm: nelder_mead::NelderMead<rust::Field, (), rust::errors::RustitudeError>) -> Self {
+        NelderMead(nm)
+    }
+}
+impl From<NelderMead> for nelder_mead::NelderMead<rust::Field, (), rust::errors::RustitudeError> {
+    fn from(nm: NelderMead) -> Self {
+        nm.0
+    }
+}
+
+#[pymethods]
+impl NelderMead {
+    #[new]
+    #[pyo3(signature = (ell, *, simplex_size = 1.0, reflection_coeff = 1.0, expansion_coeff = 2.0, outside_contraction_coeff = 0.5, inside_contraction_coeff = 0.5, shrink_coeff = 0.5, min_simplex_standard_deviation = 1e-8))]
+    #[allow(clippy::too_many_arguments)]
+    fn new(
+        ell: &ExtendedLogLikelihood,
+        simplex_size: rust::Field,
+        reflection_coeff: rust::Field,
+        expansion_coeff: rust::Field,
+        outside_contraction_coeff: rust::Field,
+        inside_contraction_coeff: rust::Field,
+        shrink_coeff: rust::Field,
+        min_simplex_standard_deviation: rust::Field,
+    ) -> Self {
+        nelder_mead::NelderMead::new(
+            ell.0.clone(),
+            &ell.0.get_initial(),
+            Some(
+                nelder_mead::NelderMeadOptions::builder()
+                    .simplex_size(simplex_size)
+                    .reflection_coeff(reflection_coeff)
+                    .expansion_coeff(expansion_coeff)
+                    .outside_contraction_coeff(outside_contraction_coeff)
+                    .inside_contraction_coeff(inside_contraction_coeff)
+                    .shrink_coeff(shrink_coeff)
+                    .min_simplex_standard_deviation(min_simplex_standard_deviation)
+                    .build(),
+            ),
+        )
+        .into()
+    }
+    #[staticmethod]
+    #[pyo3(signature = (ell, *, simplex_size = 1.0, min_simplex_standard_deviation = 1e-8))]
+    fn adaptive(
+        ell: &ExtendedLogLikelihood,
+        simplex_size: rust::Field,
+        min_simplex_standard_deviation: rust::Field,
+    ) -> Self {
+        nelder_mead::NelderMead::new(
+            ell.0.clone(),
+            &ell.0.get_initial(),
+            Some(
+                nelder_mead::NelderMeadOptions::adaptive(ell.0.get_n_free())
+                    .simplex_size(simplex_size)
+                    .min_simplex_standard_deviation(min_simplex_standard_deviation)
+                    .build(),
+            ),
+        )
+        .into()
+    }
+    fn initialize(&mut self) -> PyResult<()> {
+        self.0.initialize(None).map_err(PyErr::from)
+    }
+    fn step(&mut self) -> PyResult<()> {
+        self.0.step(None).map_err(PyErr::from)?;
+        self.0.update_best();
+        // this is added to allow for Python users to step through the algorithm
+        // without having to manually call `update_best` every step
+        Ok(())
+    }
+    fn check_for_termination(&self) -> bool {
+        self.0.check_for_termination()
+    }
+    fn minimize(&mut self, steps: usize) -> PyResult<()> {
+        self.0.minimize(None, steps, |_| {}).map_err(PyErr::from)
+    }
+    fn best(&self) -> (Vec<rust::Field>, rust::Field) {
+        let (x_best, fx_best) = self.0.best();
+        (x_best.clone(), *fx_best)
+    }
+}
+
 pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Manager>()?;
     m.add_class::<ExtendedLogLikelihood>()?;
+    m.add_class::<NelderMead>()?;
     Ok(())
 }
