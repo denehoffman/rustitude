@@ -11,6 +11,7 @@ readme = "README.md"
 
 [dependencies]
 factorial = { workspace = true }
+num = { workspace = true }
 nalgebra = { workspace = true }
 num-complex = { workspace = true }
 pyo3 = { workspace = true }
@@ -20,7 +21,6 @@ sphrs = { workspace = true }
 
 [features]
 default = []
-float = ["rustitude-core/float"]
 
 [package.metadata.docs.rs]
 rustdoc-args = ["--html-in-header", "./docs-header.html"]
