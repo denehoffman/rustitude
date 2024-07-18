@@ -288,31 +288,309 @@ pub mod prelude {
     pub use crate::errors::RustitudeError;
     pub use crate::four_momentum::FourMomentum;
     pub use crate::manager::{ExtendedLogLikelihood, Manager};
-    pub use crate::{constants::*, ComplexField, Field};
-    pub use nalgebra::Vector3;
+    pub use crate::Field;
+    // pub use crate::{constants::*, ComplexField, Field};
+    pub use nalgebra::{ComplexField, RealField, Vector3};
+    pub use num::Complex;
 }
 
-#[cfg(feature = "float")]
-/// Type describing the numeric precision of the [`rustitude_core`] crate
-pub type Field = f32;
-
-#[cfg(not(feature = "float"))]
-/// Type describing the numeric precision of the [`rustitude_core`] crate
-pub type Field = f64;
-
-/// Type describing complex numbers in the [`rustitude_core`] crate (same precision as
-/// [`crate::Field`])
-pub type ComplexField = num_complex::Complex<Field>;
-
-#[cfg(feature = "float")]
-pub mod constants {
-    //! Module containing the contents of [`std::<Float>::consts::*`](`std::f32::consts`)
-    pub use std::f32::consts::*;
+/// A trait which describes a field of "Real" numbers which can be used in calculating amplitudes.
+pub trait Field:
+    nalgebra::RealField
+    + std::iter::Sum
+    + std::iter::Product
+    + Copy
+    + Clone
+    + Default
+    + ganesh::core::Field
+    + num::Float
+    + num::traits::FloatConst
+{
+    /// See [`f64::MIN_POSITIVE`]
+    const MIN_POSITIVE: Self;
+    /// See [`f64::MAX`]
+    const MAX: Self;
+    /// See [`f64::MIN`]
+    const MIN: Self;
+    /// See [`f64::INFINITY`]
+    const INFINITY: Self;
+    /// See [`f64::NEG_INFINITY`]
+    const NEG_INFINITY: Self;
+    /// Alias for 0.0
+    const ZERO: Self;
+    /// Alias for 1.0
+    const ONE: Self;
+    /// Alias for 2.0
+    const TWO: Self;
+    /// Alias for 3.0
+    const THREE: Self;
+    /// Alias for 4.0
+    const FOUR: Self;
+    /// Alias for 5.0
+    const FIVE: Self;
+    /// Alias for 6.0
+    const SIX: Self;
+    /// Alias for 7.0
+    const SEVEN: Self;
+    /// Alias for 8.0
+    const EIGHT: Self;
+    /// Alias for 9.0
+    const NINE: Self;
+    /// Alias for 10.0
+    const TEN: Self;
+    /// Shorthand to convert an `f64` into a [`Field`].
+    /// See also: [`Field::convert_f64`].
+    fn f(x: f64) -> Self {
+        Self::convert_f64(x)
+    }
+    /// Shorthand to convert a [`Vec<f64>`] into a [`Vec<Field>`].
+    /// See also: [`Field::convert_vec_f64`].
+    fn fv(x: Vec<f64>) -> Vec<Self> {
+        Self::convert_vec_f64(x)
+    }
+    /// Shorthand to convert a `[f64; N]` into a `[Field; N]`.
+    /// See also: [`Field::convert_array_f64`].
+    fn fa<const N: usize>(x: [f64; N]) -> [Self; N] {
+        Self::convert_array_f64(x)
+    }
+    /// Converts a `[f64; N]` into a `[Field; N]`.
+    fn convert_array_f64<const N: usize>(x: [f64; N]) -> [Self; N] {
+        std::array::from_fn(|i| Self::convert_f64(x[i]))
+    }
+    /// Converts a [`Vec<f64>`] into a [`Vec<Field>`].
+    fn convert_vec_f64(x: Vec<f64>) -> Vec<Self> {
+        x.into_iter().map(Self::f).collect()
+    }
+    /// Converts an `f64` into a [`Field`].
+    fn convert_f64(x: f64) -> Self;
+    /// Converts an `f32` into a [`Field`].
+    fn convert_f32(x: f32) -> Self;
+    /// Converts a `usize` into a [`Field`].
+    fn convert_usize(x: usize) -> Self;
+    /// Converts an `isize` into a [`Field`].
+    fn convert_isize(x: isize) -> Self;
+    /// Converts a `u32` into a [`Field`].
+    fn convert_u32(x: u32) -> Self;
+    /// Shorthand for [`num::Float::abs`].
+    fn fabs(self) -> Self {
+        num::Float::abs(self)
+    }
+    /// Shorthand for [`num::Float::sqrt`].
+    fn fsqrt(self) -> Self {
+        num::Float::sqrt(self)
+    }
+    /// Shorthand for [`num::Float::cbrt`].
+    fn fcbrt(self) -> Self {
+        num::Float::cbrt(self)
+    }
+    /// Shorthand for [`num::Float::powi`].
+    fn fpowi(self, n: i32) -> Self {
+        num::Float::powi(self, n)
+    }
+    /// Shorthand for [`num::Float::powf`].
+    fn fpowf(self, n: Self) -> Self {
+        num::Float::powf(self, n)
+    }
+    /// Shorthand for [`num::Float::sin`].
+    fn fsin(self) -> Self {
+        num::Float::sin(self)
+    }
+    /// Shorthand for [`num::Float::cos`].
+    fn fcos(self) -> Self {
+        num::Float::cos(self)
+    }
+    /// Shorthand for [`num::Float::tan`].
+    fn ftan(self) -> Self {
+        num::Float::tan(self)
+    }
+    /// Shorthand for [`num::Float::asin`].
+    fn fasin(self) -> Self {
+        num::Float::asin(self)
+    }
+    /// Shorthand for [`num::Float::acos`].
+    fn facos(self) -> Self {
+        num::Float::acos(self)
+    }
+    /// Shorthand for [`num::Float::atan`].
+    fn fatan(self) -> Self {
+        num::Float::atan(self)
+    }
+    /// Shorthand for [`nalgebra::RealField::atan2`].
+    fn fatan2(self, other: Self) -> Self {
+        nalgebra::RealField::atan2(self, other)
+    }
+    /// Shorthand for [`num::Float::sinh`].
+    fn fsinh(self) -> Self {
+        num::Float::sinh(self)
+    }
+    /// Shorthand for [`num::Float::cosh`].
+    fn fcosh(self) -> Self {
+        num::Float::cosh(self)
+    }
+    /// Shorthand for [`num::Float::tanh`].
+    fn ftanh(self) -> Self {
+        num::Float::tanh(self)
+    }
+    /// Shorthand for [`num::Float::asinh`].
+    fn fasinh(self) -> Self {
+        num::Float::asinh(self)
+    }
+    /// Shorthand for [`num::Float::acosh`].
+    fn facosh(self) -> Self {
+        num::Float::acosh(self)
+    }
+    /// Shorthand for [`num::Float::atanh`].
+    fn fatanh(self) -> Self {
+        num::Float::atanh(self)
+    }
+    /// Shorthand for [`num::Float::log`].
+    fn flog(self, base: Self) -> Self {
+        num::Float::log(self, base)
+    }
+    /// Shorthand for [`num::Float::log2`].
+    fn flog2(self) -> Self {
+        num::Float::log2(self)
+    }
+    /// Shorthand for [`num::Float::log10`].
+    fn flog10(self) -> Self {
+        num::Float::log10(self)
+    }
+    /// Shorthand for [`num::Float::ln`].
+    fn fln(self) -> Self {
+        num::Float::ln(self)
+    }
+    /// Shorthand for [`num::Float::ln_1p`].
+    fn fln_1p(self) -> Self {
+        num::Float::ln_1p(self)
+    }
+    /// Shorthand for [`num::Float::exp`].
+    fn fexp(self) -> Self {
+        num::Float::exp(self)
+    }
+    /// Shorthand for [`num::Float::exp2`].
+    fn fexp2(self) -> Self {
+        num::Float::exp2(self)
+    }
+    /// Shorthand for [`num::Float::exp_m1`].
+    fn fexp_m1(self) -> Self {
+        num::Float::exp_m1(self)
+    }
+    /// Shorthand for [`num::Float::hypot`].
+    fn fhypot(self, other: Self) -> Self {
+        num::Float::hypot(self, other)
+    }
+    /// Shorthand for [`num::Float::recip`].
+    fn frecip(self) -> Self {
+        num::Float::recip(self)
+    }
+    /// Shorthand for [`num::Float::mul_add`].
+    fn fmul_add(self, a: Self, b: Self) -> Self {
+        num::Float::mul_add(self, a, b)
+    }
+    /// Shorthand for [`num::Float::floor`].
+    fn ffloor(self) -> Self {
+        num::Float::floor(self)
+    }
+    /// Shorthand for [`num::Float::ceil`].
+    fn fceil(self) -> Self {
+        num::Float::ceil(self)
+    }
+    /// Shorthand for [`num::Float::round`].
+    fn fround(self) -> Self {
+        num::Float::round(self)
+    }
+    /// Shorthand for [`num::Float::trunc`].
+    fn ftrunc(self) -> Self {
+        num::Float::trunc(self)
+    }
+    /// Shorthand for [`num::Float::fract`].
+    fn ffract(self) -> Self {
+        num::Float::fract(self)
+    }
+    /// Shorthand for [`num::Float::min`].
+    fn fmin(self, other: Self) -> Self {
+        num::Float::min(self, other)
+    }
+    /// Shorthand for [`num::Float::max`].
+    fn fmax(self, other: Self) -> Self {
+        num::Float::max(self, other)
+    }
 }
-#[cfg(not(feature = "float"))]
-pub mod constants {
-    //! Module containing the contents of [`std::<Float>::consts::*`](`std::f64::consts`)
-    pub use std::f64::consts::*;
+
+impl Field for f64 {
+    const MIN_POSITIVE: Self = Self::MIN_POSITIVE;
+    const MAX: Self = Self::MAX;
+    const MIN: Self = Self::MIN;
+    const INFINITY: Self = Self::INFINITY;
+    const NEG_INFINITY: Self = Self::NEG_INFINITY;
+    const ZERO: Self = 0.0;
+    const ONE: Self = 1.0;
+    const TWO: Self = 2.0;
+    const THREE: Self = 3.0;
+    const FOUR: Self = 4.0;
+    const FIVE: Self = 5.0;
+    const SIX: Self = 6.0;
+    const SEVEN: Self = 7.0;
+    const EIGHT: Self = 8.0;
+    const NINE: Self = 9.0;
+    const TEN: Self = 10.0;
+
+    fn convert_f64(x: f64) -> Self {
+        x
+    }
+
+    fn convert_f32(x: f32) -> Self {
+        x as Self
+    }
+
+    fn convert_usize(x: usize) -> Self {
+        x as Self
+    }
+
+    fn convert_isize(x: isize) -> Self {
+        x as Self
+    }
+    fn convert_u32(x: u32) -> Self {
+        x as Self
+    }
+}
+impl Field for f32 {
+    const MIN_POSITIVE: Self = Self::MIN_POSITIVE;
+    const MAX: Self = Self::MAX;
+    const MIN: Self = Self::MIN;
+    const INFINITY: Self = Self::INFINITY;
+    const NEG_INFINITY: Self = Self::NEG_INFINITY;
+    const ZERO: Self = 0.0;
+    const ONE: Self = 1.0;
+    const TWO: Self = 2.0;
+    const THREE: Self = 3.0;
+    const FOUR: Self = 4.0;
+    const FIVE: Self = 5.0;
+    const SIX: Self = 6.0;
+    const SEVEN: Self = 7.0;
+    const EIGHT: Self = 8.0;
+    const NINE: Self = 9.0;
+    const TEN: Self = 10.0;
+
+    fn convert_f64(x: f64) -> Self {
+        x as Self
+    }
+
+    fn convert_f32(x: f32) -> Self {
+        x
+    }
+
+    fn convert_usize(x: usize) -> Self {
+        x as Self
+    }
+
+    fn convert_isize(x: isize) -> Self {
+        x as Self
+    }
+
+    fn convert_u32(x: u32) -> Self {
+        x as Self
+    }
 }
 
 pub mod errors {
@@ -382,8 +660,23 @@ pub mod utils {
     //! This module holds some convenience methods for writing nice test functions for Amplitudes.
     use crate::prelude::*;
 
-    /// Generate a test event for the reaction $`\gamma p \to K_S K_S p`$.
-    pub fn generate_test_event() -> Event {
+    /// Generate a test event for the reaction $`\gamma p \to K_S K_S p`$ with 64-bit precision.
+    pub fn generate_test_event_f64() -> Event<f64> {
+        Event {
+            index: 0,
+            weight: -0.48,
+            beam_p4: FourMomentum::new(8.747_921, 0.0, 0.0, 8.747_921),
+            recoil_p4: FourMomentum::new(1.040_902_7, 0.119_110_32, 0.373_947_23, 0.221_585_83),
+            daughter_p4s: vec![
+                FourMomentum::new(3.136_247_2, -0.111_774_68, 0.293_426_28, 3.080_557_3),
+                FourMomentum::new(5.509_043, -0.007_335_639, -0.667_373_54, 5.445_778),
+            ],
+            eps: Vector3::from([0.385_109_57, 0.022_205_278, 0.0]),
+        }
+    }
+
+    /// Generate a test event for the reaction $`\gamma p \to K_S K_S p`$ with 32-bit precision.
+    pub fn generate_test_event_f32() -> Event<f32> {
         Event {
             index: 0,
             weight: -0.48,
@@ -399,30 +692,30 @@ pub mod utils {
 
     /// Checks if two floating point numbers are essentially equal.
     /// See [https://floating-point-gui.de/errors/comparison/](https://floating-point-gui.de/errors/comparison/).
-    pub fn is_close(a: Field, b: Field, epsilon: Field) -> bool {
-        let abs_a = Field::abs(a);
-        let abs_b = Field::abs(b);
-        let diff = Field::abs(a - b);
+    pub fn is_close<F: Field>(a: F, b: F, epsilon: F) -> bool {
+        let abs_a = F::fabs(a);
+        let abs_b = F::fabs(b);
+        let diff = F::fabs(a - b);
         if a == b {
             true
-        } else if a == 0.0 || b == 0.0 || (abs_a + abs_b < Field::MIN_POSITIVE) {
-            diff < (epsilon * Field::MIN_POSITIVE)
+        } else if a == F::ZERO || b == F::ZERO || (abs_a + abs_b < F::MIN_POSITIVE) {
+            diff < (epsilon * F::MIN_POSITIVE)
         } else {
-            diff / Field::min(abs_a + abs_b, Field::MAX) < epsilon
+            diff / F::fmin(abs_a + abs_b, F::MAX) < epsilon
         }
     }
 
     /// A macro to assert if two floating point numbers are essentially equal. Similar to [`approx`] crate.
     #[macro_export]
     macro_rules! assert_is_close {
-        ($given:expr, $expected:expr) => {
-            let abs_a = Field::abs($given);
-            let abs_b = Field::abs($expected);
-            let diff = Field::abs($given - $expected);
-            let abs_diff = diff / Field::min(abs_a + abs_b, Field::MAX);
+        ($given:expr, $expected:expr, f64) => {
+            let abs_a = f64::abs($given);
+            let abs_b = f64::abs($expected);
+            let diff = f64::abs($given - $expected);
+            let abs_diff = diff / f64::min(abs_a + abs_b, f64::MAX);
             match (&($given), &($expected)) {
                 (given, expected) => assert!(
-                    $crate::utils::is_close(Field::from(*given), *expected, 1e-5),
+                    $crate::utils::is_close(f64::from(*given), *expected, 1e-5),
                     "assert_is_close!({}, {})
 
     a = {:?}
@@ -438,11 +731,59 @@ pub mod utils {
                 ),
             }
         };
-        ($given:expr, $expected:expr, $eps:expr) => {
-            let abs_a = Field::abs($given);
-            let abs_b = Field::abs($expected);
-            let diff = Field::abs($given - $expected);
-            let abs_diff = diff / Field::min(abs_a + abs_b, Field::MAX);
+        ($given:expr, $expected:expr, f32) => {
+            let abs_a = f32::abs($given);
+            let abs_b = f32::abs($expected);
+            let diff = f32::abs($given - $expected);
+            let abs_diff = diff / f32::min(abs_a + abs_b, f32::MAX);
+            match (&($given), &($expected)) {
+                (given, expected) => assert!(
+                    $crate::utils::is_close(f32::from(*given), *expected, 1e-5),
+                    "assert_is_close!({}, {})
+
+    a = {:?}
+    b = {:?}
+    |a - b| / (|a| + |b|) = {:?} > 1e-5
+
+",
+                    stringify!($given),
+                    stringify!($expected),
+                    given,
+                    expected,
+                    abs_diff
+                ),
+            }
+        };
+        ($given:expr, $expected:expr, $eps:expr, f64) => {
+            let abs_a = f64::abs($given);
+            let abs_b = f64::abs($expected);
+            let diff = f64::abs($given - $expected);
+            let abs_diff = diff / f64::min(abs_a + abs_b, f64::MAX);
+            match (&($given), &($expected), &($eps)) {
+                (given, expected, eps) => assert!(
+                    $crate::utils::is_close(*given, *expected, *eps),
+                    "assert_is_close!({}, {}, {})
+
+    a = {:?}
+    b = {:?}
+    |a - b| / (|a| + |b|) = {:?} > {:?}
+
+",
+                    stringify!($given),
+                    stringify!($expected),
+                    stringify!($eps),
+                    given,
+                    expected,
+                    abs_diff,
+                    eps
+                ),
+            }
+        };
+        ($given:expr, $expected:expr, $eps:expr, f32) => {
+            let abs_a = f32::abs($given);
+            let abs_b = f32::abs($expected);
+            let diff = f32::abs($given - $expected);
+            let abs_diff = diff / f32::min(abs_a + abs_b, f32::MAX);
             match (&($given), &($expected), &($eps)) {
                 (given, expected, eps) => assert!(
                     $crate::utils::is_close(*given, *expected, *eps),
