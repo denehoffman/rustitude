@@ -28,7 +28,6 @@ ganesh = { workspace = true }
 
 [features]
 default = []
-float = []
 
 [dev-dependencies]
 sphrs = { workspace = true }
