@@ -1,6 +1,5 @@
 use crate::impl_convert;
 use pyo3::{prelude::*, types::PyList};
-use rustitude_core::Field;
 use rustitude_core::{self as rust, amplitude::AmpLike as RustAmpLike};
 use std::ops::{Add, Mul};
 
