@@ -1317,6 +1317,7 @@ version = "0.4.7"
 dependencies = [
  "factorial",
  "nalgebra",
+ "num",
  "num-complex",
  "pyo3",
  "rayon",
