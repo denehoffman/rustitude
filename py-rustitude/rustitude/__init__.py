@@ -9,6 +9,7 @@ import uproot
 from iminuit import Minuit
 from scipy.optimize import OptimizeResult
 import scipy.optimize as opt
+from uproot.behaviors.TBranch import HasBranches
 
 from ._rustitude import (
     amplitude,
@@ -160,6 +161,8 @@ def open(
     filepath = (file_name if isinstance(file_name, Path) else Path(file_name)).resolve()
     tfile = uproot.open(filepath)
     ttree = tfile[tree_name] if tree_name else tfile.get(tfile.keys()[0])
+    if not isinstance(ttree, HasBranches):
+        raise Exception('TTree has no branches!')
     requested_branches = [
         'E_Beam',
         'Px_Beam',
