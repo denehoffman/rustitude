@@ -20,60 +20,60 @@ from ._rustitude import (
     __version__,
 )
 from .amplitude import (
-    Scalar64,
-    Scalar32,
-    CScalar64,
-    CScalar32,
-    PCScalar64,
-    PCScalar32,
-    PiecewiseM64,
-    PiecewiseM32,
-    Parameter64,
-    Parameter32,
-    Model64,
-    Model32,
-    Amplitude64,
-    Amplitude32,
-    Real64,
-    Real32,
-    Imag64,
-    Imag32,
-    Product64,
-    Product32,
-    CohSum64,
-    CohSum32,
-    Node64,
-    Node32,
+    Scalar_64,
+    Scalar_32,
+    CScalar_64,
+    CScalar_32,
+    PCScalar_64,
+    PCScalar_32,
+    PiecewiseM_64,
+    PiecewiseM_32,
+    Parameter_64,
+    Parameter_32,
+    Model_64,
+    Model_32,
+    Amplitude_64,
+    Amplitude_32,
+    Real_64,
+    Real_32,
+    Imag_64,
+    Imag_32,
+    Product_64,
+    Product_32,
+    CohSum_64,
+    CohSum_32,
+    Node_64,
+    Node_32,
 )
-from .dataset import Event64, Event32, Dataset64, Dataset32
+from .dataset import Event_64, Event_32, Dataset_64, Dataset_32
 from .manager import (
-    ExtendedLogLikelihood64,
-    ExtendedLogLikelihood32,
-    Manager64,
-    Manager32,
-    NelderMead64,
-    NelderMead32,
+    ExtendedLogLikelihood_64,
+    ExtendedLogLikelihood_32,
+    Manager_64,
+    Manager_32,
+    NelderMead_64,
+    NelderMead_32,
 )
 
 from abc import ABCMeta, abstractmethod
 
-Scalar = Scalar64
-CScalar = CScalar64
-PCScalar = PCScalar64
-PiecewiseM = PiecewiseM64
-Parameter = Parameter64
-Model = Model64
-Amplitude = Amplitude64
-Real = Real64
-Imag = Imag64
-Product = Product64
-CohSum = CohSum64
-Node = Node64
-Event = Event64
-Dataset = Dataset64
-ExtendedLogLikelihood = ExtendedLogLikelihood64
-Manager = Manager64
-NelderMead = NelderMead64
+Scalar = Scalar_64
+CScalar = CScalar_64
+PCScalar = PCScalar_64
+PiecewiseM = PiecewiseM_64
+Parameter = Parameter_64
+Model = Model_64
+Amplitude = Amplitude_64
+Real = Real_64
+Imag = Imag_64
+Product = Product_64
+CohSum = CohSum_64
+Node = Node_64
+Event = Event_64
+Dataset = Dataset_64
+ExtendedLogLikelihood = ExtendedLogLikelihood_64
+Manager = Manager_64
+NelderMead = NelderMead_64
 
 __version__: str = __version__
 
@@ -84,59 +84,59 @@ __all__ = [
     'amplitude',
     'four_momentum',
     'Event',
-    'Event64',
-    'Event32',
+    'Event_64',
+    'Event_32',
     'Dataset',
-    'Dataset64',
-    'Dataset32',
+    'Dataset_64',
+    'Dataset_32',
     'Manager',
-    'Manager64',
-    'Manager32',
+    'Manager_64',
+    'Manager_32',
     'ExtendedLogLikelihood',
-    'ExtendedLogLikelihood64',
-    'ExtendedLogLikelihood32',
+    'ExtendedLogLikelihood_64',
+    'ExtendedLogLikelihood_32',
     'Amplitude',
-    'Amplitude64',
-    'Amplitude32',
+    'Amplitude_64',
+    'Amplitude_32',
     'Real',
-    'Real64',
-    'Real32',
+    'Real_64',
+    'Real_32',
     'Imag',
-    'Imag64',
-    'Imag32',
+    'Imag_64',
+    'Imag_32',
     'Product',
-    'Product64',
-    'Product32',
+    'Product_64',
+    'Product_32',
     'CohSum',
-    'CohSum64',
-    'CohSum32',
+    'CohSum_64',
+    'CohSum_32',
     'Scalar',
-    'Scalar64',
-    'Scalar32',
+    'Scalar_64',
+    'Scalar_32',
     'CScalar',
-    'CScalar64',
-    'CScalar32',
+    'CScalar_64',
+    'CScalar_32',
     'PCScalar',
-    'PCScalar64',
-    'PCScalar32',
+    'PCScalar_64',
+    'PCScalar_32',
     'PiecewiseM',
-    'PiecewiseM64',
-    'PiecewiseM32',
+    'PiecewiseM_64',
+    'PiecewiseM_32',
     'Parameter',
-    'Parameter64',
-    'Parameter32',
+    'Parameter_64',
+    'Parameter_32',
     'Model',
-    'Model64',
-    'Model32',
+    'Model_64',
+    'Model_32',
     'NelderMead',
-    'NelderMead64',
-    'NelderMead32',
+    'NelderMead_64',
+    'NelderMead_32',
     'Node',
-    'Node64',
-    'Node32',
+    'Node_64',
+    'Node_32',
     'PyNode',
-    'PyNode64',
-    'PyNode32',
+    'PyNode_64',
+    'PyNode_32',
     'gluex',
     'open',
     'minimizer',
@@ -154,7 +154,7 @@ def open(
     *,
     pol_in_beam: bool = False,
     f32: bool = False,
-) -> Dataset64 | Dataset32:  # noqa: A001
+) -> Dataset_64 | Dataset_32:  # noqa: A001
     filepath = (file_name if isinstance(file_name, Path) else Path(file_name)).resolve()
     tfile = uproot.open(filepath)
     ttree = tfile[tree_name] if tree_name else tfile.get(tfile.keys()[0])
@@ -183,12 +183,12 @@ def open(
         tree_arrays['Pz_Beam'] = tree_arrays['E_Beam']
         tree_arrays['EPS'] = [np.array([ex, ey, ez]) for ex, ey, ez in zip(eps_x, eps_y, eps_z)]
     if f32:
-        return Dataset32.from_dict(tree_arrays)
+        return Dataset_32.from_dict(tree_arrays)
     else:
-        return Dataset64.from_dict(tree_arrays)
+        return Dataset_64.from_dict(tree_arrays)
 
 
-class PyNode64(metaclass=ABCMeta):
+class PyNode_64(metaclass=ABCMeta):
     @abstractmethod
     def precalculate(self, dataset: Dataset) -> None:
         pass
@@ -202,16 +202,16 @@ class PyNode64(metaclass=ABCMeta):
         pass
 
 
-PyNode = PyNode64
+PyNode = PyNode_64
 
 
-class PyNode32(metaclass=ABCMeta):
+class PyNode_32(metaclass=ABCMeta):
     @abstractmethod
-    def precalculate(self, dataset: Dataset32) -> None:
+    def precalculate(self, dataset: Dataset_32) -> None:
         pass
 
     @abstractmethod
-    def calculate(self, parameters: list[float], event: Event32) -> complex:
+    def calculate(self, parameters: list[float], event: Event_32) -> complex:
         pass
 
     @abstractmethod
@@ -249,7 +249,7 @@ class ScipyMinCallable(Protocol):
 
 
 def minimizer(
-    ell: ExtendedLogLikelihood64 | ExtendedLogLikelihood32,
+    ell: ExtendedLogLikelihood_64 | ExtendedLogLikelihood_32,
     method: Literal['Minuit'] | ScipyOptMethods | ScipyMinCallable | None = None,
     *args: Any,
     indices_data: list[int] | None = None,
@@ -271,7 +271,7 @@ def minimizer(
         if unbounded:
             bounds = None
 
-        def fcn_scipy(x: ArrayLike, *args: Any):
+        def fcn_scipy(x: ArrayLike, *_args: Any):
             return ell(x, indices_data=indices_data, indices_mc=indices_mc, parallel=parallel)
 
         def fit() -> OptimizeResult:

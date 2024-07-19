@@ -1,4 +1,4 @@
-use crate::four_momentum::{FourMomentum32, FourMomentum64};
+use crate::four_momentum::{FourMomentum_32, FourMomentum_64};
 use crate::impl_convert;
 use nalgebra::Vector3;
 use pyo3::prelude::*;
@@ -9,11 +9,11 @@ use std::collections::HashMap;
 
 #[pyclass]
 #[derive(Debug, Default, Clone)]
-pub struct Event64(rust::Event<f64>);
-impl_convert!(Event64, rust::Event<f64>);
+pub struct Event_64(rust::Event<f64>);
+impl_convert!(Event_64, rust::Event<f64>);
 
 #[pymethods]
-impl Event64 {
+impl Event_64 {
     #[getter]
     fn index(&self) -> usize {
         self.0.index
@@ -23,20 +23,20 @@ impl Event64 {
         self.0.weight
     }
     #[getter]
-    fn beam_p4(&self) -> FourMomentum64 {
+    fn beam_p4(&self) -> FourMomentum_64 {
         self.0.beam_p4.into()
     }
     #[getter]
-    fn recoil_p4(&self) -> FourMomentum64 {
+    fn recoil_p4(&self) -> FourMomentum_64 {
         self.0.recoil_p4.into()
     }
     #[getter]
-    fn daughter_p4s(&self) -> Vec<FourMomentum64> {
+    fn daughter_p4s(&self) -> Vec<FourMomentum_64> {
         self.0
             .daughter_p4s
             .clone()
             .into_iter()
-            .map(FourMomentum64::from)
+            .map(FourMomentum_64::from)
             .collect()
     }
     #[getter]
@@ -53,11 +53,11 @@ impl Event64 {
 
 #[pyclass]
 #[derive(Debug, Default, Clone)]
-pub struct Event32(rust::Event<f32>);
-impl_convert!(Event32, rust::Event<f32>);
+pub struct Event_32(rust::Event<f32>);
+impl_convert!(Event_32, rust::Event<f32>);
 
 #[pymethods]
-impl Event32 {
+impl Event_32 {
     #[getter]
     fn index(&self) -> usize {
         self.0.index
@@ -67,20 +67,20 @@ impl Event32 {
         self.0.weight
     }
     #[getter]
-    fn beam_p4(&self) -> FourMomentum32 {
+    fn beam_p4(&self) -> FourMomentum_32 {
         self.0.beam_p4.into()
     }
     #[getter]
-    fn recoil_p4(&self) -> FourMomentum32 {
+    fn recoil_p4(&self) -> FourMomentum_32 {
         self.0.recoil_p4.into()
     }
     #[getter]
-    fn daughter_p4s(&self) -> Vec<FourMomentum32> {
+    fn daughter_p4s(&self) -> Vec<FourMomentum_32> {
         self.0
             .daughter_p4s
             .clone()
             .into_iter()
-            .map(FourMomentum32::from)
+            .map(FourMomentum_32::from)
             .collect()
     }
     #[getter]
@@ -97,20 +97,20 @@ impl Event32 {
 
 #[pyclass]
 #[derive(Default, Debug, Clone)]
-pub struct Dataset64(rust::Dataset<f64>);
-impl_convert!(Dataset64, rust::Dataset<f64>);
+pub struct Dataset_64(rust::Dataset<f64>);
+impl_convert!(Dataset_64, rust::Dataset<f64>);
 
-impl From<&rust::Dataset<f64>> for Dataset64 {
+impl From<&rust::Dataset<f64>> for Dataset_64 {
     fn from(dataset: &rust::Dataset<f64>) -> Self {
-        Dataset64(dataset.clone())
+        Dataset_64(dataset.clone())
     }
 }
 
 #[pymethods]
-impl Dataset64 {
+impl Dataset_64 {
     #[getter]
-    fn events(&self) -> Vec<Event64> {
-        self.0.events.iter().cloned().map(Event64::from).collect()
+    fn events(&self) -> Vec<Event_64> {
+        self.0.events.iter().cloned().map(Event_64::from).collect()
     }
     #[getter]
     fn weights(&self) -> Vec<f64> {
@@ -120,7 +120,7 @@ impl Dataset64 {
         Ok(self.0.len())
     }
 
-    fn __getitem__(&self, idx: isize) -> PyResult<Py<Event64>> {
+    fn __getitem__(&self, idx: isize) -> PyResult<Py<Event_64>> {
         Ok(Python::with_gil(|py| Py::new(py, self.events()[idx as usize].clone())).unwrap())
     }
 
@@ -139,7 +139,7 @@ impl Dataset64 {
     }
 
     #[staticmethod]
-    fn from_events(events: Vec<Event64>) -> Self {
+    fn from_events(events: Vec<Event_64>) -> Self {
         rust::Dataset::new(events.into_iter().map(rust::Event::from).collect()).into()
     }
 
@@ -227,51 +227,51 @@ impl Dataset64 {
     #[staticmethod]
     fn from_parquet(path: &str) -> PyResult<Self> {
         rust::Dataset::from_parquet(path)
-            .map(Dataset64::from)
+            .map(Dataset_64::from)
             .map_err(PyErr::from)
     }
     #[staticmethod]
     fn from_parquet_eps_in_beam(path: &str) -> PyResult<Self> {
         rust::Dataset::from_parquet_eps_in_beam(path)
-            .map(Dataset64::from)
+            .map(Dataset_64::from)
             .map_err(PyErr::from)
     }
     #[staticmethod]
     fn from_parquet_with_eps(path: &str, eps: Vec<f64>) -> PyResult<Self> {
         rust::Dataset::from_parquet_with_eps(path, eps)
-            .map(Dataset64::from)
+            .map(Dataset_64::from)
             .map_err(PyErr::from)
     }
     #[staticmethod]
     fn from_parquet_unpolarized(path: &str) -> PyResult<Self> {
         rust::Dataset::from_parquet_unpolarized(path)
-            .map(Dataset64::from)
+            .map(Dataset_64::from)
             .map_err(PyErr::from)
     }
     #[staticmethod]
     fn from_root(path: &str) -> PyResult<Self> {
         rust::Dataset::from_root(path)
-            .map(Dataset64::from)
+            .map(Dataset_64::from)
             .map_err(PyErr::from)
     }
 }
 
 #[pyclass]
 #[derive(Default, Debug, Clone)]
-pub struct Dataset32(rust::Dataset<f32>);
-impl_convert!(Dataset32, rust::Dataset<f32>);
+pub struct Dataset_32(rust::Dataset<f32>);
+impl_convert!(Dataset_32, rust::Dataset<f32>);
 
-impl From<&rust::Dataset<f32>> for Dataset32 {
+impl From<&rust::Dataset<f32>> for Dataset_32 {
     fn from(dataset: &rust::Dataset<f32>) -> Self {
-        Dataset32(dataset.clone())
+        Dataset_32(dataset.clone())
     }
 }
 
 #[pymethods]
-impl Dataset32 {
+impl Dataset_32 {
     #[getter]
-    fn events(&self) -> Vec<Event32> {
-        self.0.events.iter().cloned().map(Event32::from).collect()
+    fn events(&self) -> Vec<Event_32> {
+        self.0.events.iter().cloned().map(Event_32::from).collect()
     }
     #[getter]
     fn weights(&self) -> Vec<f32> {
@@ -281,7 +281,7 @@ impl Dataset32 {
         Ok(self.0.len())
     }
 
-    fn __getitem__(&self, idx: isize) -> PyResult<Py<Event32>> {
+    fn __getitem__(&self, idx: isize) -> PyResult<Py<Event_32>> {
         Ok(Python::with_gil(|py| Py::new(py, self.events()[idx as usize].clone())).unwrap())
     }
 
@@ -300,7 +300,7 @@ impl Dataset32 {
     }
 
     #[staticmethod]
-    fn from_events(events: Vec<Event32>) -> Self {
+    fn from_events(events: Vec<Event_32>) -> Self {
         rust::Dataset::new(events.into_iter().map(rust::Event::from).collect()).into()
     }
 
@@ -388,39 +388,39 @@ impl Dataset32 {
     #[staticmethod]
     fn from_parquet(path: &str) -> PyResult<Self> {
         rust::Dataset::from_parquet(path)
-            .map(Dataset32::from)
+            .map(Dataset_32::from)
             .map_err(PyErr::from)
     }
     #[staticmethod]
     fn from_parquet_eps_in_beam(path: &str) -> PyResult<Self> {
         rust::Dataset::from_parquet_eps_in_beam(path)
-            .map(Dataset32::from)
+            .map(Dataset_32::from)
             .map_err(PyErr::from)
     }
     #[staticmethod]
     fn from_parquet_with_eps(path: &str, eps: Vec<f32>) -> PyResult<Self> {
         rust::Dataset::from_parquet_with_eps(path, eps)
-            .map(Dataset32::from)
+            .map(Dataset_32::from)
             .map_err(PyErr::from)
     }
     #[staticmethod]
     fn from_parquet_unpolarized(path: &str) -> PyResult<Self> {
         rust::Dataset::from_parquet_unpolarized(path)
-            .map(Dataset32::from)
+            .map(Dataset_32::from)
             .map_err(PyErr::from)
     }
     #[staticmethod]
     fn from_root(path: &str) -> PyResult<Self> {
         rust::Dataset::from_root(path)
-            .map(Dataset32::from)
+            .map(Dataset_32::from)
             .map_err(PyErr::from)
     }
 }
 
 pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<Event64>()?;
-    m.add_class::<Event32>()?;
-    m.add_class::<Dataset64>()?;
-    m.add_class::<Dataset32>()?;
+    m.add_class::<Event_64>()?;
+    m.add_class::<Event_32>()?;
+    m.add_class::<Dataset_64>()?;
+    m.add_class::<Dataset_32>()?;
     Ok(())
 }

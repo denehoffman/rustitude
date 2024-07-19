@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+#![allow(non_camel_case_types)]
 use pyo3::prelude::*;
 mod amplitude;
 mod dataset;
@@ -45,6 +47,6 @@ fn rustitude(m: &Bound<'_, PyModule>) -> PyResult<()> {
     add_submodule(m, "rustitude.amplitude", amplitude::pyo3_module)?;
     add_submodule(m, "rustitude.manager", manager::pyo3_module)?;
 
-    add_submodule(m, "rustitude.gluex", gluex::pyo3_moudle)?;
+    add_submodule(m, "rustitude.gluex", gluex::pyo3_module)?;
     Ok(())
 }

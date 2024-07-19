@@ -1,6 +1,6 @@
 from typing import Literal, overload
 
-from rustitude import Amplitude, Amplitude64, Amplitude32
+from rustitude import Amplitude, Amplitude_64, Amplitude_32
 
 @overload
 def Ylm(
@@ -31,61 +31,61 @@ def Ylm(
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
 ) -> Amplitude: ...
 @overload
-def Ylm64(
+def Ylm_64(
     name: str,
     l: Literal[0],  # noqa: E741
     m: Literal[0],
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude64: ...
+) -> Amplitude_64: ...
 @overload
-def Ylm64(
+def Ylm_64(
     name: str,
     l: Literal[1],  # noqa: E741
     m: Literal[-1, 0, 1],
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude64: ...
+) -> Amplitude_64: ...
 @overload
-def Ylm64(
+def Ylm_64(
     name: str,
     l: Literal[2],  # noqa: E741
     m: Literal[-2, -1, 0, 1, 2],
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude64: ...
+) -> Amplitude_64: ...
 @overload
-def Ylm64(
+def Ylm_64(
     name: str,
     l: Literal[3],  # noqa: E741
     m: Literal[-3, -2, -1, 0, 1, 2, 3],
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude64: ...
+) -> Amplitude_64: ...
 @overload
-def Ylm32(
+def Ylm_32(
     name: str,
     l: Literal[0],  # noqa: E741
     m: Literal[0],
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude32: ...
+) -> Amplitude_32: ...
 @overload
-def Ylm32(
+def Ylm_32(
     name: str,
     l: Literal[1],  # noqa: E741
     m: Literal[-1, 0, 1],
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude32: ...
+) -> Amplitude_32: ...
 @overload
-def Ylm32(
+def Ylm_32(
     name: str,
     l: Literal[2],  # noqa: E741
     m: Literal[-2, -1, 0, 1, 2],
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude32: ...
+) -> Amplitude_32: ...
 @overload
-def Ylm32(
+def Ylm_32(
     name: str,
     l: Literal[3],  # noqa: E741
     m: Literal[-3, -2, -1, 0, 1, 2, 3],
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude32: ...
+) -> Amplitude_32: ...
 @overload
 def Zlm(
     name: str,
@@ -127,7 +127,7 @@ def Zlm(
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
 ) -> Amplitude: ...
 @overload
-def Zlm64(
+def Zlm_64(
     name: str,
     l: Literal[0],  # noqa: E741
     m: Literal[0],
@@ -135,9 +135,9 @@ def Zlm64(
         'positive', 'pos', 'p', '+', 'plus', 'negative', 'neg', 'n', '-', 'minus', 'm'
     ] = 'positive',
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude64: ...
+) -> Amplitude_64: ...
 @overload
-def Zlm64(
+def Zlm_64(
     name: str,
     l: Literal[1],  # noqa: E741
     m: Literal[-1, 0, 1],
@@ -145,9 +145,9 @@ def Zlm64(
         'positive', 'pos', 'p', '+', 'plus', 'negative', 'neg', 'n', '-', 'minus', 'm'
     ] = 'positive',
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude64: ...
+) -> Amplitude_64: ...
 @overload
-def Zlm64(
+def Zlm_64(
     name: str,
     l: Literal[2],  # noqa: E741
     m: Literal[-2, -1, 0, 1, 2],
@@ -155,9 +155,9 @@ def Zlm64(
         'positive', 'pos', 'p', '+', 'plus', 'negative', 'neg', 'n', '-', 'minus', 'm'
     ] = 'positive',
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude64: ...
+) -> Amplitude_64: ...
 @overload
-def Zlm64(
+def Zlm_64(
     name: str,
     l: Literal[3],  # noqa: E741
     m: Literal[-3, -2, -1, 0, 1, 2, 3],
@@ -165,9 +165,9 @@ def Zlm64(
         'positive', 'pos', 'p', '+', 'plus', 'negative', 'neg', 'n', '-', 'minus', 'm'
     ] = 'positive',
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude64: ...
+) -> Amplitude_64: ...
 @overload
-def Zlm32(
+def Zlm_32(
     name: str,
     l: Literal[0],  # noqa: E741
     m: Literal[0],
@@ -175,9 +175,9 @@ def Zlm32(
         'positive', 'pos', 'p', '+', 'plus', 'negative', 'neg', 'n', '-', 'minus', 'm'
     ] = 'positive',
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude32: ...
+) -> Amplitude_32: ...
 @overload
-def Zlm32(
+def Zlm_32(
     name: str,
     l: Literal[1],  # noqa: E741
     m: Literal[-1, 0, 1],
@@ -185,9 +185,9 @@ def Zlm32(
         'positive', 'pos', 'p', '+', 'plus', 'negative', 'neg', 'n', '-', 'minus', 'm'
     ] = 'positive',
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude32: ...
+) -> Amplitude_32: ...
 @overload
-def Zlm32(
+def Zlm_32(
     name: str,
     l: Literal[2],  # noqa: E741
     m: Literal[-2, -1, 0, 1, 2],
@@ -195,9 +195,9 @@ def Zlm32(
         'positive', 'pos', 'p', '+', 'plus', 'negative', 'neg', 'n', '-', 'minus', 'm'
     ] = 'positive',
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude32: ...
+) -> Amplitude_32: ...
 @overload
-def Zlm32(
+def Zlm_32(
     name: str,
     l: Literal[3],  # noqa: E741
     m: Literal[-3, -2, -1, 0, 1, 2, 3],
@@ -205,7 +205,7 @@ def Zlm32(
         'positive', 'pos', 'p', '+', 'plus', 'negative', 'neg', 'n', '-', 'minus', 'm'
     ] = 'positive',
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude32: ...
+) -> Amplitude_32: ...
 def OnePS(  # noqa: N802
     name: str,
     reflectivity: Literal[
@@ -213,20 +213,20 @@ def OnePS(  # noqa: N802
     ] = 'positive',
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
 ) -> Amplitude: ...
-def OnePS64(  # noqa: N802
+def OnePS_64(  # noqa: N802
     name: str,
     reflectivity: Literal[
         'positive', 'pos', 'p', '+', 'plus', 'negative', 'neg', 'n', '-', 'minus', 'm'
     ] = 'positive',
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude64: ...
-def OnePS32(  # noqa: N802
+) -> Amplitude_64: ...
+def OnePS_32(  # noqa: N802
     name: str,
     reflectivity: Literal[
         'positive', 'pos', 'p', '+', 'plus', 'negative', 'neg', 'n', '-', 'minus', 'm'
     ] = 'positive',
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude32: ...
+) -> Amplitude_32: ...
 @overload
 def TwoPS(
     name: str,
@@ -269,7 +269,7 @@ def TwoPS(
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
 ) -> Amplitude: ...
 @overload
-def TwoPS64(
+def TwoPS_64(
     name: str,
     l: Literal[0],  # noqa: E741
     m: Literal[0],
@@ -277,9 +277,9 @@ def TwoPS64(
         'positive', 'pos', 'p', '+', 'plus', 'negative', 'neg', 'n', '-', 'minus', 'm'
     ] = 'positive',
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude64: ...
+) -> Amplitude_64: ...
 @overload
-def TwoPS64(
+def TwoPS_64(
     name: str,
     l: Literal[1],  # noqa: E741
     m: Literal[-1, 0, 1],
@@ -288,9 +288,9 @@ def TwoPS64(
     ] = 'positive',
     part: Literal['real', 're', 'imaginary', 'imag', 'im', 'both'] = 'real',
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude64: ...
+) -> Amplitude_64: ...
 @overload
-def TwoPS64(
+def TwoPS_64(
     name: str,
     l: Literal[2],  # noqa: E741
     m: Literal[-2, -1, 0, 1, 2],
@@ -298,9 +298,9 @@ def TwoPS64(
         'positive', 'pos', 'p', '+', 'plus', 'negative', 'neg', 'n', '-', 'minus', 'm'
     ] = 'positive',
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude64: ...
+) -> Amplitude_64: ...
 @overload
-def TwoPS64(
+def TwoPS_64(
     name: str,
     l: Literal[3],  # noqa: E741
     m: Literal[-3, -2, -1, 0, 1, 2, 3],
@@ -308,9 +308,9 @@ def TwoPS64(
         'positive', 'pos', 'p', '+', 'plus', 'negative', 'neg', 'n', '-', 'minus', 'm'
     ] = 'positive',
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude64: ...
+) -> Amplitude_64: ...
 @overload
-def TwoPS32(
+def TwoPS_32(
     name: str,
     l: Literal[0],  # noqa: E741
     m: Literal[0],
@@ -318,9 +318,9 @@ def TwoPS32(
         'positive', 'pos', 'p', '+', 'plus', 'negative', 'neg', 'n', '-', 'minus', 'm'
     ] = 'positive',
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude32: ...
+) -> Amplitude_32: ...
 @overload
-def TwoPS32(
+def TwoPS_32(
     name: str,
     l: Literal[1],  # noqa: E741
     m: Literal[-1, 0, 1],
@@ -329,9 +329,9 @@ def TwoPS32(
     ] = 'positive',
     part: Literal['real', 're', 'imaginary', 'imag', 'im', 'both'] = 'real',
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude32: ...
+) -> Amplitude_32: ...
 @overload
-def TwoPS32(
+def TwoPS_32(
     name: str,
     l: Literal[2],  # noqa: E741
     m: Literal[-2, -1, 0, 1, 2],
@@ -339,9 +339,9 @@ def TwoPS32(
         'positive', 'pos', 'p', '+', 'plus', 'negative', 'neg', 'n', '-', 'minus', 'm'
     ] = 'positive',
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude32: ...
+) -> Amplitude_32: ...
 @overload
-def TwoPS32(
+def TwoPS_32(
     name: str,
     l: Literal[3],  # noqa: E741
     m: Literal[-3, -2, -1, 0, 1, 2, 3],
@@ -349,4 +349,4 @@ def TwoPS32(
         'positive', 'pos', 'p', '+', 'plus', 'negative', 'neg', 'n', '-', 'minus', 'm'
     ] = 'positive',
     frame: Literal['helicity', 'hx', 'gottfried-jackson', 'gj'] = 'helicity',
-) -> Amplitude32: ...
+) -> Amplitude_32: ...

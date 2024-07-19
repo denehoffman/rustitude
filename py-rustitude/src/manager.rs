@@ -5,19 +5,20 @@ use rustitude_core as rust;
 
 use crate::{
     amplitude::{
-        Amplitude32, Amplitude64, CohSum32, CohSum64, Model32, Model64, Parameter32, Parameter64,
+        Amplitude_32, Amplitude_64, CohSum_32, CohSum_64, Model_32, Model_64, Parameter_32,
+        Parameter_64,
     },
-    dataset::{Dataset32, Dataset64},
+    dataset::{Dataset_32, Dataset_64},
     impl_convert,
 };
 
 #[pyclass]
 #[derive(Clone)]
-pub struct Manager64(rust::manager::Manager<f64>);
-impl_convert!(Manager64, rust::manager::Manager<f64>);
+pub struct Manager_64(rust::manager::Manager<f64>);
+impl_convert!(Manager_64, rust::manager::Manager<f64>);
 
 #[pymethods]
-impl Manager64 {
+impl Manager_64 {
     fn __str__(&self) -> String {
         format!("{}", self.0)
     }
@@ -25,41 +26,41 @@ impl Manager64 {
         format!("{:?}", self.0)
     }
     #[getter]
-    fn cohsums(&self) -> Vec<CohSum64> {
+    fn cohsums(&self) -> Vec<CohSum_64> {
         self.0
             .model
             .cohsums
             .clone()
             .into_iter()
-            .map(CohSum64::from)
+            .map(CohSum_64::from)
             .collect()
     }
     #[getter]
-    fn model(&self) -> Model64 {
+    fn model(&self) -> Model_64 {
         self.0.model.clone().into()
     }
     #[getter]
-    fn dataset(&self) -> Dataset64 {
+    fn dataset(&self) -> Dataset_64 {
         self.0.dataset.clone().into()
     }
     #[getter]
-    fn amplitudes(&self) -> Vec<Amplitude64> {
+    fn amplitudes(&self) -> Vec<Amplitude_64> {
         self.0
             .model
             .amplitudes
             .clone()
             .into_iter()
-            .map(Amplitude64::from)
+            .map(Amplitude_64::from)
             .collect()
     }
     #[getter]
-    fn parameters(&self) -> Vec<Parameter64> {
+    fn parameters(&self) -> Vec<Parameter_64> {
         self.0
             .model
             .parameters
             .clone()
             .into_iter()
-            .map(Parameter64::from)
+            .map(Parameter_64::from)
             .collect()
     }
     #[getter]
@@ -75,12 +76,12 @@ impl Manager64 {
         self.0.get_n_free()
     }
     #[new]
-    fn new(model: Model64, dataset: Dataset64) -> PyResult<Self> {
+    fn new(model: Model_64, dataset: Dataset_64) -> PyResult<Self> {
         rust::manager::Manager::new(
             &rustitude_core::amplitude::Model::from(model),
             &rustitude_core::dataset::Dataset::from(dataset),
         )
-        .map(Manager64::from)
+        .map(Manager_64::from)
         .map_err(PyErr::from)
     }
     #[pyo3(name = "__call__", signature = (parameters, *, indices = None, parallel = true))]
@@ -120,16 +121,16 @@ impl Manager64 {
             self.0.evaluate(&parameters).map_err(PyErr::from)
         }
     }
-    fn get_amplitude(&self, amplitude_name: &str) -> PyResult<Amplitude64> {
+    fn get_amplitude(&self, amplitude_name: &str) -> PyResult<Amplitude_64> {
         self.0
             .get_amplitude(amplitude_name)
-            .map(Amplitude64::from)
+            .map(Amplitude_64::from)
             .map_err(PyErr::from)
     }
-    fn get_parameter(&self, amplitude_name: &str, parameter_name: &str) -> PyResult<Parameter64> {
+    fn get_parameter(&self, amplitude_name: &str, parameter_name: &str) -> PyResult<Parameter_64> {
         self.0
             .get_parameter(amplitude_name, parameter_name)
-            .map(Parameter64::from)
+            .map(Parameter_64::from)
             .map_err(PyErr::from)
     }
     fn print_parameters(&self) {
@@ -183,11 +184,11 @@ impl Manager64 {
 
 #[pyclass]
 #[derive(Clone)]
-pub struct Manager32(rust::manager::Manager<f32>);
-impl_convert!(Manager32, rust::manager::Manager<f32>);
+pub struct Manager_32(rust::manager::Manager<f32>);
+impl_convert!(Manager_32, rust::manager::Manager<f32>);
 
 #[pymethods]
-impl Manager32 {
+impl Manager_32 {
     fn __str__(&self) -> String {
         format!("{}", self.0)
     }
@@ -195,41 +196,41 @@ impl Manager32 {
         format!("{:?}", self.0)
     }
     #[getter]
-    fn cohsums(&self) -> Vec<CohSum32> {
+    fn cohsums(&self) -> Vec<CohSum_32> {
         self.0
             .model
             .cohsums
             .clone()
             .into_iter()
-            .map(CohSum32::from)
+            .map(CohSum_32::from)
             .collect()
     }
     #[getter]
-    fn model(&self) -> Model32 {
+    fn model(&self) -> Model_32 {
         self.0.model.clone().into()
     }
     #[getter]
-    fn dataset(&self) -> Dataset32 {
+    fn dataset(&self) -> Dataset_32 {
         self.0.dataset.clone().into()
     }
     #[getter]
-    fn amplitudes(&self) -> Vec<Amplitude32> {
+    fn amplitudes(&self) -> Vec<Amplitude_32> {
         self.0
             .model
             .amplitudes
             .clone()
             .into_iter()
-            .map(Amplitude32::from)
+            .map(Amplitude_32::from)
             .collect()
     }
     #[getter]
-    fn parameters(&self) -> Vec<Parameter32> {
+    fn parameters(&self) -> Vec<Parameter_32> {
         self.0
             .model
             .parameters
             .clone()
             .into_iter()
-            .map(Parameter32::from)
+            .map(Parameter_32::from)
             .collect()
     }
     #[getter]
@@ -245,12 +246,12 @@ impl Manager32 {
         self.0.get_n_free()
     }
     #[new]
-    fn new(model: Model32, dataset: Dataset32) -> PyResult<Self> {
+    fn new(model: Model_32, dataset: Dataset_32) -> PyResult<Self> {
         rust::manager::Manager::new(
             &rustitude_core::amplitude::Model::from(model),
             &rustitude_core::dataset::Dataset::from(dataset),
         )
-        .map(Manager32::from)
+        .map(Manager_32::from)
         .map_err(PyErr::from)
     }
     #[pyo3(name = "__call__", signature = (parameters, *, indices = None, parallel = true))]
@@ -290,16 +291,16 @@ impl Manager32 {
             self.0.evaluate(&parameters).map_err(PyErr::from)
         }
     }
-    fn get_amplitude(&self, amplitude_name: &str) -> PyResult<Amplitude32> {
+    fn get_amplitude(&self, amplitude_name: &str) -> PyResult<Amplitude_32> {
         self.0
             .get_amplitude(amplitude_name)
-            .map(Amplitude32::from)
+            .map(Amplitude_32::from)
             .map_err(PyErr::from)
     }
-    fn get_parameter(&self, amplitude_name: &str, parameter_name: &str) -> PyResult<Parameter32> {
+    fn get_parameter(&self, amplitude_name: &str, parameter_name: &str) -> PyResult<Parameter_32> {
         self.0
             .get_parameter(amplitude_name, parameter_name)
-            .map(Parameter32::from)
+            .map(Parameter_32::from)
             .map_err(PyErr::from)
     }
     fn print_parameters(&self) {
@@ -352,14 +353,14 @@ impl Manager32 {
 }
 
 #[pyclass]
-pub struct ExtendedLogLikelihood64(rust::manager::ExtendedLogLikelihood<f64>);
+pub struct ExtendedLogLikelihood_64(rust::manager::ExtendedLogLikelihood<f64>);
 impl_convert!(
-    ExtendedLogLikelihood64,
+    ExtendedLogLikelihood_64,
     rust::manager::ExtendedLogLikelihood<f64>
 );
 
 #[pymethods]
-impl ExtendedLogLikelihood64 {
+impl ExtendedLogLikelihood_64 {
     fn __str__(&self) -> String {
         format!("{}", self.0)
     }
@@ -367,47 +368,47 @@ impl ExtendedLogLikelihood64 {
         format!("{:?}", self.0)
     }
     #[getter]
-    fn data_manager(&self) -> Manager64 {
+    fn data_manager(&self) -> Manager_64 {
         self.0.data_manager.clone().into()
     }
 
     #[getter]
-    fn mc_manager(&self) -> Manager64 {
+    fn mc_manager(&self) -> Manager_64 {
         self.0.mc_manager.clone().into()
     }
 
     #[getter]
-    fn cohsums(&self) -> Vec<CohSum64> {
+    fn cohsums(&self) -> Vec<CohSum_64> {
         self.0
             .data_manager
             .model
             .cohsums
             .clone()
             .into_iter()
-            .map(CohSum64::from)
+            .map(CohSum_64::from)
             .collect()
     }
 
     #[getter]
-    fn amplitudes(&self) -> Vec<Amplitude64> {
+    fn amplitudes(&self) -> Vec<Amplitude_64> {
         self.0
             .data_manager
             .model
             .amplitudes
             .clone()
             .into_iter()
-            .map(Amplitude64::from)
+            .map(Amplitude_64::from)
             .collect()
     }
     #[getter]
-    fn parameters(&self) -> Vec<Parameter64> {
+    fn parameters(&self) -> Vec<Parameter_64> {
         self.0
             .data_manager
             .model
             .parameters
             .clone()
             .into_iter()
-            .map(Parameter64::from)
+            .map(Parameter_64::from)
             .collect()
     }
     #[getter]
@@ -423,7 +424,7 @@ impl ExtendedLogLikelihood64 {
         self.0.get_n_free()
     }
     #[new]
-    fn new(data_manager: Manager64, mc_manager: Manager64) -> Self {
+    fn new(data_manager: Manager_64, mc_manager: Manager_64) -> Self {
         rust::manager::ExtendedLogLikelihood::new(data_manager.into(), mc_manager.into()).into()
     }
     #[pyo3(signature = (parameters, *, indices_data = None, indices_mc = None, parallel = true))]
@@ -481,7 +482,7 @@ impl ExtendedLogLikelihood64 {
     fn intensity(
         &self,
         parameters: Vec<f64>,
-        dataset: Dataset64,
+        dataset: Dataset_64,
         indices_data: Option<Vec<usize>>,
         indices_mc: Option<Vec<usize>>,
         parallel: bool,
@@ -547,16 +548,16 @@ impl ExtendedLogLikelihood64 {
     ) -> PyResult<f64> {
         self.evaluate(parameters, indices_data, indices_mc, parallel)
     }
-    fn get_amplitude(&self, amplitude_name: &str) -> PyResult<Amplitude64> {
+    fn get_amplitude(&self, amplitude_name: &str) -> PyResult<Amplitude_64> {
         self.0
             .get_amplitude(amplitude_name)
-            .map(Amplitude64::from)
+            .map(Amplitude_64::from)
             .map_err(PyErr::from)
     }
-    fn get_parameter(&self, amplitude_name: &str, parameter_name: &str) -> PyResult<Parameter64> {
+    fn get_parameter(&self, amplitude_name: &str, parameter_name: &str) -> PyResult<Parameter_64> {
         self.0
             .get_parameter(amplitude_name, parameter_name)
-            .map(Parameter64::from)
+            .map(Parameter_64::from)
             .map_err(PyErr::from)
     }
     fn print_parameters(&self) {
@@ -609,14 +610,14 @@ impl ExtendedLogLikelihood64 {
 }
 
 #[pyclass]
-pub struct ExtendedLogLikelihood32(rust::manager::ExtendedLogLikelihood<f32>);
+pub struct ExtendedLogLikelihood_32(rust::manager::ExtendedLogLikelihood<f32>);
 impl_convert!(
-    ExtendedLogLikelihood32,
+    ExtendedLogLikelihood_32,
     rust::manager::ExtendedLogLikelihood<f32>
 );
 
 #[pymethods]
-impl ExtendedLogLikelihood32 {
+impl ExtendedLogLikelihood_32 {
     fn __str__(&self) -> String {
         format!("{}", self.0)
     }
@@ -624,47 +625,47 @@ impl ExtendedLogLikelihood32 {
         format!("{:?}", self.0)
     }
     #[getter]
-    fn data_manager(&self) -> Manager32 {
+    fn data_manager(&self) -> Manager_32 {
         self.0.data_manager.clone().into()
     }
 
     #[getter]
-    fn mc_manager(&self) -> Manager32 {
+    fn mc_manager(&self) -> Manager_32 {
         self.0.mc_manager.clone().into()
     }
 
     #[getter]
-    fn cohsums(&self) -> Vec<CohSum32> {
+    fn cohsums(&self) -> Vec<CohSum_32> {
         self.0
             .data_manager
             .model
             .cohsums
             .clone()
             .into_iter()
-            .map(CohSum32::from)
+            .map(CohSum_32::from)
             .collect()
     }
 
     #[getter]
-    fn amplitudes(&self) -> Vec<Amplitude32> {
+    fn amplitudes(&self) -> Vec<Amplitude_32> {
         self.0
             .data_manager
             .model
             .amplitudes
             .clone()
             .into_iter()
-            .map(Amplitude32::from)
+            .map(Amplitude_32::from)
             .collect()
     }
     #[getter]
-    fn parameters(&self) -> Vec<Parameter32> {
+    fn parameters(&self) -> Vec<Parameter_32> {
         self.0
             .data_manager
             .model
             .parameters
             .clone()
             .into_iter()
-            .map(Parameter32::from)
+            .map(Parameter_32::from)
             .collect()
     }
     #[getter]
@@ -680,7 +681,7 @@ impl ExtendedLogLikelihood32 {
         self.0.get_n_free()
     }
     #[new]
-    fn new(data_manager: Manager32, mc_manager: Manager32) -> Self {
+    fn new(data_manager: Manager_32, mc_manager: Manager_32) -> Self {
         rust::manager::ExtendedLogLikelihood::new(data_manager.into(), mc_manager.into()).into()
     }
     #[pyo3(signature = (parameters, *, indices_data = None, indices_mc = None, parallel = true))]
@@ -738,7 +739,7 @@ impl ExtendedLogLikelihood32 {
     fn intensity(
         &self,
         parameters: Vec<f32>,
-        dataset: Dataset32,
+        dataset: Dataset_32,
         indices_data: Option<Vec<usize>>,
         indices_mc: Option<Vec<usize>>,
         parallel: bool,
@@ -804,16 +805,16 @@ impl ExtendedLogLikelihood32 {
     ) -> PyResult<f32> {
         self.evaluate(parameters, indices_data, indices_mc, parallel)
     }
-    fn get_amplitude(&self, amplitude_name: &str) -> PyResult<Amplitude32> {
+    fn get_amplitude(&self, amplitude_name: &str) -> PyResult<Amplitude_32> {
         self.0
             .get_amplitude(amplitude_name)
-            .map(Amplitude32::from)
+            .map(Amplitude_32::from)
             .map_err(PyErr::from)
     }
-    fn get_parameter(&self, amplitude_name: &str, parameter_name: &str) -> PyResult<Parameter32> {
+    fn get_parameter(&self, amplitude_name: &str, parameter_name: &str) -> PyResult<Parameter_32> {
         self.0
             .get_parameter(amplitude_name, parameter_name)
-            .map(Parameter32::from)
+            .map(Parameter_32::from)
             .map_err(PyErr::from)
     }
     fn print_parameters(&self) {
@@ -866,16 +867,16 @@ impl ExtendedLogLikelihood32 {
 }
 
 #[pyclass]
-pub struct NelderMead64(nelder_mead::NelderMead<f64, (), rust::errors::RustitudeError>);
-impl_convert!(NelderMead64, nelder_mead::NelderMead<f64, (), rust::errors::RustitudeError>);
+pub struct NelderMead_64(nelder_mead::NelderMead<f64, (), rust::errors::RustitudeError>);
+impl_convert!(NelderMead_64, nelder_mead::NelderMead<f64, (), rust::errors::RustitudeError>);
 
 #[pymethods]
-impl NelderMead64 {
+impl NelderMead_64 {
     #[new]
     #[pyo3(signature = (ell, *, simplex_size = 1.0, reflection_coeff = 1.0, expansion_coeff = 2.0, outside_contraction_coeff = 0.5, inside_contraction_coeff = 0.5, shrink_coeff = 0.5, min_simplex_standard_deviation = 1e-8))]
     #[allow(clippy::too_many_arguments)]
     fn new(
-        ell: &ExtendedLogLikelihood64,
+        ell: &ExtendedLogLikelihood_64,
         simplex_size: f64,
         reflection_coeff: f64,
         expansion_coeff: f64,
@@ -904,7 +905,7 @@ impl NelderMead64 {
     #[staticmethod]
     #[pyo3(signature = (ell, *, simplex_size = 1.0, min_simplex_standard_deviation = 1e-8))]
     fn adaptive(
-        ell: &ExtendedLogLikelihood64,
+        ell: &ExtendedLogLikelihood_64,
         simplex_size: f64,
         min_simplex_standard_deviation: f64,
     ) -> Self {
@@ -943,16 +944,16 @@ impl NelderMead64 {
 }
 
 #[pyclass]
-pub struct NelderMead32(nelder_mead::NelderMead<f32, (), rust::errors::RustitudeError>);
-impl_convert!(NelderMead32, nelder_mead::NelderMead<f32, (), rust::errors::RustitudeError>);
+pub struct NelderMead_32(nelder_mead::NelderMead<f32, (), rust::errors::RustitudeError>);
+impl_convert!(NelderMead_32, nelder_mead::NelderMead<f32, (), rust::errors::RustitudeError>);
 
 #[pymethods]
-impl NelderMead32 {
+impl NelderMead_32 {
     #[new]
     #[pyo3(signature = (ell, *, simplex_size = 1.0, reflection_coeff = 1.0, expansion_coeff = 2.0, outside_contraction_coeff = 0.5, inside_contraction_coeff = 0.5, shrink_coeff = 0.5, min_simplex_standard_deviation = 1e-8))]
     #[allow(clippy::too_many_arguments)]
     fn new(
-        ell: &ExtendedLogLikelihood32,
+        ell: &ExtendedLogLikelihood_32,
         simplex_size: f32,
         reflection_coeff: f32,
         expansion_coeff: f32,
@@ -981,7 +982,7 @@ impl NelderMead32 {
     #[staticmethod]
     #[pyo3(signature = (ell, *, simplex_size = 1.0, min_simplex_standard_deviation = 1e-8))]
     fn adaptive(
-        ell: &ExtendedLogLikelihood32,
+        ell: &ExtendedLogLikelihood_32,
         simplex_size: f32,
         min_simplex_standard_deviation: f32,
     ) -> Self {
@@ -1020,11 +1021,11 @@ impl NelderMead32 {
 }
 
 pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<Manager64>()?;
-    m.add_class::<Manager32>()?;
-    m.add_class::<ExtendedLogLikelihood64>()?;
-    m.add_class::<ExtendedLogLikelihood32>()?;
-    m.add_class::<NelderMead64>()?;
-    m.add_class::<NelderMead32>()?;
+    m.add_class::<Manager_64>()?;
+    m.add_class::<Manager_32>()?;
+    m.add_class::<ExtendedLogLikelihood_64>()?;
+    m.add_class::<ExtendedLogLikelihood_32>()?;
+    m.add_class::<NelderMead_64>()?;
+    m.add_class::<NelderMead_32>()?;
     Ok(())
 }

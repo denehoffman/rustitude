@@ -1,5 +1,5 @@
-from rustitude import Amplitude, Amplitude64, Amplitude32
+from rustitude import Amplitude, Amplitude_64, Amplitude_32
 
 def OmegaDalitz() -> Amplitude: ...  # noqa: N802
-def OmegaDalitz64() -> Amplitude64: ...  # noqa: N802
-def OmegaDalitz32() -> Amplitude32: ...  # noqa: N802
+def OmegaDalitz_64() -> Amplitude_64: ...  # noqa: N802
+def OmegaDalitz_32() -> Amplitude_32: ...  # noqa: N802

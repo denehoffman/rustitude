@@ -1,4 +1,1 @@
-from . import resonances
-from . import sdmes
-from . import harmonics
-from . import dalitz
+from . import resonances, sdmes, harmonics, dalitz
