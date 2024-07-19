@@ -494,7 +494,9 @@ dependencies = [
 
 [[package]]
 name = "ganesh"
-version = "0.2.0"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f0d5ed3ff5cdece560ee30dfdf0edc7049e5f31f65b0273559466f687e7d9c1"
 dependencies = [
  "nalgebra",
  "num-traits",
