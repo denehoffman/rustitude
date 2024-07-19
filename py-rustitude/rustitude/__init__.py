@@ -18,7 +18,6 @@ from ._rustitude import (
     gluex,
     manager,
     __version__,
-    __rustitude_precision__,
 )
 from .amplitude import (
     Scalar64,
@@ -77,11 +76,9 @@ Manager = Manager64
 NelderMead = NelderMead64
 
 __version__: str = __version__
-__rustitude_precision__: str = __rustitude_precision__
 
 __all__ = [
     '__version__',
-    '__rustitude_precision__',
     'dataset',
     'manager',
     'amplitude',
