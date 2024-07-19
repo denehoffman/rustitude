@@ -4,11 +4,11 @@ use rustitude_core::four_momentum as rust;
 
 #[pyclass]
 #[derive(Debug, Clone, PartialEq, Copy, Default)]
-pub struct FourMomentum64(rust::FourMomentum<f64>);
-impl_convert!(FourMomentum64, rust::FourMomentum<f64>);
+pub struct FourMomentum_64(rust::FourMomentum<f64>);
+impl_convert!(FourMomentum_64, rust::FourMomentum<f64>);
 
 #[pymethods]
-impl FourMomentum64 {
+impl FourMomentum_64 {
     #[new]
     pub fn new(e: f64, px: f64, py: f64, pz: f64) -> Self {
         Self(rust::FourMomentum::new(e, px, py, pz))
@@ -57,11 +57,11 @@ impl FourMomentum64 {
 
 #[pyclass]
 #[derive(Debug, Clone, PartialEq, Copy, Default)]
-pub struct FourMomentum32(rust::FourMomentum<f32>);
-impl_convert!(FourMomentum32, rust::FourMomentum<f32>);
+pub struct FourMomentum_32(rust::FourMomentum<f32>);
+impl_convert!(FourMomentum_32, rust::FourMomentum<f32>);
 
 #[pymethods]
-impl FourMomentum32 {
+impl FourMomentum_32 {
     #[new]
     pub fn new(e: f32, px: f32, py: f32, pz: f32) -> Self {
         Self(rust::FourMomentum::new(e, px, py, pz))
@@ -109,7 +109,7 @@ impl FourMomentum32 {
 }
 
 pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<FourMomentum64>()?;
-    m.add_class::<FourMomentum32>()?;
+    m.add_class::<FourMomentum_64>()?;
+    m.add_class::<FourMomentum_32>()?;
     Ok(())
 }

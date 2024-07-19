@@ -5,11 +5,11 @@ use std::ops::{Add, Mul};
 
 #[pyclass]
 #[derive(Clone)]
-pub struct Parameter64(rust::amplitude::Parameter<f64>);
-impl_convert!(Parameter64, rust::amplitude::Parameter<f64>);
+pub struct Parameter_64(rust::amplitude::Parameter<f64>);
+impl_convert!(Parameter_64, rust::amplitude::Parameter<f64>);
 
 #[pymethods]
-impl Parameter64 {
+impl Parameter_64 {
     #[new]
     fn new(amplitude: &str, name: &str, index: usize) -> Self {
         Self(rust::amplitude::Parameter::<f64>::new(
@@ -58,11 +58,11 @@ impl Parameter64 {
 
 #[pyclass]
 #[derive(Clone)]
-pub struct Parameter32(rust::amplitude::Parameter<f32>);
-impl_convert!(Parameter32, rust::amplitude::Parameter<f32>);
+pub struct Parameter_32(rust::amplitude::Parameter<f32>);
+impl_convert!(Parameter_32, rust::amplitude::Parameter<f32>);
 
 #[pymethods]
-impl Parameter32 {
+impl Parameter_32 {
     #[new]
     fn new(amplitude: &str, name: &str, index: usize) -> Self {
         Self(rust::amplitude::Parameter::<f32>::new(
@@ -109,24 +109,24 @@ impl Parameter32 {
     }
 }
 
-#[pyclass(name = "Node64")]
+#[pyclass(name = "Node_64")]
 #[derive(Clone)]
-struct PyNode64 {
+struct PyNode_64 {
     node: Py<PyAny>,
 }
 #[pymethods]
-impl PyNode64 {
+impl PyNode_64 {
     #[new]
     pub fn new(node: Py<PyAny>) -> Self {
-        PyNode64 { node }
+        PyNode_64 { node }
     }
-    pub fn precalculate(&mut self, dataset: crate::dataset::Dataset64) -> Result<(), PyErr> {
+    pub fn precalculate(&mut self, dataset: crate::dataset::Dataset_64) -> Result<(), PyErr> {
         rust::amplitude::Node::precalculate(self, &dataset.into()).map_err(PyErr::from)
     }
     pub fn calculate(
         &self,
         parameters: Vec<f64>,
-        event: crate::dataset::Event64,
+        event: crate::dataset::Event_64,
     ) -> Result<rust::prelude::Complex<f64>, PyErr> {
         rust::amplitude::Node::calculate(self, &parameters, &event.into()).map_err(PyErr::from)
     }
@@ -134,18 +134,18 @@ impl PyNode64 {
         rust::amplitude::Node::parameters(self)
     }
     #[allow(clippy::wrong_self_convention)]
-    pub fn into_amplitude(&self, name: &str) -> Amplitude64 {
-        Amplitude64(rust::amplitude::Node::into_amplitude(self.clone(), name))
+    pub fn into_amplitude(&self, name: &str) -> Amplitude_64 {
+        Amplitude_64(rust::amplitude::Node::into_amplitude(self.clone(), name))
     }
 }
 
-impl rust::amplitude::Node<f64> for PyNode64 {
+impl rust::amplitude::Node<f64> for PyNode_64 {
     fn precalculate(
         &mut self,
         dataset: &rust::dataset::Dataset<f64>,
     ) -> Result<(), rust::errors::RustitudeError> {
         Python::with_gil(|py| {
-            let py_dataset = crate::dataset::Dataset64::from(dataset.clone());
+            let py_dataset = crate::dataset::Dataset_64::from(dataset.clone());
             let py_dataset_obj = Py::new(py, py_dataset).unwrap();
             match self
                 .node
@@ -164,7 +164,7 @@ impl rust::amplitude::Node<f64> for PyNode64 {
     ) -> Result<rust::prelude::Complex<f64>, rustitude::prelude::RustitudeError> {
         Python::with_gil(|py| {
             let py_parameters = PyList::new_bound(py, parameters);
-            let py_event = crate::dataset::Event64::from(event.clone());
+            let py_event = crate::dataset::Event_64::from(event.clone());
             let py_event_obj = Py::new(py, py_event).unwrap();
             match self
                 .node
@@ -195,24 +195,24 @@ impl rust::amplitude::Node<f64> for PyNode64 {
     }
 }
 
-#[pyclass(name = "Node32")]
+#[pyclass(name = "Node_32")]
 #[derive(Clone)]
-struct PyNode32 {
+struct PyNode_32 {
     node: Py<PyAny>,
 }
 #[pymethods]
-impl PyNode32 {
+impl PyNode_32 {
     #[new]
     pub fn new(node: Py<PyAny>) -> Self {
-        PyNode32 { node }
+        PyNode_32 { node }
     }
-    pub fn precalculate(&mut self, dataset: crate::dataset::Dataset32) -> Result<(), PyErr> {
+    pub fn precalculate(&mut self, dataset: crate::dataset::Dataset_32) -> Result<(), PyErr> {
         rust::amplitude::Node::precalculate(self, &dataset.into()).map_err(PyErr::from)
     }
     pub fn calculate(
         &self,
         parameters: Vec<f32>,
-        event: crate::dataset::Event32,
+        event: crate::dataset::Event_32,
     ) -> Result<rust::prelude::Complex<f32>, PyErr> {
         rust::amplitude::Node::calculate(self, &parameters, &event.into()).map_err(PyErr::from)
     }
@@ -220,18 +220,18 @@ impl PyNode32 {
         rust::amplitude::Node::parameters(self)
     }
     #[allow(clippy::wrong_self_convention)]
-    pub fn into_amplitude(&self, name: &str) -> Amplitude32 {
-        Amplitude32(rust::amplitude::Node::into_amplitude(self.clone(), name))
+    pub fn into_amplitude(&self, name: &str) -> Amplitude_32 {
+        Amplitude_32(rust::amplitude::Node::into_amplitude(self.clone(), name))
     }
 }
 
-impl rust::amplitude::Node<f32> for PyNode32 {
+impl rust::amplitude::Node<f32> for PyNode_32 {
     fn precalculate(
         &mut self,
         dataset: &rust::dataset::Dataset<f32>,
     ) -> Result<(), rust::errors::RustitudeError> {
         Python::with_gil(|py| {
-            let py_dataset = crate::dataset::Dataset32::from(dataset.clone());
+            let py_dataset = crate::dataset::Dataset_32::from(dataset.clone());
             let py_dataset_obj = Py::new(py, py_dataset).unwrap();
             match self
                 .node
@@ -250,7 +250,7 @@ impl rust::amplitude::Node<f32> for PyNode32 {
     ) -> Result<rust::prelude::Complex<f32>, rustitude::prelude::RustitudeError> {
         Python::with_gil(|py| {
             let py_parameters = PyList::new_bound(py, parameters);
-            let py_event = crate::dataset::Event32::from(event.clone());
+            let py_event = crate::dataset::Event_32::from(event.clone());
             let py_event_obj = Py::new(py, py_event).unwrap();
             match self
                 .node
@@ -282,36 +282,36 @@ impl rust::amplitude::Node<f32> for PyNode32 {
 }
 
 #[derive(FromPyObject)]
-enum AmpLikeOrCohSum64 {
-    Amplitude(Amplitude64),
-    Real(Real64),
-    Imag(Imag64),
-    Product(Product64),
-    CohSum(CohSum64),
+enum AmpLikeOrCohSum_64 {
+    Amplitude(Amplitude_64),
+    Real(Real_64),
+    Imag(Imag_64),
+    Product(Product_64),
+    CohSum(CohSum_64),
 }
 
 #[derive(FromPyObject)]
-enum AmpLikeOrCohSum32 {
-    Amplitude(Amplitude32),
-    Real(Real32),
-    Imag(Imag32),
-    Product(Product32),
-    CohSum(CohSum32),
+enum AmpLikeOrCohSum_32 {
+    Amplitude(Amplitude_32),
+    Real(Real_32),
+    Imag(Imag_32),
+    Product(Product_32),
+    CohSum(CohSum_32),
 }
 
 #[pyclass]
 #[derive(Clone)]
-pub struct Amplitude64(rust::amplitude::Amplitude<f64>);
-impl_convert!(Amplitude64, rust::amplitude::Amplitude<f64>);
-impl Amplitude64 {
+pub struct Amplitude_64(rust::amplitude::Amplitude<f64>);
+impl_convert!(Amplitude_64, rust::amplitude::Amplitude<f64>);
+impl Amplitude_64 {
     pub fn new(name: &str, node: impl rust::amplitude::Node<f64> + 'static) -> Self {
         Self(rust::amplitude::Amplitude::<f64>::new(name, node))
     }
 }
 #[pymethods]
-impl Amplitude64 {
+impl Amplitude_64 {
     #[new]
-    fn from_pynode(name: &str, pynode: PyNode64) -> Self {
+    fn from_pynode(name: &str, pynode: PyNode_64) -> Self {
         Self(rust::amplitude::Amplitude::<f64>::new(name, pynode))
     }
     #[getter]
@@ -336,60 +336,60 @@ impl Amplitude64 {
     fn __repr__(&self) -> String {
         format!("{:?}", self.0)
     }
-    fn as_cohsum(&self) -> CohSum64 {
+    fn as_cohsum(&self) -> CohSum_64 {
         self.0.as_cohsum().into()
     }
-    fn __add__(&self, other: &Bound<PyAny>) -> PyResult<CohSum64> {
-        let other: AmpLikeOrCohSum64 = AmpLikeOrCohSum64::extract_bound(other)?;
+    fn __add__(&self, other: &Bound<PyAny>) -> PyResult<CohSum_64> {
+        let other: AmpLikeOrCohSum_64 = AmpLikeOrCohSum_64::extract_bound(other)?;
         match other {
-            AmpLikeOrCohSum64::Amplitude(al) => Ok(CohSum64(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum64::Real(al) => Ok(CohSum64(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum64::Imag(al) => Ok(CohSum64(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum64::Product(al) => Ok(CohSum64(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum64::CohSum(al) => Ok(CohSum64(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_64::Amplitude(al) => Ok(CohSum_64(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_64::Real(al) => Ok(CohSum_64(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_64::Imag(al) => Ok(CohSum_64(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_64::Product(al) => Ok(CohSum_64(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_64::CohSum(al) => Ok(CohSum_64(self.0.clone().add(al.0))),
         }
     }
     fn __mul__<'a>(&self, py: Python<'a>, other: &Bound<PyAny>) -> PyResult<Bound<'a, PyAny>> {
-        let other: AmpLikeOrCohSum64 = AmpLikeOrCohSum64::extract_bound(other)?;
+        let other: AmpLikeOrCohSum_64 = AmpLikeOrCohSum_64::extract_bound(other)?;
         match other {
-            AmpLikeOrCohSum64::Amplitude(al) => {
-                Ok(Bound::new(py, Product64(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_64::Amplitude(al) => {
+                Ok(Bound::new(py, Product_64(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum64::Real(al) => {
-                Ok(Bound::new(py, Product64(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_64::Real(al) => {
+                Ok(Bound::new(py, Product_64(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum64::Imag(al) => {
-                Ok(Bound::new(py, Product64(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_64::Imag(al) => {
+                Ok(Bound::new(py, Product_64(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum64::Product(al) => {
-                Ok(Bound::new(py, Product64(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_64::Product(al) => {
+                Ok(Bound::new(py, Product_64(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum64::CohSum(al) => {
-                Ok(Bound::new(py, CohSum64(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_64::CohSum(al) => {
+                Ok(Bound::new(py, CohSum_64(self.0.clone().mul(al.0)))?.into_any())
             }
         }
     }
-    fn real(&self) -> Real64 {
-        Real64(self.0.real())
+    fn real(&self) -> Real_64 {
+        Real_64(self.0.real())
     }
-    fn imag(&self) -> Imag64 {
-        Imag64(self.0.imag())
+    fn imag(&self) -> Imag_64 {
+        Imag_64(self.0.imag())
     }
 }
 
 #[pyclass]
 #[derive(Clone)]
-pub struct Amplitude32(rust::amplitude::Amplitude<f32>);
-impl_convert!(Amplitude32, rust::amplitude::Amplitude<f32>);
-impl Amplitude32 {
+pub struct Amplitude_32(rust::amplitude::Amplitude<f32>);
+impl_convert!(Amplitude_32, rust::amplitude::Amplitude<f32>);
+impl Amplitude_32 {
     pub fn new(name: &str, node: impl rust::amplitude::Node<f32> + 'static) -> Self {
         Self(rust::amplitude::Amplitude::<f32>::new(name, node))
     }
 }
 #[pymethods]
-impl Amplitude32 {
+impl Amplitude_32 {
     #[new]
-    fn from_pynode(name: &str, pynode: PyNode32) -> Self {
+    fn from_pynode(name: &str, pynode: PyNode_32) -> Self {
         Self(rust::amplitude::Amplitude::<f32>::new(name, pynode))
     }
     #[getter]
@@ -414,383 +414,383 @@ impl Amplitude32 {
     fn __repr__(&self) -> String {
         format!("{:?}", self.0)
     }
-    fn as_cohsum(&self) -> CohSum32 {
+    fn as_cohsum(&self) -> CohSum_32 {
         self.0.as_cohsum().into()
     }
-    fn __add__(&self, other: &Bound<PyAny>) -> PyResult<CohSum32> {
-        let other: AmpLikeOrCohSum32 = AmpLikeOrCohSum32::extract_bound(other)?;
+    fn __add__(&self, other: &Bound<PyAny>) -> PyResult<CohSum_32> {
+        let other: AmpLikeOrCohSum_32 = AmpLikeOrCohSum_32::extract_bound(other)?;
         match other {
-            AmpLikeOrCohSum32::Amplitude(al) => Ok(CohSum32(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum32::Real(al) => Ok(CohSum32(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum32::Imag(al) => Ok(CohSum32(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum32::Product(al) => Ok(CohSum32(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum32::CohSum(al) => Ok(CohSum32(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_32::Amplitude(al) => Ok(CohSum_32(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_32::Real(al) => Ok(CohSum_32(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_32::Imag(al) => Ok(CohSum_32(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_32::Product(al) => Ok(CohSum_32(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_32::CohSum(al) => Ok(CohSum_32(self.0.clone().add(al.0))),
         }
     }
     fn __mul__<'a>(&self, py: Python<'a>, other: &Bound<PyAny>) -> PyResult<Bound<'a, PyAny>> {
-        let other: AmpLikeOrCohSum32 = AmpLikeOrCohSum32::extract_bound(other)?;
+        let other: AmpLikeOrCohSum_32 = AmpLikeOrCohSum_32::extract_bound(other)?;
         match other {
-            AmpLikeOrCohSum32::Amplitude(al) => {
-                Ok(Bound::new(py, Product32(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_32::Amplitude(al) => {
+                Ok(Bound::new(py, Product_32(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum32::Real(al) => {
-                Ok(Bound::new(py, Product32(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_32::Real(al) => {
+                Ok(Bound::new(py, Product_32(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum32::Imag(al) => {
-                Ok(Bound::new(py, Product32(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_32::Imag(al) => {
+                Ok(Bound::new(py, Product_32(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum32::Product(al) => {
-                Ok(Bound::new(py, Product32(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_32::Product(al) => {
+                Ok(Bound::new(py, Product_32(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum32::CohSum(al) => {
-                Ok(Bound::new(py, CohSum32(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_32::CohSum(al) => {
+                Ok(Bound::new(py, CohSum_32(self.0.clone().mul(al.0)))?.into_any())
             }
         }
     }
-    fn real(&self) -> Real32 {
-        Real32(self.0.real())
+    fn real(&self) -> Real_32 {
+        Real_32(self.0.real())
     }
-    fn imag(&self) -> Imag32 {
-        Imag32(self.0.imag())
+    fn imag(&self) -> Imag_32 {
+        Imag_32(self.0.imag())
     }
 }
 
 #[pyclass]
 #[derive(Clone)]
-pub struct Real64(rust::amplitude::Real<f64>);
-impl_convert!(Real64, rust::amplitude::Real<f64>);
+pub struct Real_64(rust::amplitude::Real<f64>);
+impl_convert!(Real_64, rust::amplitude::Real<f64>);
 #[pymethods]
-impl Real64 {
+impl Real_64 {
     fn __str__(&self) -> String {
         format!("{}", self.0)
     }
     fn __repr__(&self) -> String {
         format!("{:?}", self.0)
     }
-    fn as_cohsum(&self) -> CohSum64 {
+    fn as_cohsum(&self) -> CohSum_64 {
         self.0.as_cohsum().into()
     }
-    fn __add__(&self, other: &Bound<PyAny>) -> PyResult<CohSum64> {
-        let other: AmpLikeOrCohSum64 = AmpLikeOrCohSum64::extract_bound(other)?;
+    fn __add__(&self, other: &Bound<PyAny>) -> PyResult<CohSum_64> {
+        let other: AmpLikeOrCohSum_64 = AmpLikeOrCohSum_64::extract_bound(other)?;
         match other {
-            AmpLikeOrCohSum64::Amplitude(al) => Ok(CohSum64(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum64::Real(al) => Ok(CohSum64(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum64::Imag(al) => Ok(CohSum64(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum64::Product(al) => Ok(CohSum64(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum64::CohSum(al) => Ok(CohSum64(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_64::Amplitude(al) => Ok(CohSum_64(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_64::Real(al) => Ok(CohSum_64(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_64::Imag(al) => Ok(CohSum_64(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_64::Product(al) => Ok(CohSum_64(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_64::CohSum(al) => Ok(CohSum_64(self.0.clone().add(al.0))),
         }
     }
     fn __mul__<'a>(&self, py: Python<'a>, other: &Bound<PyAny>) -> PyResult<Bound<'a, PyAny>> {
-        let other: AmpLikeOrCohSum64 = AmpLikeOrCohSum64::extract_bound(other)?;
+        let other: AmpLikeOrCohSum_64 = AmpLikeOrCohSum_64::extract_bound(other)?;
         match other {
-            AmpLikeOrCohSum64::Amplitude(al) => {
-                Ok(Bound::new(py, Product64(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_64::Amplitude(al) => {
+                Ok(Bound::new(py, Product_64(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum64::Real(al) => {
-                Ok(Bound::new(py, Product64(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_64::Real(al) => {
+                Ok(Bound::new(py, Product_64(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum64::Imag(al) => {
-                Ok(Bound::new(py, Product64(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_64::Imag(al) => {
+                Ok(Bound::new(py, Product_64(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum64::Product(al) => {
-                Ok(Bound::new(py, Product64(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_64::Product(al) => {
+                Ok(Bound::new(py, Product_64(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum64::CohSum(al) => {
-                Ok(Bound::new(py, CohSum64(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_64::CohSum(al) => {
+                Ok(Bound::new(py, CohSum_64(self.0.clone().mul(al.0)))?.into_any())
             }
         }
     }
-    fn real(&self) -> Real64 {
-        Real64(self.0.real())
+    fn real(&self) -> Real_64 {
+        Real_64(self.0.real())
     }
-    fn imag(&self) -> Imag64 {
-        Imag64(self.0.imag())
+    fn imag(&self) -> Imag_64 {
+        Imag_64(self.0.imag())
     }
 }
 
 #[pyclass]
 #[derive(Clone)]
-pub struct Real32(rust::amplitude::Real<f32>);
-impl_convert!(Real32, rust::amplitude::Real<f32>);
+pub struct Real_32(rust::amplitude::Real<f32>);
+impl_convert!(Real_32, rust::amplitude::Real<f32>);
 #[pymethods]
-impl Real32 {
+impl Real_32 {
     fn __str__(&self) -> String {
         format!("{}", self.0)
     }
     fn __repr__(&self) -> String {
         format!("{:?}", self.0)
     }
-    fn as_cohsum(&self) -> CohSum32 {
+    fn as_cohsum(&self) -> CohSum_32 {
         self.0.as_cohsum().into()
     }
-    fn __add__(&self, other: &Bound<PyAny>) -> PyResult<CohSum32> {
-        let other: AmpLikeOrCohSum32 = AmpLikeOrCohSum32::extract_bound(other)?;
+    fn __add__(&self, other: &Bound<PyAny>) -> PyResult<CohSum_32> {
+        let other: AmpLikeOrCohSum_32 = AmpLikeOrCohSum_32::extract_bound(other)?;
         match other {
-            AmpLikeOrCohSum32::Amplitude(al) => Ok(CohSum32(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum32::Real(al) => Ok(CohSum32(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum32::Imag(al) => Ok(CohSum32(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum32::Product(al) => Ok(CohSum32(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum32::CohSum(al) => Ok(CohSum32(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_32::Amplitude(al) => Ok(CohSum_32(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_32::Real(al) => Ok(CohSum_32(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_32::Imag(al) => Ok(CohSum_32(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_32::Product(al) => Ok(CohSum_32(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_32::CohSum(al) => Ok(CohSum_32(self.0.clone().add(al.0))),
         }
     }
     fn __mul__<'a>(&self, py: Python<'a>, other: &Bound<PyAny>) -> PyResult<Bound<'a, PyAny>> {
-        let other: AmpLikeOrCohSum32 = AmpLikeOrCohSum32::extract_bound(other)?;
+        let other: AmpLikeOrCohSum_32 = AmpLikeOrCohSum_32::extract_bound(other)?;
         match other {
-            AmpLikeOrCohSum32::Amplitude(al) => {
-                Ok(Bound::new(py, Product32(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_32::Amplitude(al) => {
+                Ok(Bound::new(py, Product_32(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum32::Real(al) => {
-                Ok(Bound::new(py, Product32(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_32::Real(al) => {
+                Ok(Bound::new(py, Product_32(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum32::Imag(al) => {
-                Ok(Bound::new(py, Product32(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_32::Imag(al) => {
+                Ok(Bound::new(py, Product_32(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum32::Product(al) => {
-                Ok(Bound::new(py, Product32(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_32::Product(al) => {
+                Ok(Bound::new(py, Product_32(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum32::CohSum(al) => {
-                Ok(Bound::new(py, CohSum32(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_32::CohSum(al) => {
+                Ok(Bound::new(py, CohSum_32(self.0.clone().mul(al.0)))?.into_any())
             }
         }
     }
-    fn real(&self) -> Real32 {
-        Real32(self.0.real())
+    fn real(&self) -> Real_32 {
+        Real_32(self.0.real())
     }
-    fn imag(&self) -> Imag32 {
-        Imag32(self.0.imag())
+    fn imag(&self) -> Imag_32 {
+        Imag_32(self.0.imag())
     }
 }
 
 #[pyclass]
 #[derive(Clone)]
-pub struct Imag64(rust::amplitude::Imag<f64>);
-impl_convert!(Imag64, rust::amplitude::Imag<f64>);
+pub struct Imag_64(rust::amplitude::Imag<f64>);
+impl_convert!(Imag_64, rust::amplitude::Imag<f64>);
 #[pymethods]
-impl Imag64 {
+impl Imag_64 {
     fn __str__(&self) -> String {
         format!("{}", self.0)
     }
     fn __repr__(&self) -> String {
         format!("{:?}", self.0)
     }
-    fn as_cohsum(&self) -> CohSum64 {
+    fn as_cohsum(&self) -> CohSum_64 {
         self.0.as_cohsum().into()
     }
-    fn __add__(&self, other: &Bound<PyAny>) -> PyResult<CohSum64> {
-        let other: AmpLikeOrCohSum64 = AmpLikeOrCohSum64::extract_bound(other)?;
+    fn __add__(&self, other: &Bound<PyAny>) -> PyResult<CohSum_64> {
+        let other: AmpLikeOrCohSum_64 = AmpLikeOrCohSum_64::extract_bound(other)?;
         match other {
-            AmpLikeOrCohSum64::Amplitude(al) => Ok(CohSum64(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum64::Real(al) => Ok(CohSum64(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum64::Imag(al) => Ok(CohSum64(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum64::Product(al) => Ok(CohSum64(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum64::CohSum(al) => Ok(CohSum64(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_64::Amplitude(al) => Ok(CohSum_64(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_64::Real(al) => Ok(CohSum_64(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_64::Imag(al) => Ok(CohSum_64(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_64::Product(al) => Ok(CohSum_64(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_64::CohSum(al) => Ok(CohSum_64(self.0.clone().add(al.0))),
         }
     }
     fn __mul__<'a>(&self, py: Python<'a>, other: &Bound<PyAny>) -> PyResult<Bound<'a, PyAny>> {
-        let other: AmpLikeOrCohSum64 = AmpLikeOrCohSum64::extract_bound(other)?;
+        let other: AmpLikeOrCohSum_64 = AmpLikeOrCohSum_64::extract_bound(other)?;
         match other {
-            AmpLikeOrCohSum64::Amplitude(al) => {
-                Ok(Bound::new(py, Product64(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_64::Amplitude(al) => {
+                Ok(Bound::new(py, Product_64(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum64::Real(al) => {
-                Ok(Bound::new(py, Product64(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_64::Real(al) => {
+                Ok(Bound::new(py, Product_64(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum64::Imag(al) => {
-                Ok(Bound::new(py, Product64(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_64::Imag(al) => {
+                Ok(Bound::new(py, Product_64(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum64::Product(al) => {
-                Ok(Bound::new(py, Product64(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_64::Product(al) => {
+                Ok(Bound::new(py, Product_64(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum64::CohSum(al) => {
-                Ok(Bound::new(py, CohSum64(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_64::CohSum(al) => {
+                Ok(Bound::new(py, CohSum_64(self.0.clone().mul(al.0)))?.into_any())
             }
         }
     }
-    fn real(&self) -> Real64 {
-        Real64(self.0.real())
+    fn real(&self) -> Real_64 {
+        Real_64(self.0.real())
     }
-    fn imag(&self) -> Imag64 {
-        Imag64(self.0.imag())
+    fn imag(&self) -> Imag_64 {
+        Imag_64(self.0.imag())
     }
 }
 
 #[pyclass]
 #[derive(Clone)]
-pub struct Imag32(rust::amplitude::Imag<f32>);
-impl_convert!(Imag32, rust::amplitude::Imag<f32>);
+pub struct Imag_32(rust::amplitude::Imag<f32>);
+impl_convert!(Imag_32, rust::amplitude::Imag<f32>);
 #[pymethods]
-impl Imag32 {
+impl Imag_32 {
     fn __str__(&self) -> String {
         format!("{}", self.0)
     }
     fn __repr__(&self) -> String {
         format!("{:?}", self.0)
     }
-    fn as_cohsum(&self) -> CohSum32 {
+    fn as_cohsum(&self) -> CohSum_32 {
         self.0.as_cohsum().into()
     }
-    fn __add__(&self, other: &Bound<PyAny>) -> PyResult<CohSum32> {
-        let other: AmpLikeOrCohSum32 = AmpLikeOrCohSum32::extract_bound(other)?;
+    fn __add__(&self, other: &Bound<PyAny>) -> PyResult<CohSum_32> {
+        let other: AmpLikeOrCohSum_32 = AmpLikeOrCohSum_32::extract_bound(other)?;
         match other {
-            AmpLikeOrCohSum32::Amplitude(al) => Ok(CohSum32(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum32::Real(al) => Ok(CohSum32(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum32::Imag(al) => Ok(CohSum32(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum32::Product(al) => Ok(CohSum32(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum32::CohSum(al) => Ok(CohSum32(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_32::Amplitude(al) => Ok(CohSum_32(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_32::Real(al) => Ok(CohSum_32(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_32::Imag(al) => Ok(CohSum_32(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_32::Product(al) => Ok(CohSum_32(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_32::CohSum(al) => Ok(CohSum_32(self.0.clone().add(al.0))),
         }
     }
     fn __mul__<'a>(&self, py: Python<'a>, other: &Bound<PyAny>) -> PyResult<Bound<'a, PyAny>> {
-        let other: AmpLikeOrCohSum32 = AmpLikeOrCohSum32::extract_bound(other)?;
+        let other: AmpLikeOrCohSum_32 = AmpLikeOrCohSum_32::extract_bound(other)?;
         match other {
-            AmpLikeOrCohSum32::Amplitude(al) => {
-                Ok(Bound::new(py, Product32(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_32::Amplitude(al) => {
+                Ok(Bound::new(py, Product_32(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum32::Real(al) => {
-                Ok(Bound::new(py, Product32(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_32::Real(al) => {
+                Ok(Bound::new(py, Product_32(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum32::Imag(al) => {
-                Ok(Bound::new(py, Product32(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_32::Imag(al) => {
+                Ok(Bound::new(py, Product_32(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum32::Product(al) => {
-                Ok(Bound::new(py, Product32(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_32::Product(al) => {
+                Ok(Bound::new(py, Product_32(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum32::CohSum(al) => {
-                Ok(Bound::new(py, CohSum32(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_32::CohSum(al) => {
+                Ok(Bound::new(py, CohSum_32(self.0.clone().mul(al.0)))?.into_any())
             }
         }
     }
-    fn real(&self) -> Real32 {
-        Real32(self.0.real())
+    fn real(&self) -> Real_32 {
+        Real_32(self.0.real())
     }
-    fn imag(&self) -> Imag32 {
-        Imag32(self.0.imag())
+    fn imag(&self) -> Imag_32 {
+        Imag_32(self.0.imag())
     }
 }
 
 #[pyclass]
 #[derive(Clone)]
-pub struct Product64(rust::amplitude::Product<f64>);
-impl_convert!(Product64, rust::amplitude::Product<f64>);
+pub struct Product_64(rust::amplitude::Product<f64>);
+impl_convert!(Product_64, rust::amplitude::Product<f64>);
 #[pymethods]
-impl Product64 {
+impl Product_64 {
     fn __str__(&self) -> String {
         format!("{}", self.0)
     }
     fn __repr__(&self) -> String {
         format!("{:?}", self.0)
     }
-    fn as_cohsum(&self) -> CohSum64 {
+    fn as_cohsum(&self) -> CohSum_64 {
         self.0.as_cohsum().into()
     }
-    fn __add__(&self, other: &Bound<PyAny>) -> PyResult<CohSum64> {
-        let other: AmpLikeOrCohSum64 = AmpLikeOrCohSum64::extract_bound(other)?;
+    fn __add__(&self, other: &Bound<PyAny>) -> PyResult<CohSum_64> {
+        let other: AmpLikeOrCohSum_64 = AmpLikeOrCohSum_64::extract_bound(other)?;
         match other {
-            AmpLikeOrCohSum64::Amplitude(al) => Ok(CohSum64(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum64::Real(al) => Ok(CohSum64(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum64::Imag(al) => Ok(CohSum64(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum64::Product(al) => Ok(CohSum64(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum64::CohSum(al) => Ok(CohSum64(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_64::Amplitude(al) => Ok(CohSum_64(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_64::Real(al) => Ok(CohSum_64(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_64::Imag(al) => Ok(CohSum_64(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_64::Product(al) => Ok(CohSum_64(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_64::CohSum(al) => Ok(CohSum_64(self.0.clone().add(al.0))),
         }
     }
     fn __mul__<'a>(&self, py: Python<'a>, other: &Bound<PyAny>) -> PyResult<Bound<'a, PyAny>> {
-        let other: AmpLikeOrCohSum64 = AmpLikeOrCohSum64::extract_bound(other)?;
+        let other: AmpLikeOrCohSum_64 = AmpLikeOrCohSum_64::extract_bound(other)?;
         match other {
-            AmpLikeOrCohSum64::Amplitude(al) => {
-                Ok(Bound::new(py, Product64(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_64::Amplitude(al) => {
+                Ok(Bound::new(py, Product_64(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum64::Real(al) => {
-                Ok(Bound::new(py, Product64(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_64::Real(al) => {
+                Ok(Bound::new(py, Product_64(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum64::Imag(al) => {
-                Ok(Bound::new(py, Product64(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_64::Imag(al) => {
+                Ok(Bound::new(py, Product_64(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum64::Product(al) => {
-                Ok(Bound::new(py, Product64(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_64::Product(al) => {
+                Ok(Bound::new(py, Product_64(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum64::CohSum(al) => {
-                Ok(Bound::new(py, CohSum64(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_64::CohSum(al) => {
+                Ok(Bound::new(py, CohSum_64(self.0.clone().mul(al.0)))?.into_any())
             }
         }
     }
-    fn real(&self) -> Real64 {
-        Real64(self.0.real())
+    fn real(&self) -> Real_64 {
+        Real_64(self.0.real())
     }
-    fn imag(&self) -> Imag64 {
-        Imag64(self.0.imag())
+    fn imag(&self) -> Imag_64 {
+        Imag_64(self.0.imag())
     }
 }
 
 #[pyclass]
 #[derive(Clone)]
-pub struct Product32(rust::amplitude::Product<f32>);
-impl_convert!(Product32, rust::amplitude::Product<f32>);
+pub struct Product_32(rust::amplitude::Product<f32>);
+impl_convert!(Product_32, rust::amplitude::Product<f32>);
 #[pymethods]
-impl Product32 {
+impl Product_32 {
     fn __str__(&self) -> String {
         format!("{}", self.0)
     }
     fn __repr__(&self) -> String {
         format!("{:?}", self.0)
     }
-    fn as_cohsum(&self) -> CohSum32 {
+    fn as_cohsum(&self) -> CohSum_32 {
         self.0.as_cohsum().into()
     }
-    fn __add__(&self, other: &Bound<PyAny>) -> PyResult<CohSum32> {
-        let other: AmpLikeOrCohSum32 = AmpLikeOrCohSum32::extract_bound(other)?;
+    fn __add__(&self, other: &Bound<PyAny>) -> PyResult<CohSum_32> {
+        let other: AmpLikeOrCohSum_32 = AmpLikeOrCohSum_32::extract_bound(other)?;
         match other {
-            AmpLikeOrCohSum32::Amplitude(al) => Ok(CohSum32(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum32::Real(al) => Ok(CohSum32(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum32::Imag(al) => Ok(CohSum32(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum32::Product(al) => Ok(CohSum32(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum32::CohSum(al) => Ok(CohSum32(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_32::Amplitude(al) => Ok(CohSum_32(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_32::Real(al) => Ok(CohSum_32(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_32::Imag(al) => Ok(CohSum_32(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_32::Product(al) => Ok(CohSum_32(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_32::CohSum(al) => Ok(CohSum_32(self.0.clone().add(al.0))),
         }
     }
     fn __mul__<'a>(&self, py: Python<'a>, other: &Bound<PyAny>) -> PyResult<Bound<'a, PyAny>> {
-        let other: AmpLikeOrCohSum32 = AmpLikeOrCohSum32::extract_bound(other)?;
+        let other: AmpLikeOrCohSum_32 = AmpLikeOrCohSum_32::extract_bound(other)?;
         match other {
-            AmpLikeOrCohSum32::Amplitude(al) => {
-                Ok(Bound::new(py, Product32(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_32::Amplitude(al) => {
+                Ok(Bound::new(py, Product_32(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum32::Real(al) => {
-                Ok(Bound::new(py, Product32(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_32::Real(al) => {
+                Ok(Bound::new(py, Product_32(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum32::Imag(al) => {
-                Ok(Bound::new(py, Product32(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_32::Imag(al) => {
+                Ok(Bound::new(py, Product_32(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum32::Product(al) => {
-                Ok(Bound::new(py, Product32(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_32::Product(al) => {
+                Ok(Bound::new(py, Product_32(self.0.clone().mul(al.0)))?.into_any())
             }
-            AmpLikeOrCohSum32::CohSum(al) => {
-                Ok(Bound::new(py, CohSum32(self.0.clone().mul(al.0)))?.into_any())
+            AmpLikeOrCohSum_32::CohSum(al) => {
+                Ok(Bound::new(py, CohSum_32(self.0.clone().mul(al.0)))?.into_any())
             }
         }
     }
-    fn real(&self) -> Real32 {
-        Real32(self.0.real())
+    fn real(&self) -> Real_32 {
+        Real_32(self.0.real())
     }
-    fn imag(&self) -> Imag32 {
-        Imag32(self.0.imag())
+    fn imag(&self) -> Imag_32 {
+        Imag_32(self.0.imag())
     }
 }
 
 #[pyclass]
 #[derive(Clone)]
-pub struct CohSum64(rust::amplitude::CohSum<f64>);
-impl_convert!(CohSum64, rust::amplitude::CohSum<f64>);
+pub struct CohSum_64(rust::amplitude::CohSum<f64>);
+impl_convert!(CohSum_64, rust::amplitude::CohSum<f64>);
 
 #[pymethods]
-impl CohSum64 {
+impl CohSum_64 {
     #[new]
     pub fn new(terms: Vec<Bound<PyAny>>) -> PyResult<Self> {
         let mut rust_terms: Vec<Box<dyn rust::amplitude::AmpLike<f64>>> = Vec::default();
         for term in &terms {
-            let term = AmpLikeOrCohSum64::extract_bound(term)?;
+            let term = AmpLikeOrCohSum_64::extract_bound(term)?;
             match term {
-                AmpLikeOrCohSum64::Amplitude(amplitude) => rust_terms.push(Box::new(amplitude.0)),
-                AmpLikeOrCohSum64::Real(real) => rust_terms.push(Box::new(real.0)),
-                AmpLikeOrCohSum64::Imag(imag) => rust_terms.push(Box::new(imag.0)),
-                AmpLikeOrCohSum64::Product(product) => rust_terms.push(Box::new(product.0)),
-                AmpLikeOrCohSum64::CohSum(cohsum) => rust_terms.extend((cohsum.0).0),
+                AmpLikeOrCohSum_64::Amplitude(amplitude) => rust_terms.push(Box::new(amplitude.0)),
+                AmpLikeOrCohSum_64::Real(real) => rust_terms.push(Box::new(real.0)),
+                AmpLikeOrCohSum_64::Imag(imag) => rust_terms.push(Box::new(imag.0)),
+                AmpLikeOrCohSum_64::Product(product) => rust_terms.push(Box::new(product.0)),
+                AmpLikeOrCohSum_64::CohSum(cohsum) => rust_terms.extend((cohsum.0).0),
             }
         }
         Ok(Self(rust::amplitude::CohSum(rust_terms)))
@@ -801,46 +801,46 @@ impl CohSum64 {
     fn __repr__(&self) -> String {
         format!("{:?}", self.0)
     }
-    fn __add__(&self, other: &Bound<PyAny>) -> PyResult<CohSum64> {
-        let other: AmpLikeOrCohSum64 = AmpLikeOrCohSum64::extract_bound(other)?;
+    fn __add__(&self, other: &Bound<PyAny>) -> PyResult<CohSum_64> {
+        let other: AmpLikeOrCohSum_64 = AmpLikeOrCohSum_64::extract_bound(other)?;
         match other {
-            AmpLikeOrCohSum64::Amplitude(al) => Ok(CohSum64(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum64::Real(al) => Ok(CohSum64(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum64::Imag(al) => Ok(CohSum64(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum64::Product(al) => Ok(CohSum64(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum64::CohSum(al) => Ok(CohSum64(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_64::Amplitude(al) => Ok(CohSum_64(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_64::Real(al) => Ok(CohSum_64(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_64::Imag(al) => Ok(CohSum_64(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_64::Product(al) => Ok(CohSum_64(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_64::CohSum(al) => Ok(CohSum_64(self.0.clone().add(al.0))),
         }
     }
-    fn __mul__(&self, other: &Bound<PyAny>) -> PyResult<CohSum64> {
-        let other: AmpLikeOrCohSum64 = AmpLikeOrCohSum64::extract_bound(other)?;
+    fn __mul__(&self, other: &Bound<PyAny>) -> PyResult<CohSum_64> {
+        let other: AmpLikeOrCohSum_64 = AmpLikeOrCohSum_64::extract_bound(other)?;
         match other {
-            AmpLikeOrCohSum64::Amplitude(al) => Ok(CohSum64(self.0.clone().mul(al.0))),
-            AmpLikeOrCohSum64::Real(al) => Ok(CohSum64(self.0.clone().mul(al.0))),
-            AmpLikeOrCohSum64::Imag(al) => Ok(CohSum64(self.0.clone().mul(al.0))),
-            AmpLikeOrCohSum64::Product(al) => Ok(CohSum64(self.0.clone().mul(al.0))),
-            AmpLikeOrCohSum64::CohSum(_) => unimplemented!(),
+            AmpLikeOrCohSum_64::Amplitude(al) => Ok(CohSum_64(self.0.clone().mul(al.0))),
+            AmpLikeOrCohSum_64::Real(al) => Ok(CohSum_64(self.0.clone().mul(al.0))),
+            AmpLikeOrCohSum_64::Imag(al) => Ok(CohSum_64(self.0.clone().mul(al.0))),
+            AmpLikeOrCohSum_64::Product(al) => Ok(CohSum_64(self.0.clone().mul(al.0))),
+            AmpLikeOrCohSum_64::CohSum(_) => unimplemented!(),
         }
     }
 }
 
 #[pyclass]
 #[derive(Clone)]
-pub struct CohSum32(rust::amplitude::CohSum<f32>);
-impl_convert!(CohSum32, rust::amplitude::CohSum<f32>);
+pub struct CohSum_32(rust::amplitude::CohSum<f32>);
+impl_convert!(CohSum_32, rust::amplitude::CohSum<f32>);
 
 #[pymethods]
-impl CohSum32 {
+impl CohSum_32 {
     #[new]
     pub fn new(terms: Vec<Bound<PyAny>>) -> PyResult<Self> {
         let mut rust_terms: Vec<Box<dyn rust::amplitude::AmpLike<f32>>> = Vec::default();
         for term in &terms {
-            let term = AmpLikeOrCohSum32::extract_bound(term)?;
+            let term = AmpLikeOrCohSum_32::extract_bound(term)?;
             match term {
-                AmpLikeOrCohSum32::Amplitude(amplitude) => rust_terms.push(Box::new(amplitude.0)),
-                AmpLikeOrCohSum32::Real(real) => rust_terms.push(Box::new(real.0)),
-                AmpLikeOrCohSum32::Imag(imag) => rust_terms.push(Box::new(imag.0)),
-                AmpLikeOrCohSum32::Product(product) => rust_terms.push(Box::new(product.0)),
-                AmpLikeOrCohSum32::CohSum(cohsum) => rust_terms.extend((cohsum.0).0),
+                AmpLikeOrCohSum_32::Amplitude(amplitude) => rust_terms.push(Box::new(amplitude.0)),
+                AmpLikeOrCohSum_32::Real(real) => rust_terms.push(Box::new(real.0)),
+                AmpLikeOrCohSum_32::Imag(imag) => rust_terms.push(Box::new(imag.0)),
+                AmpLikeOrCohSum_32::Product(product) => rust_terms.push(Box::new(product.0)),
+                AmpLikeOrCohSum_32::CohSum(cohsum) => rust_terms.extend((cohsum.0).0),
             }
         }
         Ok(Self(rust::amplitude::CohSum(rust_terms)))
@@ -851,35 +851,35 @@ impl CohSum32 {
     fn __repr__(&self) -> String {
         format!("{:?}", self.0)
     }
-    fn __add__(&self, other: &Bound<PyAny>) -> PyResult<CohSum32> {
-        let other: AmpLikeOrCohSum32 = AmpLikeOrCohSum32::extract_bound(other)?;
+    fn __add__(&self, other: &Bound<PyAny>) -> PyResult<CohSum_32> {
+        let other: AmpLikeOrCohSum_32 = AmpLikeOrCohSum_32::extract_bound(other)?;
         match other {
-            AmpLikeOrCohSum32::Amplitude(al) => Ok(CohSum32(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum32::Real(al) => Ok(CohSum32(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum32::Imag(al) => Ok(CohSum32(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum32::Product(al) => Ok(CohSum32(self.0.clone().add(al.0))),
-            AmpLikeOrCohSum32::CohSum(al) => Ok(CohSum32(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_32::Amplitude(al) => Ok(CohSum_32(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_32::Real(al) => Ok(CohSum_32(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_32::Imag(al) => Ok(CohSum_32(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_32::Product(al) => Ok(CohSum_32(self.0.clone().add(al.0))),
+            AmpLikeOrCohSum_32::CohSum(al) => Ok(CohSum_32(self.0.clone().add(al.0))),
         }
     }
-    fn __mul__(&self, other: &Bound<PyAny>) -> PyResult<CohSum32> {
-        let other: AmpLikeOrCohSum32 = AmpLikeOrCohSum32::extract_bound(other)?;
+    fn __mul__(&self, other: &Bound<PyAny>) -> PyResult<CohSum_32> {
+        let other: AmpLikeOrCohSum_32 = AmpLikeOrCohSum_32::extract_bound(other)?;
         match other {
-            AmpLikeOrCohSum32::Amplitude(al) => Ok(CohSum32(self.0.clone().mul(al.0))),
-            AmpLikeOrCohSum32::Real(al) => Ok(CohSum32(self.0.clone().mul(al.0))),
-            AmpLikeOrCohSum32::Imag(al) => Ok(CohSum32(self.0.clone().mul(al.0))),
-            AmpLikeOrCohSum32::Product(al) => Ok(CohSum32(self.0.clone().mul(al.0))),
-            AmpLikeOrCohSum32::CohSum(_) => unimplemented!(),
+            AmpLikeOrCohSum_32::Amplitude(al) => Ok(CohSum_32(self.0.clone().mul(al.0))),
+            AmpLikeOrCohSum_32::Real(al) => Ok(CohSum_32(self.0.clone().mul(al.0))),
+            AmpLikeOrCohSum_32::Imag(al) => Ok(CohSum_32(self.0.clone().mul(al.0))),
+            AmpLikeOrCohSum_32::Product(al) => Ok(CohSum_32(self.0.clone().mul(al.0))),
+            AmpLikeOrCohSum_32::CohSum(_) => unimplemented!(),
         }
     }
 }
 
 #[pyclass]
 #[derive(Clone)]
-pub struct Model64(rust::amplitude::Model<f64>);
-impl_convert!(Model64, rust::amplitude::Model<f64>);
+pub struct Model_64(rust::amplitude::Model<f64>);
+impl_convert!(Model_64, rust::amplitude::Model<f64>);
 
 #[pymethods]
-impl Model64 {
+impl Model_64 {
     fn __str__(&self) -> String {
         format!("{}", self.0)
     }
@@ -887,30 +887,30 @@ impl Model64 {
         format!("{:?}", self.0)
     }
     #[getter]
-    fn cohsums(&self) -> Vec<CohSum64> {
+    fn cohsums(&self) -> Vec<CohSum_64> {
         self.0
             .clone()
             .cohsums
             .into_iter()
-            .map(CohSum64::from)
+            .map(CohSum_64::from)
             .collect()
     }
     #[getter]
-    fn amplitudes(&self) -> Vec<Amplitude64> {
+    fn amplitudes(&self) -> Vec<Amplitude_64> {
         self.0
             .amplitudes
             .clone()
             .into_iter()
-            .map(Amplitude64::from)
+            .map(Amplitude_64::from)
             .collect()
     }
     #[getter]
-    fn parameters(&self) -> Vec<Parameter64> {
+    fn parameters(&self) -> Vec<Parameter_64> {
         self.0
             .parameters
             .clone()
             .into_iter()
-            .map(Parameter64::from)
+            .map(Parameter_64::from)
             .collect()
     }
     #[getter]
@@ -926,7 +926,7 @@ impl Model64 {
         self.0.get_n_free()
     }
     #[new]
-    fn new(cohsums: Vec<CohSum64>) -> Self {
+    fn new(cohsums: Vec<CohSum_64>) -> Self {
         Self(rust::amplitude::Model::new(
             cohsums
                 .into_iter()
@@ -934,16 +934,16 @@ impl Model64 {
                 .collect(),
         ))
     }
-    fn get_amplitude(&self, amplitude_name: &str) -> PyResult<Amplitude64> {
+    fn get_amplitude(&self, amplitude_name: &str) -> PyResult<Amplitude_64> {
         self.0
             .get_amplitude(amplitude_name)
-            .map(Amplitude64::from)
+            .map(Amplitude_64::from)
             .map_err(PyErr::from)
     }
-    fn get_parameter(&self, amplitude_name: &str, parameter_name: &str) -> PyResult<Parameter64> {
+    fn get_parameter(&self, amplitude_name: &str, parameter_name: &str) -> PyResult<Parameter_64> {
         self.0
             .get_parameter(amplitude_name, parameter_name)
-            .map(Parameter64::from)
+            .map(Parameter_64::from)
             .map_err(PyErr::from)
     }
     fn print_parameters(&self) {
@@ -997,11 +997,11 @@ impl Model64 {
 
 #[pyclass]
 #[derive(Clone)]
-pub struct Model32(rust::amplitude::Model<f32>);
-impl_convert!(Model32, rust::amplitude::Model<f32>);
+pub struct Model_32(rust::amplitude::Model<f32>);
+impl_convert!(Model_32, rust::amplitude::Model<f32>);
 
 #[pymethods]
-impl Model32 {
+impl Model_32 {
     fn __str__(&self) -> String {
         format!("{}", self.0)
     }
@@ -1009,30 +1009,30 @@ impl Model32 {
         format!("{:?}", self.0)
     }
     #[getter]
-    fn cohsums(&self) -> Vec<CohSum32> {
+    fn cohsums(&self) -> Vec<CohSum_32> {
         self.0
             .clone()
             .cohsums
             .into_iter()
-            .map(CohSum32::from)
+            .map(CohSum_32::from)
             .collect()
     }
     #[getter]
-    fn amplitudes(&self) -> Vec<Amplitude32> {
+    fn amplitudes(&self) -> Vec<Amplitude_32> {
         self.0
             .amplitudes
             .clone()
             .into_iter()
-            .map(Amplitude32::from)
+            .map(Amplitude_32::from)
             .collect()
     }
     #[getter]
-    fn parameters(&self) -> Vec<Parameter32> {
+    fn parameters(&self) -> Vec<Parameter_32> {
         self.0
             .parameters
             .clone()
             .into_iter()
-            .map(Parameter32::from)
+            .map(Parameter_32::from)
             .collect()
     }
     #[getter]
@@ -1048,7 +1048,7 @@ impl Model32 {
         self.0.get_n_free()
     }
     #[new]
-    fn new(cohsums: Vec<CohSum32>) -> Self {
+    fn new(cohsums: Vec<CohSum_32>) -> Self {
         Self(rust::amplitude::Model::new(
             cohsums
                 .into_iter()
@@ -1056,16 +1056,16 @@ impl Model32 {
                 .collect(),
         ))
     }
-    fn get_amplitude(&self, amplitude_name: &str) -> PyResult<Amplitude32> {
+    fn get_amplitude(&self, amplitude_name: &str) -> PyResult<Amplitude_32> {
         self.0
             .get_amplitude(amplitude_name)
-            .map(Amplitude32::from)
+            .map(Amplitude_32::from)
             .map_err(PyErr::from)
     }
-    fn get_parameter(&self, amplitude_name: &str, parameter_name: &str) -> PyResult<Parameter32> {
+    fn get_parameter(&self, amplitude_name: &str, parameter_name: &str) -> PyResult<Parameter_32> {
         self.0
             .get_parameter(amplitude_name, parameter_name)
-            .map(Parameter32::from)
+            .map(Parameter_32::from)
             .map_err(PyErr::from)
     }
     fn print_parameters(&self) {
@@ -1117,63 +1117,63 @@ impl Model32 {
     }
 }
 
-#[pyfunction(name = "Scalar64")]
-fn scalar64(name: &str) -> Amplitude64 {
+#[pyfunction]
+fn Scalar_64(name: &str) -> Amplitude_64 {
     rust::amplitude::scalar(name).into()
 }
-#[pyfunction(name = "CScalar64")]
-fn cscalar64(name: &str) -> Amplitude64 {
+#[pyfunction]
+fn CScalar_64(name: &str) -> Amplitude_64 {
     rust::amplitude::cscalar(name).into()
 }
-#[pyfunction(name = "PCScalar64")]
-fn pcscalar64(name: &str) -> Amplitude64 {
+#[pyfunction]
+fn PCScalar_64(name: &str) -> Amplitude_64 {
     rust::amplitude::pcscalar(name).into()
 }
-#[pyfunction(name = "PiecewiseM64")]
-pub fn piecewise_m64(name: &str, bins: usize, range: (f64, f64)) -> Amplitude64 {
+#[pyfunction]
+pub fn PiecewiseM_64(name: &str, bins: usize, range: (f64, f64)) -> Amplitude_64 {
     rust::amplitude::piecewise_m(name, bins, range).into()
 }
-#[pyfunction(name = "Scalar32")]
-fn scalar32(name: &str) -> Amplitude32 {
+#[pyfunction]
+fn Scalar_32(name: &str) -> Amplitude_32 {
     rust::amplitude::scalar(name).into()
 }
-#[pyfunction(name = "CScalar32")]
-fn cscalar32(name: &str) -> Amplitude32 {
+#[pyfunction]
+fn CScalar_32(name: &str) -> Amplitude_32 {
     rust::amplitude::cscalar(name).into()
 }
-#[pyfunction(name = "PCScalar32")]
-fn pcscalar32(name: &str) -> Amplitude32 {
+#[pyfunction]
+fn PCScalar_32(name: &str) -> Amplitude_32 {
     rust::amplitude::pcscalar(name).into()
 }
-#[pyfunction(name = "PiecewiseM32")]
-pub fn piecewise_m32(name: &str, bins: usize, range: (f32, f32)) -> Amplitude32 {
+#[pyfunction]
+pub fn PiecewiseM_32(name: &str, bins: usize, range: (f32, f32)) -> Amplitude_32 {
     rust::amplitude::piecewise_m(name, bins, range).into()
 }
 
 pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<Amplitude64>()?;
-    m.add_class::<Amplitude32>()?;
-    m.add_class::<Real64>()?;
-    m.add_class::<Real32>()?;
-    m.add_class::<Imag64>()?;
-    m.add_class::<Imag32>()?;
-    m.add_class::<Product64>()?;
-    m.add_class::<Product32>()?;
-    m.add_class::<Parameter64>()?;
-    m.add_class::<Parameter32>()?;
-    m.add_class::<CohSum64>()?;
-    m.add_class::<CohSum32>()?;
-    m.add_class::<Model64>()?;
-    m.add_class::<Model32>()?;
-    m.add_class::<PyNode64>()?;
-    m.add_class::<PyNode32>()?;
-    m.add_function(wrap_pyfunction!(scalar64, m)?)?;
-    m.add_function(wrap_pyfunction!(scalar32, m)?)?;
-    m.add_function(wrap_pyfunction!(cscalar64, m)?)?;
-    m.add_function(wrap_pyfunction!(cscalar32, m)?)?;
-    m.add_function(wrap_pyfunction!(pcscalar64, m)?)?;
-    m.add_function(wrap_pyfunction!(pcscalar32, m)?)?;
-    m.add_function(wrap_pyfunction!(piecewise_m64, m)?)?;
-    m.add_function(wrap_pyfunction!(piecewise_m32, m)?)?;
+    m.add_class::<Amplitude_64>()?;
+    m.add_class::<Amplitude_32>()?;
+    m.add_class::<Real_64>()?;
+    m.add_class::<Real_32>()?;
+    m.add_class::<Imag_64>()?;
+    m.add_class::<Imag_32>()?;
+    m.add_class::<Product_64>()?;
+    m.add_class::<Product_32>()?;
+    m.add_class::<Parameter_64>()?;
+    m.add_class::<Parameter_32>()?;
+    m.add_class::<CohSum_64>()?;
+    m.add_class::<CohSum_32>()?;
+    m.add_class::<Model_64>()?;
+    m.add_class::<Model_32>()?;
+    m.add_class::<PyNode_64>()?;
+    m.add_class::<PyNode_32>()?;
+    m.add_function(wrap_pyfunction!(Scalar_64, m)?)?;
+    m.add_function(wrap_pyfunction!(Scalar_32, m)?)?;
+    m.add_function(wrap_pyfunction!(CScalar_64, m)?)?;
+    m.add_function(wrap_pyfunction!(CScalar_32, m)?)?;
+    m.add_function(wrap_pyfunction!(PCScalar_64, m)?)?;
+    m.add_function(wrap_pyfunction!(PCScalar_32, m)?)?;
+    m.add_function(wrap_pyfunction!(PiecewiseM_64, m)?)?;
+    m.add_function(wrap_pyfunction!(PiecewiseM_32, m)?)?;
     Ok(())
 }
