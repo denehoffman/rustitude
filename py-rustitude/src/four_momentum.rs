@@ -1,57 +1,100 @@
+use crate::impl_convert;
 use pyo3::prelude::*;
 use rustitude_core::four_momentum as rust;
-use rustitude_core::Field;
 
 #[pyclass]
 #[derive(Debug, Clone, PartialEq, Copy, Default)]
-pub struct FourMomentum(rust::FourMomentum);
-
-impl From<FourMomentum> for rust::FourMomentum {
-    fn from(p4: FourMomentum) -> Self {
-        p4.0
-    }
-}
-impl From<rust::FourMomentum> for FourMomentum {
-    fn from(p4: rust::FourMomentum) -> Self {
-        FourMomentum(p4)
-    }
-}
+pub struct FourMomentum64(rust::FourMomentum<f64>);
+impl_convert!(FourMomentum64, rust::FourMomentum<f64>);
 
 #[pymethods]
-impl FourMomentum {
+impl FourMomentum64 {
     #[new]
-    pub fn new(e: Field, px: Field, py: Field, pz: Field) -> Self {
+    pub fn new(e: f64, px: f64, py: f64, pz: f64) -> Self {
         Self(rust::FourMomentum::new(e, px, py, pz))
     }
     fn __repr__(&self) -> String {
-        format!("<FourMomentum ({})>", self.0)
+        format!("<FourMomentum (64-bit) ({})>", self.0)
     }
 
     fn __str__(&self) -> String {
         self.0.to_string()
     }
     #[getter]
-    fn e(&self) -> Field {
+    fn e(&self) -> f64 {
         self.0.e()
     }
     #[getter]
-    fn px(&self) -> Field {
+    fn px(&self) -> f64 {
         self.0.px()
     }
     #[getter]
-    fn py(&self) -> Field {
+    fn py(&self) -> f64 {
         self.0.py()
     }
     #[getter]
-    fn pz(&self) -> Field {
+    fn pz(&self) -> f64 {
         self.0.pz()
     }
     #[getter]
-    fn m(&self) -> Field {
+    fn m(&self) -> f64 {
         self.0.m()
     }
     #[getter]
-    fn m2(&self) -> Field {
+    fn m2(&self) -> f64 {
+        self.0.m2()
+    }
+    fn boost_along(&self, other: Self) -> Self {
+        self.0.boost_along(&other.into()).into()
+    }
+    fn __add__(&self, other: Self) -> Self {
+        (self.0 + other.0).into()
+    }
+    fn __sub__(&self, other: Self) -> Self {
+        (self.0 - other.0).into()
+    }
+}
+
+#[pyclass]
+#[derive(Debug, Clone, PartialEq, Copy, Default)]
+pub struct FourMomentum32(rust::FourMomentum<f32>);
+impl_convert!(FourMomentum32, rust::FourMomentum<f32>);
+
+#[pymethods]
+impl FourMomentum32 {
+    #[new]
+    pub fn new(e: f32, px: f32, py: f32, pz: f32) -> Self {
+        Self(rust::FourMomentum::new(e, px, py, pz))
+    }
+    fn __repr__(&self) -> String {
+        format!("<FourMomentum (32-bit) ({})>", self.0)
+    }
+
+    fn __str__(&self) -> String {
+        self.0.to_string()
+    }
+    #[getter]
+    fn e(&self) -> f32 {
+        self.0.e()
+    }
+    #[getter]
+    fn px(&self) -> f32 {
+        self.0.px()
+    }
+    #[getter]
+    fn py(&self) -> f32 {
+        self.0.py()
+    }
+    #[getter]
+    fn pz(&self) -> f32 {
+        self.0.pz()
+    }
+    #[getter]
+    fn m(&self) -> f32 {
+        self.0.m()
+    }
+    #[getter]
+    fn m2(&self) -> f32 {
         self.0.m2()
     }
     fn boost_along(&self, other: Self) -> Self {
@@ -66,6 +109,7 @@ impl FourMomentum {
 }
 
 pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<FourMomentum>()?;
+    m.add_class::<FourMomentum64>()?;
+    m.add_class::<FourMomentum32>()?;
     Ok(())
 }
