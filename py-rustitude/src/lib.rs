@@ -5,7 +5,21 @@ mod four_momentum;
 mod gluex;
 mod manager;
 
-#[allow(deprecated)]
+#[macro_export]
+macro_rules! impl_convert {
+    ($a:ty, $b:ty) => {
+        impl From<$b> for $a {
+            fn from(value: $b) -> Self {
+                Self(value)
+            }
+        }
+        impl From<$a> for $b {
+            fn from(value: $a) -> Self {
+                value.0
+            }
+        }
+    };
+}
 
 pub fn add_submodule<F>(parent: &Bound<'_, PyModule>, name: &str, mod_init: F) -> PyResult<()>
 where

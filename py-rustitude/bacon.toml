@@ -42,12 +42,10 @@ command = [
     "test",
     "--color",
     "always",
-    "-F",
-    "intel-mkl-static",
     "--",
     "--nocapture",
     "--color",
-    "always",           # see https://github.com/Canop/bacon/issues/124
+    "always",      # see https://github.com/Canop/bacon/issues/124
 ]
 need_stdout = true
 
@@ -76,8 +74,6 @@ command = [
     "--release",
     "--color",
     "always",
-    "-F",
-    "intel-mkl-static",
     "--timings",
     # put launch parameters for your program behind a `--` separator
 ]
