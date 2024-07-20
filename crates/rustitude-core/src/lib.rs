@@ -6,10 +6,10 @@
 //! repo](https://github.com/denehoffman/rustitude) for more information on the Python API.
 //!
 //! The three core principles of `rustitude-core` are:
-//! 1. Parallelization over events is automatically handeled by a [`Manager`](crate::manager::Manager).
+//! 1. Parallelization over events is automatically handeled by a [`Manager`](`crate::manager::Manager`).
 //! 2. Amplitudes are written to do as much work as possible ahead of time, and evaluations use
 //!    caching as much as possible automatically.
-//! 3. Developers just need to implement the [`Node`](crate::amplitude::Node) trait to write a new
+//! 3. Developers just need to implement the [`Node`](`crate::amplitude::Node`) trait to write a new
 //!    amplitude, everything else is handled by the crate.
 //!
 //! ## Table of Contents
@@ -22,8 +22,8 @@
 //!
 //! # Dataset Structure
 //!
-//! A [`Dataset`](crate::dataset::Dataset) is essentially just a wrapper for a [`Vec`] of
-//! [`Event`](crate::dataset::Event)s. The current [`Event`](crate::dataset::Event) structure is as follows:
+//! A [`Dataset`](`crate::dataset::Dataset`) is essentially just a wrapper for a [`Vec`] of
+//! [`Event`](`crate::dataset::Event`)s. The current [`Event`](`crate::dataset::Event`) structure is as follows:
 //!
 //! ```ignore
 //! pub struct Event {
@@ -36,12 +36,12 @@
 //! }
 //! ```
 //!
-//! In the Rust API, we can create [`Dataset`](crate::dataset::Dataset)s from `ROOT` files as well as
+//! In the Rust API, we can create [`Dataset`](`crate::dataset::Dataset`)s from `ROOT` files as well as
 //! `Parquet` files. `ROOT` file reading is done through [`oxyroot`] - This still has some issues,
 //! and large files or files with user metadata might fail to load. The alternative `Parquet`
 //! format can be obtained from a `ROOT` file by using a conversion script like the one provided
 //! [here](https://github.com/denehoffman/rustitude/blob/main/bin/convert). By default, we expect
-//! all of the [`Event`](crate::dataset::Event) fields to be mirrored as the following branches:
+//! all of the [`Event`](`crate::dataset::Event`) fields to be mirrored as the following branches:
 //!
 //! | Branch Name | Data Type | Notes |
 //! |---|---|---|
@@ -68,27 +68,30 @@
 //! Because the beam is often directed along the $`z`$-axis, there is an alternative way to store
 //! the `EPS` vector without a new branch (for linear polarization. The $`x`$ and $`y`$ components
 //! of `EPS` can be stored as `Px_Beam` and `Py_Beam` respectively, and the format can be loaded
-//! using [`Dataset::from_parquet_eps_in_beam`](crate::dataset::Dataset::from_parquet_eps_in_beam).
+//! using [`Dataset::from_parquet_eps_in_beam`](`crate::dataset::Dataset::from_parquet_eps_in_beam`).
 //!
 //! # Creating a New Amplitude
 //!
 //! To make a new amplitude, we will first create a new struct and then implement
-//! [`Node`](crate::amplitude::Node). Let's start with a trivial example, an amplitude which returns a
+//! [`Node`](`crate::amplitude::Node`). Let's start with a trivial example, an amplitude which returns a
 //! complex scalar. This particular amplitude is already implemented as a convenience struct called
-//! [`ComplexScalar`](crate::amplitude::ComplexScalar).
+//! [`ComplexScalar`](`crate::amplitude::ComplexScalar`).
 //!
 //! ```ignore
-//! use rustitude_core::prelude::*
-//! struct ComplexScalar;
-//! impl Node for ComplexScalar {
-//!     fn calculate(&self, parameters: &[f32], _event: &Event) -> Result<Complex32, RustitudeError> {
-//!         Ok(Complex32::new(parameters[0], parameters[1]))
+//! use rustitude_core::prelude::*;
+//!
+//! #[derive(Clone)]
+//! pub struct ComplexScalar;
+//! impl<F: Field> Node<F> for ComplexScalar {
+//!     fn calculate(&self, parameters: &[F], _event: &Event<F>) -> Result<Complex<F>, RustitudeError> {
+//!         Ok(Complex::new(parameters[0], parameters[1]))
 //!     }
 //!
 //!     fn parameters(&self) -> Vec<String> {
 //!         vec!["real".to_string(), "imag".to_string()]
 //!     }
 //! }
+//!
 //! ```
 //!
 //! For a second example, we can look at the precalculation feature. Here's an Dalitz-like
@@ -97,18 +100,17 @@
 //! use rayon::prelude::*;
 //! use rustitude_core::prelude::*;
 //!
-//! #[derive(Default)]
-//! pub struct OmegaDalitz {
-//!     dalitz_z: Vec<f32>,
-//!     dalitz_sin3theta: Vec<f32>,
-//!     lambda: Vec<f32>,
+//! #[derive(Default, Clone)]
+//! pub struct OmegaDalitz<F: Field> {
+//!     dalitz_z: Vec<F>,
+//!     dalitz_sin3theta: Vec<F>,
+//!     lambda: Vec<F>,
 //! }
 //!
-//! impl Node for OmegaDalitz {
-//!     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
+//! impl<F: Field> Node<F> for OmegaDalitz<F> {
+//!     fn precalculate(&mut self, dataset: &Dataset<F>) -> Result<(), RustitudeError> {
 //!         (self.dalitz_z, (self.dalitz_sin3theta, self.lambda)) = dataset
 //!             .events
-//!             .read()
 //!             .par_iter()
 //!             .map(|event| {
 //!                 let pi0 = event.daughter_p4s[0];
@@ -120,21 +122,22 @@
 //!                 let dalitz_t = (pip + pi0).m2();
 //!                 let dalitz_u = (pim + pi0).m2();
 //!
-//!                 let m3pi = (2.0 * pip.m()) + pi0.m();
-//!                 let dalitz_d = 2.0 * omega.m() * (omega.m() - m3pi);
-//!                 let dalitz_sc = (1.0 / 3.0) * (omega.m2() + pip.m2() + pim.m2() + pi0.m2());
-//!                 let dalitz_x = f32::sqrt(3.0) * (dalitz_t - dalitz_u) / dalitz_d;
-//!                 let dalitz_y = 3.0 * (dalitz_sc - dalitz_s) / dalitz_d;
+//!                 let m3pi = (F::TWO * pip.m()) + pi0.m();
+//!                 let dalitz_d = F::TWO * omega.m() * (omega.m() - m3pi);
+//!                 let dalitz_sc = (F::ONE / F::THREE) * (omega.m2() + pip.m2() + pim.m2() + pi0.m2());
+//!                 let dalitz_x = F::fsqrt(F::THREE) * (dalitz_t - dalitz_u) / dalitz_d;
+//!                 let dalitz_y = F::THREE * (dalitz_sc - dalitz_s) / dalitz_d;
 //!
 //!                 let dalitz_z = dalitz_x * dalitz_x + dalitz_y * dalitz_y;
-//!                 let dalitz_sin3theta = f32::sin(3.0 * f32::asin(dalitz_y / f32::sqrt(dalitz_z)));
+//!                 let dalitz_sin3theta = F::fsin(F::THREE * F::fasin(dalitz_y / F::fsqrt(dalitz_z)));
 //!
 //!                 let pip_omega = pip.boost_along(&omega);
 //!                 let pim_omega = pim.boost_along(&omega);
 //!                 let pi_cross = pip_omega.momentum().cross(&pim_omega.momentum());
 //!
-//!                 let lambda = (4.0 / 3.0) * f32::abs(pi_cross.dot(&pi_cross))
-//!                     / ((1.0 / 9.0) * (omega.m2() - (2.0 * pip.m() + pi0.m()).powi(2)).powi(2));
+//!                 let lambda = (F::FOUR / F::THREE) * F::fabs(pi_cross.dot(&pi_cross))
+//!                     / ((F::ONE / F::NINE)
+//!                         * (omega.m2() - (F::TWO * pip.m() + pi0.m()).fpowi(2)).fpowi(2));
 //!
 //!                 (dalitz_z, (dalitz_sin3theta, lambda))
 //!             })
@@ -142,7 +145,7 @@
 //!         Ok(())
 //!     }
 //!
-//!     fn calculate(&self, parameters: &[f32], event: &Event) -> Result<Complex32, RustitudeError> {
+//!     fn calculate(&self, parameters: &[F], event: &Event<F>) -> Result<Complex<F>, RustitudeError> {
 //!         let dalitz_z = self.dalitz_z[event.index];
 //!         let dalitz_sin3theta = self.dalitz_sin3theta[event.index];
 //!         let lambda = self.lambda[event.index];
@@ -150,13 +153,13 @@
 //!         let beta = parameters[1];
 //!         let gamma = parameters[2];
 //!         let delta = parameters[3];
-//!         Ok(f32::sqrt(f32::abs(
+//!         Ok(F::fsqrt(F::fabs(
 //!             lambda
-//!                 * (1.0
-//!                     + 2.0 * alpha * dalitz_z
-//!                     + 2.0 * beta * dalitz_z.powf(3.0 / 2.0) * dalitz_sin3theta
-//!                     + 2.0 * gamma * dalitz_z.powi(2)
-//!                     + 2.0 * delta * dalitz_z.powf(5.0 / 2.0) * dalitz_sin3theta),
+//!                 * (F::ONE
+//!                     + F::TWO * alpha * dalitz_z
+//!                     + F::TWO * beta * dalitz_z.fpowf(F::THREE / F::TWO) * dalitz_sin3theta
+//!                     + F::TWO * gamma * dalitz_z.fpowi(2)
+//!                     + F::TWO * delta * dalitz_z.fpowf(F::FIVE / F::TWO) * dalitz_sin3theta),
 //!         ))
 //!         .into())
 //!     }
@@ -171,6 +174,23 @@
 //!     }
 //! }
 //! ```
+//! Note several of the generic features which allow this amplitude to be used with different
+//! numeric data types. Because it isn't specifically written for 64-bit floats (`f64`s), we can
+//! conduct analyses that use the same code with 32-bit floats (`f32`s), which saves on memory and
+//! time while sacrificing a bit of precision. In fact, we can go a step further and conduct the
+//! majority of an analysis in 32-bit mode, switching over to 64-bit mode when we actually get near
+//! a solution and want the increased accuracy!
+//!
+//! The [`Field`] trait contains a few helper constants and functions to make this easier for those
+//! who aren't as familiar with rust. Constants are provided for whole numbers between zero and ten
+//! (inclusively), and the [`Field`] trait also contains a few mathematical constants like
+//! [`Field::PI()`][`num::traits::FloatConst::PI()`] and
+//! [`Field::SQRT_2()`][`num::traits::FloatConst::SQRT_2()`]. Most mathematical functions are
+//! aliased with a leading "f" to simplify duplicated function definitions in the [`num::Float`]
+//! and [`nalgebra::RealField`] traits. For instance, [`Field::fabs()`] calls
+//! [`num::Float::abs()`], since the alternative would be to use the fully qualified name to
+//! distinguish it from [`nalgebra::ComplexField::abs()`].
+//!
 //! # Combining Amplitudes into Models
 //! We can use several operations to modify and combine amplitudes. Since amplitudes yield complex
 //! values, the following convenience methods are provided:
@@ -208,7 +228,7 @@
 //! impl Node for OmegaDalitz { ... }
 //!
 //! let complex_term = cscalar("my complex scalar");
-//! let omega_dalitz = amplitude!("omega dalitz", OmegaDalitz::default());
+//! let omega_dalitz = Amplitude::new("omega dalitz", OmegaDalitz::default());
 //! let term = (complex_term * omega_dalitz).norm_sqr();
 //! term.print_tree();
 //! // [ norm sqr ]
@@ -224,22 +244,22 @@
 //! identified solely by their name and the name of the amplitude they are associated with. This
 //! means that two amplitudes with the same name will share parameters which also have the same
 //! name. If we want to intentionally set one parameter in a particular amplitude equal to another,
-//! we can use the [`Model::constrain`](crate::amplitude::Model::constrain). This will reduce the
+//! we can use the [`Model::constrain`](`crate::amplitude::Model::constrain`). This will reduce the
 //! number of free parameters in the fit, and will yield a
-//! [`RustitudeError`](crate::errors::RustitudeError) if either of the parameters is not found.
-//! Parameters can also be fixed and freed using [`Model::fix`](crate::amplitude::Model::fix) and
-//! [`Model::free`](crate::amplitude::Model::free) respectively, and these methods are mirrored in
-//! [`Manager`](crate::manager::Manager) and
-//! [`ExtendedLogLikelihood`](crate::manager::ExtendedLogLikelihood) for convenience.
+//! [`RustitudeError`](`crate::errors::RustitudeError`) if either of the parameters is not found.
+//! Parameters can also be fixed and freed using [`Model::fix`](`crate::amplitude::Model::fix`) and
+//! [`Model::free`](`crate::amplitude::Model::free`) respectively, and these methods are mirrored in
+//! [`Manager`](`crate::manager::Manager`) and
+//! [`ExtendedLogLikelihood`](`crate::manager::ExtendedLogLikelihood`) for convenience.
 //!
 //! # Evaluating Likelihoods
 //!
 //! If we wanted to obtain the negative log-likelihood for this particular amplitude, we need to
-//! link our [`Model`](crate::amplitude::Model) to a [`Dataset`](crate::dataset::Dataset). This is done using a
-//! [`Manager`](crate::manager::Manager). Finally, two [`Manager`](crate::manager::Manager)s may be combined into an
-//! [`ExtendedLogLikelihood`](crate::manager::ExtendedLogLikelihood). Both of these manager-like structs have an
+//! link our [`Model`](`crate::amplitude::Model`) to a [`Dataset`](`crate::dataset::Dataset`). This is done using a
+//! [`Manager`](`crate::manager::Manager``). Finally, two [`Manager`](`crate::manager::Manager``)s may be combined into an
+//! [`ExtendedLogLikelihood`](`crate::manager::ExtendedLogLikelihood`). Both of these manager-like structs have an
 //! `evaluate` method that takes some parameters as a `&[f32]` (along with a [`usize`] for the
-//! number of threads to use for the [`ExtendedLogLikelihood`](crate::manager::ExtendedLogLikelihood)).
+//! number of threads to use for the [`ExtendedLogLikelihood`](`crate::manager::ExtendedLogLikelihood`)).
 //!
 //! ```ignore
 //! use rustitude_core::prelude::*;
@@ -249,7 +269,7 @@
 //! impl Node for OmegaDalitz { ... }
 //!
 //! let complex_term = cscalar("my complex scalar");
-//! let omega_dalitz = amplitude!("omega dalitz", OmegaDalitz::default());
+//! let omega_dalitz = Amplitude::new("omega dalitz", OmegaDalitz::default());
 //! let term = (complex_term * omega_dalitz).norm_sqr();
 //! let model = Model::new(term);
 //! let dataset = Dataset::from_parquet("path/to/file.parquet").unwrap();
