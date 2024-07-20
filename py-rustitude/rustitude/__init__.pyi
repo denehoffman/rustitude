@@ -208,6 +208,8 @@ class Model_64:
     cohsums: list[CohSum_64]
     amplitudes: list[Amplitude_64]
     parameters: list[Parameter_64]
+    free_parameters: list[Parameter_64]
+    fixed_parameters: list[Parameter_64]
     bounds: list[tuple[float, float]]
     initial: list[float]
     n_free: int
@@ -234,6 +236,8 @@ class Model_32:
     cohsums: list[CohSum_32]
     amplitudes: list[Amplitude_32]
     parameters: list[Parameter_32]
+    free_parameters: list[Parameter_32]
+    fixed_parameters: list[Parameter_32]
     bounds: list[tuple[float, float]]
     initial: list[float]
     n_free: int
@@ -468,6 +472,8 @@ class Manager_64:
     root: Amplitude_64
     amplitudes: list[Amplitude_64]
     parameters: list[Parameter_64]
+    free_parameters: list[Parameter_64]
+    fixed_parameters: list[Parameter_64]
     bounds: list[tuple[float, float]]
     initial: list[float]
     n_free: int
@@ -497,6 +503,8 @@ class Manager_32:
     root: Amplitude_32
     amplitudes: list[Amplitude_32]
     parameters: list[Parameter_32]
+    free_parameters: list[Parameter_32]
+    fixed_parameters: list[Parameter_32]
     bounds: list[tuple[float, float]]
     initial: list[float]
     n_free: int
@@ -528,6 +536,8 @@ class ExtendedLogLikelihood_64:
     root: Amplitude_64
     amplitudes: list[Amplitude_64]
     parameters: list[Parameter_64]
+    free_parameters: list[Parameter_64]
+    fixed_parameters: list[Parameter_64]
     bounds: list[tuple[float, float]]
     initial: list[float]
     n_free: int
@@ -577,6 +587,8 @@ class ExtendedLogLikelihood_32:
     root: Amplitude_32
     amplitudes: list[Amplitude_32]
     parameters: list[Parameter_32]
+    free_parameters: list[Parameter_32]
+    fixed_parameters: list[Parameter_32]
     bounds: list[tuple[float, float]]
     initial: list[float]
     n_free: int

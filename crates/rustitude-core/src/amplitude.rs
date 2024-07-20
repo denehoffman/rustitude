@@ -64,6 +64,16 @@ impl<F: Field> Parameter<F> {
             bounds: (F::NEG_INFINITY, F::INFINITY),
         }
     }
+
+    /// Returns `true` if the [`Parameter`] is free, `false` otherwise.
+    pub const fn is_free(&self) -> bool {
+        self.index.is_some()
+    }
+
+    /// Returns `true` if the [`Parameter`] is fixed, `false` otherwise.
+    pub const fn is_fixed(&self) -> bool {
+        self.index.is_none()
+    }
 }
 
 impl<F: Field> Debug for Parameter<F> {
@@ -891,6 +901,25 @@ impl<F: Field> Model<F> {
             );
         }
     }
+
+    /// Returns a [`Vec<Parameter<F>>`] containing the free parameters in the [`Model`].
+    pub fn free_parameters(&self) -> Vec<Parameter<F>> {
+        self.parameters
+            .iter()
+            .filter(|p| p.is_free())
+            .cloned()
+            .collect()
+    }
+
+    /// Returns a [`Vec<Parameter<F>>`] containing the fixed parameters in the [`Model`].
+    pub fn fixed_parameters(&self) -> Vec<Parameter<F>> {
+        self.parameters
+            .iter()
+            .filter(|p| p.is_fixed())
+            .cloned()
+            .collect()
+    }
+
     /// Constrains two [`Parameter`]s in the [`Model`] to be equal to each other when evaluated.
     ///
     /// # Errors

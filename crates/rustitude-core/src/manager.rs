@@ -211,6 +211,20 @@ impl<F: Field> Manager<F> {
         self.model.print_parameters()
     }
 
+    /// Returns a [`Vec<Parameter<F>>`] containing the free parameters in the [`Model`].
+    ///
+    /// See [`Model::free_parameters`] for more information.
+    pub fn free_parameters(&self) -> Vec<Parameter<F>> {
+        self.model.free_parameters()
+    }
+
+    /// Returns a [`Vec<Parameter<F>>`] containing the fixed parameters in the [`Model`].
+    ///
+    /// See [`Model::fixed_parameters`] for more information.
+    pub fn fixed_parameters(&self) -> Vec<Parameter<F>> {
+        self.model.fixed_parameters()
+    }
+
     /// Constrain two parameters by name, reducing the number of free parameters by one.
     ///
     /// # Errors
@@ -719,6 +733,20 @@ impl<F: Field> ExtendedLogLikelihood<F> {
     /// information.
     pub fn print_parameters(&self) {
         self.data_manager.print_parameters()
+    }
+
+    /// Returns a [`Vec<Parameter<F>>`] containing the free parameters in the data [`Manager`].
+    ///
+    /// See [`Model::free_parameters`] for more information.
+    pub fn free_parameters(&self) -> Vec<Parameter<F>> {
+        self.data_manager.free_parameters()
+    }
+
+    /// Returns a [`Vec<Parameter<F>>`] containing the fixed parameters in the data [`Manager`].
+    ///
+    /// See [`Model::fixed_parameters`] for more information.
+    pub fn fixed_parameters(&self) -> Vec<Parameter<F>> {
+        self.data_manager.fixed_parameters()
     }
 
     /// Constrain two parameters by name, reducing the number of free parameters by one.

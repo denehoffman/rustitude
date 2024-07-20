@@ -64,6 +64,24 @@ impl Manager_64 {
             .collect()
     }
     #[getter]
+    fn free_parameters(&self) -> Vec<Parameter_64> {
+        self.0
+            .model
+            .free_parameters()
+            .into_iter()
+            .map(Parameter_64::from)
+            .collect()
+    }
+    #[getter]
+    fn fixed_parameters(&self) -> Vec<Parameter_64> {
+        self.0
+            .model
+            .fixed_parameters()
+            .into_iter()
+            .map(Parameter_64::from)
+            .collect()
+    }
+    #[getter]
     fn bounds(&self) -> Vec<(f64, f64)> {
         self.0.get_bounds()
     }
@@ -229,6 +247,24 @@ impl Manager_32 {
             .model
             .parameters
             .clone()
+            .into_iter()
+            .map(Parameter_32::from)
+            .collect()
+    }
+    #[getter]
+    fn free_parameters(&self) -> Vec<Parameter_32> {
+        self.0
+            .model
+            .free_parameters()
+            .into_iter()
+            .map(Parameter_32::from)
+            .collect()
+    }
+    #[getter]
+    fn fixed_parameters(&self) -> Vec<Parameter_32> {
+        self.0
+            .model
+            .fixed_parameters()
             .into_iter()
             .map(Parameter_32::from)
             .collect()
@@ -407,6 +443,22 @@ impl ExtendedLogLikelihood_64 {
             .model
             .parameters
             .clone()
+            .into_iter()
+            .map(Parameter_64::from)
+            .collect()
+    }
+    #[getter]
+    fn free_parameters(&self) -> Vec<Parameter_64> {
+        self.0
+            .free_parameters()
+            .into_iter()
+            .map(Parameter_64::from)
+            .collect()
+    }
+    #[getter]
+    fn fixed_parameters(&self) -> Vec<Parameter_64> {
+        self.0
+            .fixed_parameters()
             .into_iter()
             .map(Parameter_64::from)
             .collect()
@@ -664,6 +716,22 @@ impl ExtendedLogLikelihood_32 {
             .model
             .parameters
             .clone()
+            .into_iter()
+            .map(Parameter_32::from)
+            .collect()
+    }
+    #[getter]
+    fn free_parameters(&self) -> Vec<Parameter_32> {
+        self.0
+            .free_parameters()
+            .into_iter()
+            .map(Parameter_32::from)
+            .collect()
+    }
+    #[getter]
+    fn fixed_parameters(&self) -> Vec<Parameter_32> {
+        self.0
+            .fixed_parameters()
             .into_iter()
             .map(Parameter_32::from)
             .collect()
