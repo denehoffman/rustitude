@@ -70,14 +70,16 @@ Models have similar methods for managing parameters and amplitudes:
 .. code-block:: python
 
     class Model:
-        cohsums: list[CohSum]
+        cohsums: list[NormSqr]
         amplitudes: list[Amplitude]
         parameters: list[Parameter]
+        fixed_parameters: list[Parameter]
+        free_parameters: list[Parameter]
         bounds: list[tuple[float, float]]
         initial: list[float]
         n_free: int
 
-        def __init__(self, cohsums: list[CohSum]) -> None: ...
+        def __init__(self, cohsums: list[Amplitude | Real | Imag | Product | Sum]) -> None: ...
         def get_parameter(self, amplitude_name: str, parameter_name: str) -> Parameter | None: ...
         def print_parameters(self) -> None: ...
         def constrain(self, amplitude_1: str, parameter_1: str, amplitude_2: str, parameter_2: str) -> None: ...
