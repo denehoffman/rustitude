@@ -290,6 +290,15 @@ pub trait Node<F: Field>: Sync + Send + DynClone {
         Amplitude::new(name, self)
     }
 
+    /// A convenience method for turning [`Node`]s into [`Amplitude`]s. This method has a
+    /// shorter name than [`Node::into_amplitude`], which it calls.
+    fn named(self, name: &str) -> Amplitude<F>
+    where
+        Self: std::marker::Sized + 'static,
+    {
+        self.into_amplitude(name)
+    }
+
     /// A flag which says if the [`Node`] was written in Python. This matters because the GIL
     /// cannot currently play nice with [`rayon`] multithreading. You will probably never need to
     /// set this, as the only object which returns `True` is in the `py_rustitude` crate which
