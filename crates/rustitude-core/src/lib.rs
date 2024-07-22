@@ -291,9 +291,61 @@
 //! data. Here's an example to show how that might be accomplished:
 //!
 //! ```ignore
-//! use rustitude_core::prelude::*
-//! use rustitude_gluex::resonances::BreitWigner;
+//! use ganesh::algorithms::NelderMead;
+//! use ganesh::prelude::*;
+//! use rustitude::gluex::harmonics::Zlm;
+//! use rustitude::gluex::{
+//!     resonances::BreitWigner,
+//!     utils::{Frame, Reflectivity, Wave},
+//! };
+//! use rustitude::prelude::*;
+//! fn main() -> Result<(), RustitudeError> {
+//!     let a2_1320 = BreitWigner::new(&[0], &[1], 2).named("a2_1320");
+//!     let a2_1700 = BreitWigner::new(&[0], &[1], 2).named("a2_1700");
+//!     let pw_s_wave = piecewise_m("pw_s_wave", 40, (1.04, 1.72));
+//!     let zlm_s0p = Zlm::new(Wave::S0, Reflectivity::Positive, Frame::Helicity).named("zlm_s0p");
+//!     let zlm_s0n = Zlm::new(Wave::S0, Reflectivity::Negative, Frame::Helicity).named("zlm_s0n");
+//!     let zlm_dn2p = Zlm::new(Wave::Dn2, Reflectivity::Positive, Frame::Helicity).named("zlm_dn2p");
+//!     let zlm_dn1p = Zlm::new(Wave::Dn1, Reflectivity::Positive, Frame::Helicity).named("zlm_dn1p");
+//!     let zlm_d0p = Zlm::new(Wave::D0, Reflectivity::Positive, Frame::Helicity).named("zlm_d0p");
+//!     let zlm_d1p = Zlm::new(Wave::D1, Reflectivity::Positive, Frame::Helicity).named("zlm_d1p");
+//!     let zlm_d2p = Zlm::new(Wave::D2, Reflectivity::Positive, Frame::Helicity).named("zlm_d2p");
+//!     let zlm_dn2n = Zlm::new(Wave::Dn2, Reflectivity::Negative, Frame::Helicity).named("zlm_dn2n");
+//!     let zlm_dn1n = Zlm::new(Wave::Dn1, Reflectivity::Negative, Frame::Helicity).named("zlm_dn1n");
+//!     let zlm_d0n = Zlm::new(Wave::D0, Reflectivity::Negative, Frame::Helicity).named("zlm_d0n");
+//!     let zlm_d1n = Zlm::new(Wave::D1, Reflectivity::Negative, Frame::Helicity).named("zlm_d1n");
+//!     let zlm_d2n = Zlm::new(Wave::D2, Reflectivity::Negative, Frame::Helicity).named("zlm_d2n");
+//!     let pos_d_wave = zlm_dn2p + zlm_dn1p + zlm_d0p + zlm_d1p + zlm_d2p;
+//!     let neg_d_wave = zlm_dn2n + zlm_dn1n + zlm_d0n + zlm_d1n + zlm_d2n;
+//!     let pos_real =
+//!         zlm_s0p.real() * &pw_s_wave + &a2_1320 * &pos_d_wave.real() + &a2_1700 * &pos_d_wave.real();
+//!     let pos_imag =
+//!         zlm_s0p.imag() * &pw_s_wave + &a2_1320 * &pos_d_wave.imag() + &a2_1700 * &pos_d_wave.imag();
+//!     let neg_real =
+//!         zlm_s0n.real() * &pw_s_wave + &a2_1320 * &neg_d_wave.real() + &a2_1700 * &neg_d_wave.real();
+//!     let neg_imag =
+//!         zlm_s0n.imag() * &pw_s_wave + &a2_1320 * &neg_d_wave.imag() + &a2_1700 * &neg_d_wave.imag();
+//!     let model = model!(pos_real, pos_imag, neg_real, neg_imag);
+//!     let ds_data = Dataset::from_parquet_eps_in_beam("path/to/data.root")?;
+//!     let ds_accmc = Dataset::from_parquet_eps_in_beam("path/to/accmc.root")?;
+//!     let mut ell = ExtendedLogLikelihood::new(
+//!         Manager::new(&model, &ds_data)?,
+//!         Manager::new(&model, &ds_accmc)?,
+//!     );
+//!     ell.set_initial("a2_1320", "mass", 1.3182)?;
+//!     ell.set_initial("a2_1320", "width", 0.1111)?;
+//!     ell.fix("a2_1700", "mass", 1.698)?;
+//!     ell.fix("a2_1700", "width", 0.265)?;
+//!     ell.fix("pw_s_wave", "bin 10 im", 0.0)?;
 //!
+//!     let mut nm = NelderMead::new(ell.clone(), &ell.get_initial(), None);
+//!     minimize!(nm, 1000)?; // Run 1000 steps
+//!     let (best_pars, best_fx) = nm.best();
+//!     for (par_name, par_value) in ell.free_parameters().iter().zip(best_pars) {
+//!         println!("{} -> {} (NLL = {})", par_name, par_value, best_fx);
+//!     }
+//!     Ok(())
+//! }
 //! ```
 #![warn(
     clippy::nursery,
