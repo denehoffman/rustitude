@@ -301,14 +301,14 @@ pub mod manager;
 /// Recommended namespace for use and development.
 pub mod prelude {
     pub use crate::amplitude::{
-        cscalar, pcscalar, piecewise_m, scalar, AmpLike, Amplitude, AsTree, CohSum, Imag, Model,
-        Node, Parameter, Piecewise, Product, Real,
+        cscalar, pcscalar, piecewise_m, scalar, AmpLike, Amplitude, AsTree, Imag, Model, Node,
+        Parameter, Piecewise, Product, Real, Sum,
     };
     pub use crate::dataset::{Dataset, Event};
     pub use crate::errors::RustitudeError;
     pub use crate::four_momentum::FourMomentum;
     pub use crate::manager::{ExtendedLogLikelihood, Manager};
-    pub use crate::Field;
+    pub use crate::{model, Field};
     // pub use crate::{constants::*, ComplexField, Field};
     pub use nalgebra::{ComplexField, RealField, Vector3};
     pub use num::Complex;
@@ -611,6 +611,14 @@ impl Field for f32 {
     fn convert_u32(x: u32) -> Self {
         x as Self
     }
+}
+
+#[macro_export]
+/// Convenience macro for boxing up coherent sum terms into a [`Model`](`crate::amplitude::Model`).
+macro_rules! model {
+    ($($term:expr),+ $(,)?) => {
+        Model::new(&[$(Box::new($term),)+])
+    };
 }
 
 pub mod errors {

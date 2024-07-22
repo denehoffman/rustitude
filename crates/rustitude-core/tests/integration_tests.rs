@@ -17,10 +17,10 @@ mod f64_tests {
     fn test_activation() -> Result<(), RustitudeError> {
         let event = generate_test_event_f64();
         let dataset = Dataset::new(vec![event]);
-        let model = Model::new(vec![
+        let model = model!(
             scalar("a") + scalar("b"),
             scalar("c") * scalar("d") + scalar("e"),
-        ]);
+        );
         let mut manager = Manager::new(&model, &dataset)?;
         // |(1 + 10)|^2 + |(100 * 2 + 1000)|^2 = 1440121
         assert_is_close!(
@@ -68,6 +68,17 @@ mod f64_tests {
         );
         Ok(())
     }
+    #[test]
+    fn test_distribution() -> Result<(), RustitudeError> {
+        let event = generate_test_event_f64();
+        let dataset = Dataset::new(vec![event]);
+        let model = model!((scalar("a") + scalar("b")) * scalar("c") + scalar("d"));
+        let manager = Manager::new(&model, &dataset)?;
+        // |(2 + 3) * 4 + 10|^2 = |(2 * 4) + (3 * 4) + 10|^2 = |8 + 12 + 10|^2 = |30|^2 = 900
+        // Note the arguments are "out of order due" to amplitude distribution
+        assert_is_close!(manager.evaluate(&[2.0, 4.0, 3.0, 10.0])?[0], 900.0, f64);
+        Ok(())
+    }
 }
 
 mod f32_tests {
@@ -89,10 +100,10 @@ mod f32_tests {
     fn test_activation() -> Result<(), RustitudeError> {
         let event = generate_test_event_f32();
         let dataset = Dataset::new(vec![event]);
-        let model = Model::new(vec![
+        let model = model!(
             scalar("a") + scalar("b"),
             scalar("c") * scalar("d") + scalar("e"),
-        ]);
+        );
         let mut manager = Manager::new(&model, &dataset)?;
         // |(1 + 10)|^2 + |(100 * 2 + 1000)|^2 = 1440121
         assert_is_close!(
@@ -138,6 +149,17 @@ mod f32_tests {
             1440121.0,
             f32
         );
+        Ok(())
+    }
+    #[test]
+    fn test_distribution() -> Result<(), RustitudeError> {
+        let event = generate_test_event_f32();
+        let dataset = Dataset::new(vec![event]);
+        let model = model!((scalar("a") + scalar("b")) * scalar("c") + scalar("d"));
+        let manager = Manager::new(&model, &dataset)?;
+        // |(2 + 3) * 4 + 10|^2 = |(2 * 4) + (3 * 4) + 10|^2 = |8 + 12 + 10|^2 = |30|^2 = 900
+        // Note the arguments are "out of order due" to amplitude distribution
+        assert_is_close!(manager.evaluate(&[2.0, 4.0, 3.0, 10.0])?[0], 900.0, f32);
         Ok(())
     }
 }

@@ -320,20 +320,12 @@ pub trait AmpLike<F: Field>: Send + Sync + Debug + Display + AsTree + DynClone {
         Product(*dyn_clone::clone_box(als))
     }
 
-    /// Take the coherent sum (absolute square of the sum) of a [`Vec`] of [`Amplitude-like`](`AmpLike`) structs.
-    fn sum(als: &Vec<Box<dyn AmpLike<F>>>) -> CohSum<F>
+    /// Take the sum of a [`Vec`] of [`Amplitude-like`](`AmpLike`) structs.
+    fn sum(als: &Vec<Box<dyn AmpLike<F>>>) -> Sum<F>
     where
         Self: Sized + 'static,
     {
-        CohSum(*dyn_clone::clone_box(als))
-    }
-
-    /// Returns the given [`AmpLike`] as a coherent sum containing only itself.
-    fn as_cohsum(&self) -> CohSum<F>
-    where
-        Self: Sized + 'static,
-    {
-        CohSum(vec![dyn_clone::clone_box(self)])
+        Sum(*dyn_clone::clone_box(als))
     }
 }
 dyn_clone::clone_trait_object!(<F> AmpLike<F>);
@@ -650,27 +642,26 @@ impl<F: Field> AmpLike<F> for Product<F> {
     }
 }
 
-/// Struct to hold a coherent sum of [`AmpLike`]s
+/// An [`AmpLike`] representing the sum of the [`AmpLike`]s it contains.
 #[derive(Clone)]
-pub struct CohSum<F: Field>(pub Vec<Box<dyn AmpLike<F>>>);
-
-impl<F: Field> Debug for CohSum<F> {
+pub struct Sum<F: Field>(pub Vec<Box<dyn AmpLike<F>>>);
+impl<F: Field> Debug for Sum<F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "CohSum [ ")?;
+        write!(f, "Sum [ ")?;
         for op in &self.0 {
             write!(f, "{:?} ", op)?;
         }
         write!(f, "]")
     }
 }
-impl<F: Field> Display for CohSum<F> {
+impl<F: Field> Display for Sum<F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "{}", self.get_tree())
     }
 }
-impl<F: Field> AsTree for CohSum<F> {
+impl<F: Field> AsTree for Sum<F> {
     fn _get_tree(&self, bits: &mut Vec<bool>) -> String {
-        let mut res = String::from("[ + (coh) ]\n");
+        let mut res = String::from("[ + ]\n");
         for (i, op) in self.0.iter().enumerate() {
             res.push_str(&self._get_indent(bits.to_vec()));
             if i == self.0.len() - 1 {
@@ -686,44 +677,91 @@ impl<F: Field> AsTree for CohSum<F> {
         res
     }
 }
-impl<F: Field> CohSum<F> {
-    /// Shortcut for computation using a cache of precomputed values. This method will return
-    /// [`None`] if the cache value at the corresponding [`Amplitude`]'s
-    /// [`Amplitude::cache_position`] is also [`None`], otherwise it just returns the corresponding
-    /// cached value. The computation is run across the [`CohSum`]'s terms, and the absolute square
-    /// of the result is returned (coherent sum).
-    pub fn compute(&self, cache: &[Option<Complex<F>>]) -> Option<F> {
-        Some(
-            self.0
-                .iter()
-                .filter_map(|al| al.compute(cache))
-                .sum::<Complex<F>>()
-                .norm_sqr(),
-        )
+impl<F: Field> AmpLike<F> for Sum<F> {
+    fn get_cloned_terms(&self) -> Option<Vec<Box<dyn AmpLike<F>>>> {
+        Some(self.0.clone())
     }
-
-    /// Walks through a [`CohSum`] and collects all the contained [`Amplitude`]s recursively.
-    pub fn walk(&self) -> Vec<Amplitude<F>> {
+    fn walk(&self) -> Vec<Amplitude<F>> {
         self.0.iter().flat_map(|op| op.walk()).collect()
     }
 
-    /// Walks through an [`CohSum`] and collects all the contained [`Amplitude`]s recursively. This
-    /// method gives mutable access to said [`Amplitude`]s.
-    pub fn walk_mut(&mut self) -> Vec<&mut Amplitude<F>> {
+    fn walk_mut(&mut self) -> Vec<&mut Amplitude<F>> {
         self.0.iter_mut().flat_map(|op| op.walk_mut()).collect()
+    }
+
+    fn compute(&self, cache: &[Option<Complex<F>>]) -> Option<Complex<F>> {
+        let res = Some(
+            self.0
+                .iter()
+                .filter_map(|al| al.compute(cache))
+                .sum::<Complex<F>>(),
+        );
+        debug!(
+            "Computing {:?} from cache: {:?}",
+            self,
+            res.as_ref().map(|c| c.to_string())
+        );
+        res
     }
 }
 
-/// A model contains an API to interact with a group of [`CohSum`]s by managing their amplitudes
+/// Struct to hold a coherent sum of [`AmpLike`]s
+#[derive(Clone)]
+pub struct NormSqr<F: Field>(pub Box<dyn AmpLike<F>>);
+
+impl<F: Field> Debug for NormSqr<F> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "NormSqr[ {:?} ]", self.0)
+    }
+}
+impl<F: Field> Display for NormSqr<F> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}", self.get_tree())
+    }
+}
+impl<F: Field> AsTree for NormSqr<F> {
+    fn _get_tree(&self, bits: &mut Vec<bool>) -> String {
+        let mut res = String::from("[ |_|^2 ]\n");
+        res.push_str(&self._get_indent(bits.to_vec()));
+        res.push_str(&self._get_end());
+        bits.push(false);
+        res.push_str(&self.0._get_tree(&mut bits.clone()));
+        bits.pop();
+        res
+    }
+}
+impl<F: Field> NormSqr<F> {
+    /// Shortcut for computation using a cache of precomputed values. This method will return
+    /// [`None`] if the cache value at the corresponding [`Amplitude`]'s
+    /// [`Amplitude::cache_position`] is also [`None`], otherwise it just returns the corresponding
+    /// cached value. The computation is run across the [`NormSqr`]'s contained term, and the absolute
+    /// square of the result is returned.
+    pub fn compute(&self, cache: &[Option<Complex<F>>]) -> Option<F> {
+        self.0.compute(cache).map(|res| res.norm_sqr())
+    }
+
+    /// Walks through a [`NormSqr`] and collects all the contained [`Amplitude`]s recursively.
+    pub fn walk(&self) -> Vec<Amplitude<F>> {
+        self.0.walk()
+    }
+
+    /// Walks through an [`NormSqr`] and collects all the contained [`Amplitude`]s recursively. This
+    /// method gives mutable access to said [`Amplitude`]s.
+    pub fn walk_mut(&mut self) -> Vec<&mut Amplitude<F>> {
+        self.0.walk_mut()
+    }
+}
+
+/// A model contains an API to interact with a group of coherent sums by managing their amplitudes
 /// and parameters. Models are typically passed to [`Manager`](crate::manager::Manager)-like
 /// struct.
 #[derive(Clone)]
 pub struct Model<F: Field> {
     /// The set of coherent sums included in the [`Model`].
-    pub cohsums: Vec<CohSum<F>>,
-    /// The unique amplitudes located within all [`CohSum`]s.
+    pub cohsums: Vec<NormSqr<F>>,
+    /// The unique amplitudes located within all coherent sums.
     pub amplitudes: Vec<Amplitude<F>>,
-    /// The unique parameters located within all [`CohSum`]s.
+    /// The unique parameters located within all coherent sums.
     pub parameters: Vec<Parameter<F>>,
     /// Flag which is `True` iff at least one [`Amplitude`] is written in Python and has a [`Node`]
     /// for which [`Node::is_python_node`] returns `True`.
@@ -762,10 +800,10 @@ impl<F: Field> AsTree for Model<F> {
     }
 }
 impl<F: Field> Model<F> {
-    /// Creates a new [`Model`] from a list of [`CohSum`]s.
-    pub fn new(cohsums: Vec<CohSum<F>>) -> Self {
+    /// Creates a new [`Model`] from a list of [`Box<AmpLike>`]s.
+    pub fn new(amps: &[Box<dyn AmpLike<F>>]) -> Self {
         let mut amp_names = HashSet::new();
-        let amplitudes: Vec<Amplitude<F>> = cohsums
+        let amplitudes: Vec<Amplitude<F>> = amps
             .iter()
             .flat_map(|cohsum| cohsum.walk())
             .filter_map(|amp| {
@@ -792,15 +830,15 @@ impl<F: Field> Model<F> {
             .collect();
         let contains_python_amplitudes = amplitudes.iter().any(|amp| amp.node.is_python_node());
         Self {
-            cohsums: cohsums.into_iter().map(CohSum::from).collect(),
+            cohsums: amps.iter().map(|inner| NormSqr(inner.clone())).collect(),
             amplitudes,
             parameters,
             contains_python_amplitudes,
         }
     }
     /// Computes the result of evaluating the terms in the model with the given [`Parameter`]s for
-    /// the given [`Event`] by summing the result of [`CohSum::compute`] for each [`CohSum`]
-    /// contained in the [`Model`].
+    /// the given [`Event`] by summing the result of [`NormSqr::compute`] for each [`NormSqr`]
+    /// contained in the [`Model`] (see the `cohsum` field of [`Model`]).
     ///
     /// # Errors
     ///
@@ -1405,13 +1443,13 @@ pub fn piecewise_m<F: Field + num::Float>(name: &str, bins: usize, range: (F, F)
     )
 }
 
-macro_rules! impl_add {
+macro_rules! impl_sum {
     ($t:ident, $a:ty, $b:ty) => {
         impl<$t: Field> Add<$b> for $a {
-            type Output = CohSum<$t>;
+            type Output = Sum<$t>;
 
             fn add(self, rhs: $b) -> Self::Output {
-                CohSum(vec![Box::new(self), Box::new(rhs)])
+                Sum(vec![Box::new(self), Box::new(rhs)])
             }
         }
 
@@ -1430,149 +1468,153 @@ macro_rules! impl_add {
                 <$a as Add<$b>>::add(self, rhs.clone())
             }
         }
-    };
-}
-macro_rules! impl_cohsum {
-    ($t:ident, $a:ty) => {
-        impl<$t: Field> Mul<Box<dyn AmpLike<$t>>> for $a {
-            type Output = Product<$t>;
 
-            fn mul(self, rhs: Box<dyn AmpLike<$t>>) -> Self::Output {
-                match (self.get_cloned_terms(), rhs.get_cloned_terms()) {
-                    (Some(terms_a), Some(terms_b)) => Product([terms_a, terms_b].concat()),
-                    (None, Some(terms)) => {
-                        let mut terms = terms;
-                        terms.insert(0, Box::new(self));
-                        Product(terms)
-                    }
-                    (Some(terms), None) => {
-                        let mut terms = terms;
-                        terms.push(Box::new(self));
-                        Product(terms)
-                    }
-                    (None, None) => Product(vec![Box::new(self), rhs]),
-                }
+        impl<$t: Field> Add<$b> for &$a {
+            type Output = <$a as Add<$b>>::Output;
+
+            fn add(self, rhs: $b) -> Self::Output {
+                <$a as Add<$b>>::add(self.clone(), rhs)
             }
         }
-        impl<$t: Field> Mul<$a> for Box<dyn AmpLike<$t>> {
-            type Output = Product<$t>;
 
-            fn mul(self, rhs: $a) -> Self::Output {
-                match (self.get_cloned_terms(), rhs.get_cloned_terms()) {
-                    (Some(terms_a), Some(terms_b)) => Product([terms_a, terms_b].concat()),
-                    (None, Some(terms)) => {
-                        let mut terms = terms;
-                        terms.insert(0, self);
-                        Product(terms)
-                    }
-                    (Some(terms), None) => {
-                        let mut terms = terms;
-                        terms.push(self);
-                        Product(terms)
-                    }
-                    (None, None) => Product(vec![self, Box::new(rhs)]),
-                }
-            }
-        }
-        impl<$t: Field> Mul<$a> for CohSum<$t> {
-            type Output = CohSum<$t>;
-
-            fn mul(self, rhs: $a) -> Self::Output {
-                let mut terms: Vec<Box<dyn AmpLike<$t>>> = Vec::default();
-                for term in self.0.clone() {
-                    terms.push(Box::new(term * rhs.clone()))
-                }
-                CohSum(terms)
-            }
-        }
-        impl<$t: Field> Mul<CohSum<$t>> for $a {
-            type Output = CohSum<$t>;
-
-            fn mul(self, rhs: CohSum<$t>) -> Self::Output {
-                let mut terms: Vec<Box<dyn AmpLike<$t>>> = Vec::default();
-                for term in rhs.0.clone() {
-                    terms.push(Box::new(self.clone() * term))
-                }
-                CohSum(terms)
-            }
-        }
-        impl<$t: Field> Mul<&$a> for &CohSum<$t> {
-            type Output = CohSum<$t>;
-
-            fn mul(self, rhs: &$a) -> Self::Output {
-                <CohSum<$t> as Mul<$a>>::mul(self.clone(), rhs.clone())
-            }
-        }
-        impl<$t: Field> Mul<&$a> for CohSum<$t> {
-            type Output = CohSum<$t>;
-
-            fn mul(self, rhs: &$a) -> Self::Output {
-                <CohSum<$t> as Mul<$a>>::mul(self, rhs.clone())
-            }
-        }
-        impl<$t: Field> Mul<$a> for &CohSum<$t> {
-            type Output = CohSum<$t>;
-
-            fn mul(self, rhs: $a) -> Self::Output {
-                <CohSum<$t> as Mul<$a>>::mul(self.clone(), rhs)
-            }
-        }
-        impl<$t: Field> Add<Box<dyn AmpLike<$t>>> for $a {
-            type Output = CohSum<$t>;
-
-            fn add(self, rhs: Box<dyn AmpLike<$t>>) -> Self::Output {
-                CohSum(vec![Box::new(self), rhs])
-            }
-        }
-        impl<$t: Field> Add<$a> for Box<dyn AmpLike<$t>> {
-            type Output = CohSum<$t>;
+        impl<$t: Field> Add<$a> for $b {
+            type Output = Sum<$t>;
 
             fn add(self, rhs: $a) -> Self::Output {
-                CohSum(vec![self, Box::new(rhs)])
+                Sum(vec![Box::new(self), Box::new(rhs)])
             }
         }
-        impl<$t: Field> Add<$a> for CohSum<$t> {
-            type Output = CohSum<$t>;
+
+        impl<$t: Field> Add<&$a> for &$b {
+            type Output = <$b as Add<$a>>::Output;
+
+            fn add(self, rhs: &$a) -> Self::Output {
+                <$b as Add<$a>>::add(self.clone(), rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Add<&$a> for $b {
+            type Output = <$b as Add<$a>>::Output;
+
+            fn add(self, rhs: &$a) -> Self::Output {
+                <$b as Add<$a>>::add(self, rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Add<$a> for &$b {
+            type Output = <$b as Add<$a>>::Output;
+
+            fn add(self, rhs: $a) -> Self::Output {
+                <$b as Add<$a>>::add(self.clone(), rhs)
+            }
+        }
+    };
+    ($t:ident, $a:ty) => {
+        impl<$t: Field> Add<$a> for $a {
+            type Output = Sum<$t>;
+
+            fn add(self, rhs: $a) -> Self::Output {
+                Sum(vec![Box::new(self), Box::new(rhs)])
+            }
+        }
+
+        impl<$t: Field> Add<&$a> for &$a {
+            type Output = <$a as Add<$a>>::Output;
+
+            fn add(self, rhs: &$a) -> Self::Output {
+                <$a as Add<$a>>::add(self.clone(), rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Add<&$a> for $a {
+            type Output = <$a as Add<$a>>::Output;
+
+            fn add(self, rhs: &$a) -> Self::Output {
+                <$a as Add<$a>>::add(self, rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Add<$a> for &$a {
+            type Output = <$a as Add<$a>>::Output;
+
+            fn add(self, rhs: $a) -> Self::Output {
+                <$a as Add<$a>>::add(self.clone(), rhs)
+            }
+        }
+    };
+}
+macro_rules! impl_appending_sum {
+    ($t:ident, $a:ty) => {
+        impl<$t: Field> Add<Sum<$t>> for $a {
+            type Output = Sum<$t>;
+
+            fn add(self, rhs: Sum<$t>) -> Self::Output {
+                let mut terms = rhs.0;
+                terms.insert(0, Box::new(self));
+                Sum(terms)
+            }
+        }
+
+        impl<$t: Field> Add<$a> for Sum<$t> {
+            type Output = Sum<$t>;
 
             fn add(self, rhs: $a) -> Self::Output {
                 let mut terms = self.0;
                 terms.push(Box::new(rhs));
-                CohSum(terms)
+                Sum(terms)
             }
         }
-        impl<$t: Field> Add<CohSum<$t>> for $a {
-            type Output = CohSum<$t>;
 
-            fn add(self, rhs: CohSum<$t>) -> Self::Output {
-                let mut terms = rhs.0;
-                terms.push(Box::new(self));
-                CohSum(terms)
+        impl<$t: Field> Add<&Sum<$t>> for &$a {
+            type Output = <$a as Add<Sum<$t>>>::Output;
+
+            fn add(self, rhs: &Sum<$t>) -> Self::Output {
+                <$a as Add<Sum<$t>>>::add(self.clone(), rhs.clone())
             }
         }
-        impl<$t: Field> Add<&$a> for &CohSum<$t> {
-            type Output = CohSum<$t>;
+
+        impl<$t: Field> Add<&Sum<$t>> for $a {
+            type Output = <$a as Add<Sum<$t>>>::Output;
+
+            fn add(self, rhs: &Sum<$t>) -> Self::Output {
+                <$a as Add<Sum<$t>>>::add(self, rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Add<Sum<$t>> for &$a {
+            type Output = <$a as Add<Sum<$t>>>::Output;
+
+            fn add(self, rhs: Sum<$t>) -> Self::Output {
+                <$a as Add<Sum<$t>>>::add(self.clone(), rhs)
+            }
+        }
+
+        impl<$t: Field> Add<&$a> for &Sum<$t> {
+            type Output = <Sum<$t> as Add<$a>>::Output;
 
             fn add(self, rhs: &$a) -> Self::Output {
-                <CohSum<$t> as Add<$a>>::add(self.clone(), rhs.clone())
+                <Sum<$t> as Add<$a>>::add(self.clone(), rhs.clone())
             }
         }
-        impl<$t: Field> Add<&$a> for CohSum<$t> {
-            type Output = CohSum<$t>;
+
+        impl<$t: Field> Add<&$a> for Sum<$t> {
+            type Output = <Sum<$t> as Add<$a>>::Output;
 
             fn add(self, rhs: &$a) -> Self::Output {
-                <CohSum<$t> as Add<$a>>::add(self, rhs.clone())
+                <Sum<$t> as Add<$a>>::add(self, rhs.clone())
             }
         }
-        impl<$t: Field> Add<$a> for &CohSum<$t> {
-            type Output = CohSum<$t>;
+
+        impl<$t: Field> Add<$a> for &Sum<$t> {
+            type Output = <Sum<$t> as Add<$a>>::Output;
 
             fn add(self, rhs: $a) -> Self::Output {
-                <CohSum<$t> as Add<$a>>::add(self.clone(), rhs)
+                <Sum<$t> as Add<$a>>::add(self.clone(), rhs)
             }
         }
     };
 }
-macro_rules! impl_mul {
+macro_rules! impl_prod {
     ($t:ident, $a:ty, $b:ty) => {
         impl<$t: Field> Mul<$b> for $a {
             type Output = Product<$t>;
@@ -1610,64 +1652,339 @@ macro_rules! impl_mul {
                 <$a as Mul<$b>>::mul(self, rhs.clone())
             }
         }
+
+        impl<$t: Field> Mul<$b> for &$a {
+            type Output = <$a as Mul<$b>>::Output;
+
+            fn mul(self, rhs: $b) -> Self::Output {
+                <$a as Mul<$b>>::mul(self.clone(), rhs)
+            }
+        }
+
+        impl<$t: Field> Mul<$a> for $b {
+            type Output = Product<$t>;
+
+            fn mul(self, rhs: $a) -> Self::Output {
+                match (self.get_cloned_terms(), rhs.get_cloned_terms()) {
+                    (Some(terms_a), Some(terms_b)) => Product([terms_a, terms_b].concat()),
+                    (None, Some(terms)) => {
+                        let mut terms = terms;
+                        terms.insert(0, Box::new(self));
+                        Product(terms)
+                    }
+                    (Some(terms), None) => {
+                        let mut terms = terms;
+                        terms.push(Box::new(rhs));
+                        Product(terms)
+                    }
+                    (None, None) => Product(vec![Box::new(self), Box::new(rhs)]),
+                }
+            }
+        }
+
+        impl<$t: Field> Mul<&$a> for &$b {
+            type Output = <$b as Mul<$a>>::Output;
+
+            fn mul(self, rhs: &$a) -> Self::Output {
+                <$b as Mul<$a>>::mul(self.clone(), rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Mul<&$a> for $b {
+            type Output = <$b as Mul<$a>>::Output;
+
+            fn mul(self, rhs: &$a) -> Self::Output {
+                <$b as Mul<$a>>::mul(self, rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Mul<$a> for &$b {
+            type Output = <$b as Mul<$a>>::Output;
+
+            fn mul(self, rhs: $a) -> Self::Output {
+                <$b as Mul<$a>>::mul(self.clone(), rhs)
+            }
+        }
+    };
+    ($t:ident, $a:ty) => {
+        impl<$t: Field> Mul<$a> for $a {
+            type Output = Product<$t>;
+
+            fn mul(self, rhs: $a) -> Self::Output {
+                match (self.get_cloned_terms(), rhs.get_cloned_terms()) {
+                    (Some(terms_a), Some(terms_b)) => Product([terms_a, terms_b].concat()),
+                    (None, Some(terms)) => {
+                        let mut terms = terms;
+                        terms.insert(0, Box::new(self));
+                        Product(terms)
+                    }
+                    (Some(terms), None) => {
+                        let mut terms = terms;
+                        terms.push(Box::new(rhs));
+                        Product(terms)
+                    }
+                    (None, None) => Product(vec![Box::new(self), Box::new(rhs)]),
+                }
+            }
+        }
+
+        impl<$t: Field> Mul<&$a> for &$a {
+            type Output = <$a as Mul<$a>>::Output;
+
+            fn mul(self, rhs: &$a) -> Self::Output {
+                <$a as Mul<$a>>::mul(self.clone(), rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Mul<&$a> for $a {
+            type Output = <$a as Mul<$a>>::Output;
+
+            fn mul(self, rhs: &$a) -> Self::Output {
+                <$a as Mul<$a>>::mul(self, rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Mul<$a> for &$a {
+            type Output = <$a as Mul<$a>>::Output;
+
+            fn mul(self, rhs: $a) -> Self::Output {
+                <$a as Mul<$a>>::mul(self.clone(), rhs)
+            }
+        }
+    };
+}
+macro_rules! impl_box_prod {
+    ($t:ident, $a:ty) => {
+        impl<$t: Field> Mul<Box<dyn AmpLike<$t>>> for $a {
+            type Output = Product<$t>;
+            fn mul(self, rhs: Box<dyn AmpLike<$t>>) -> Self::Output {
+                match (self.get_cloned_terms(), rhs.get_cloned_terms()) {
+                    (Some(terms_a), Some(terms_b)) => Product([terms_a, terms_b].concat()),
+                    (None, Some(terms)) => {
+                        let mut terms = terms;
+                        terms.insert(0, Box::new(self));
+                        Product(terms)
+                    }
+                    (Some(terms), None) => {
+                        let mut terms = terms;
+                        terms.push(Box::new(self));
+                        Product(terms)
+                    }
+                    (None, None) => Product(vec![Box::new(self), rhs]),
+                }
+            }
+        }
+        impl<$t: Field> Mul<$a> for Box<dyn AmpLike<$t>> {
+            type Output = Product<$t>;
+            fn mul(self, rhs: $a) -> Self::Output {
+                match (self.get_cloned_terms(), rhs.get_cloned_terms()) {
+                    (Some(terms_a), Some(terms_b)) => Product([terms_a, terms_b].concat()),
+                    (None, Some(terms)) => {
+                        let mut terms = terms;
+                        terms.insert(0, self);
+                        Product(terms)
+                    }
+                    (Some(terms), None) => {
+                        let mut terms = terms;
+                        terms.push(self);
+                        Product(terms)
+                    }
+                    (None, None) => Product(vec![self, Box::new(rhs)]),
+                }
+            }
+        }
+    };
+}
+macro_rules! impl_box_sum {
+    ($t:ident, $a:ty) => {
+        impl<$t: Field> Add<Box<dyn AmpLike<$t>>> for $a {
+            type Output = Sum<$t>;
+            fn add(self, rhs: Box<dyn AmpLike<$t>>) -> Self::Output {
+                match (self.get_cloned_terms(), rhs.get_cloned_terms()) {
+                    (Some(terms_a), Some(terms_b)) => Sum([terms_a, terms_b].concat()),
+                    (None, Some(terms)) => {
+                        let mut terms = terms;
+                        terms.insert(0, Box::new(self));
+                        Sum(terms)
+                    }
+                    (Some(terms), None) => {
+                        let mut terms = terms;
+                        terms.push(Box::new(self));
+                        Sum(terms)
+                    }
+                    (None, None) => Sum(vec![Box::new(self), rhs]),
+                }
+            }
+        }
+        impl<$t: Field> Add<$a> for Box<dyn AmpLike<$t>> {
+            type Output = Sum<$t>;
+            fn add(self, rhs: $a) -> Self::Output {
+                match (self.get_cloned_terms(), rhs.get_cloned_terms()) {
+                    (Some(terms_a), Some(terms_b)) => Sum([terms_a, terms_b].concat()),
+                    (None, Some(terms)) => {
+                        let mut terms = terms;
+                        terms.insert(0, self);
+                        Sum(terms)
+                    }
+                    (Some(terms), None) => {
+                        let mut terms = terms;
+                        terms.push(self);
+                        Sum(terms)
+                    }
+                    (None, None) => Sum(vec![self, Box::new(rhs)]),
+                }
+            }
+        }
+    };
+}
+macro_rules! impl_dist {
+    ($t:ident, $a:ty) => {
+        impl<$t: Field> Mul<Sum<$t>> for $a {
+            type Output = Sum<$t>;
+
+            fn mul(self, rhs: Sum<$t>) -> Self::Output {
+                let mut terms = vec![];
+                for term in rhs.0 {
+                    terms.push(Box::new(self.clone() * term) as Box<dyn AmpLike<$t>>);
+                }
+                Sum(terms)
+            }
+        }
+
+        impl<$t: Field> Mul<$a> for Sum<$t> {
+            type Output = Sum<$t>;
+
+            fn mul(self, rhs: $a) -> Self::Output {
+                let mut terms = vec![];
+                for term in self.0 {
+                    terms.push(Box::new(term * rhs.clone()) as Box<dyn AmpLike<$t>>);
+                }
+                Sum(terms)
+            }
+        }
+
+        impl<$t: Field> Mul<&$a> for &Sum<$t> {
+            type Output = <Sum<$t> as Mul<$a>>::Output;
+
+            fn mul(self, rhs: &$a) -> Self::Output {
+                <Sum<$t> as Mul<$a>>::mul(self.clone(), rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Mul<&$a> for Sum<$t> {
+            type Output = <Sum<$t> as Mul<$a>>::Output;
+
+            fn mul(self, rhs: &$a) -> Self::Output {
+                <Sum<$t> as Mul<$a>>::mul(self, rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Mul<$a> for &Sum<$t> {
+            type Output = <Sum<$t> as Mul<$a>>::Output;
+
+            fn mul(self, rhs: $a) -> Self::Output {
+                <Sum<$t> as Mul<$a>>::mul(self.clone(), rhs)
+            }
+        }
+
+        impl<$t: Field> Mul<&Sum<$t>> for &$a {
+            type Output = <$a as Mul<Sum<$t>>>::Output;
+
+            fn mul(self, rhs: &Sum<$t>) -> Self::Output {
+                <$a as Mul<Sum<$t>>>::mul(self.clone(), rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Mul<&Sum<$t>> for $a {
+            type Output = <$a as Mul<Sum<$t>>>::Output;
+
+            fn mul(self, rhs: &Sum<$t>) -> Self::Output {
+                <$a as Mul<Sum<$t>>>::mul(self, rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Mul<Sum<$t>> for &$a {
+            type Output = <$a as Mul<Sum<$t>>>::Output;
+
+            fn mul(self, rhs: Sum<$t>) -> Self::Output {
+                <$a as Mul<Sum<$t>>>::mul(self.clone(), rhs)
+            }
+        }
     };
 }
 
-impl_cohsum!(F, Amplitude<F>);
-impl_add!(F, Amplitude<F>, Amplitude<F>);
-impl_add!(F, Amplitude<F>, Real<F>);
-impl_add!(F, Amplitude<F>, Imag<F>);
-impl_add!(F, Amplitude<F>, Product<F>);
-impl_mul!(F, Amplitude<F>, Amplitude<F>);
-impl_mul!(F, Amplitude<F>, Real<F>);
-impl_mul!(F, Amplitude<F>, Imag<F>);
-impl_mul!(F, Amplitude<F>, Product<F>);
-impl_cohsum!(F, Real<F>);
-impl_add!(F, Real<F>, Amplitude<F>);
-impl_add!(F, Real<F>, Real<F>);
-impl_add!(F, Real<F>, Imag<F>);
-impl_add!(F, Real<F>, Product<F>);
-impl_mul!(F, Real<F>, Amplitude<F>);
-impl_mul!(F, Real<F>, Real<F>);
-impl_mul!(F, Real<F>, Imag<F>);
-impl_mul!(F, Real<F>, Product<F>);
-impl_cohsum!(F, Imag<F>);
-impl_add!(F, Imag<F>, Amplitude<F>);
-impl_add!(F, Imag<F>, Real<F>);
-impl_add!(F, Imag<F>, Imag<F>);
-impl_add!(F, Imag<F>, Product<F>);
-impl_mul!(F, Imag<F>, Amplitude<F>);
-impl_mul!(F, Imag<F>, Real<F>);
-impl_mul!(F, Imag<F>, Imag<F>);
-impl_mul!(F, Imag<F>, Product<F>);
-impl_cohsum!(F, Product<F>);
-impl_add!(F, Product<F>, Amplitude<F>);
-impl_add!(F, Product<F>, Real<F>);
-impl_add!(F, Product<F>, Imag<F>);
-impl_add!(F, Product<F>, Product<F>);
-impl_mul!(F, Product<F>, Amplitude<F>);
-impl_mul!(F, Product<F>, Real<F>);
-impl_mul!(F, Product<F>, Imag<F>);
-impl_mul!(F, Product<F>, Product<F>);
+impl_sum!(F, Amplitude<F>);
+impl_box_sum!(F, Amplitude<F>);
+impl_sum!(F, Real<F>);
+impl_box_sum!(F, Real<F>);
+impl_sum!(F, Imag<F>);
+impl_box_sum!(F, Imag<F>);
+impl_sum!(F, Product<F>);
+impl_box_sum!(F, Product<F>);
+impl_box_sum!(F, Sum<F>);
 
-impl<F: Field> Add<Self> for CohSum<F> {
+impl_sum!(F, Amplitude<F>, Real<F>);
+impl_sum!(F, Amplitude<F>, Imag<F>);
+impl_sum!(F, Amplitude<F>, Product<F>);
+impl_sum!(F, Real<F>, Imag<F>);
+impl_sum!(F, Real<F>, Product<F>);
+impl_sum!(F, Imag<F>, Product<F>);
+
+impl_appending_sum!(F, Amplitude<F>);
+impl_appending_sum!(F, Real<F>);
+impl_appending_sum!(F, Imag<F>);
+impl_appending_sum!(F, Product<F>);
+
+impl_prod!(F, Amplitude<F>);
+impl_box_prod!(F, Amplitude<F>);
+impl_prod!(F, Real<F>);
+impl_box_prod!(F, Real<F>);
+impl_prod!(F, Imag<F>);
+impl_box_prod!(F, Imag<F>);
+impl_prod!(F, Product<F>);
+impl_box_prod!(F, Product<F>);
+
+impl_prod!(F, Amplitude<F>, Real<F>);
+impl_prod!(F, Amplitude<F>, Imag<F>);
+impl_prod!(F, Amplitude<F>, Product<F>);
+impl_prod!(F, Real<F>, Imag<F>);
+impl_prod!(F, Real<F>, Product<F>);
+impl_prod!(F, Imag<F>, Product<F>);
+
+impl_dist!(F, Amplitude<F>);
+impl_dist!(F, Real<F>);
+impl_dist!(F, Imag<F>);
+impl_dist!(F, Product<F>);
+
+impl<F: Field> Add<Self> for Sum<F> {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
+        println!("adding");
         Self([self.0, rhs.0].concat())
     }
 }
-impl<F: Field> Add<&Self> for &CohSum<F> {
-    type Output = <CohSum<F> as Add>::Output;
 
-    fn add(self, rhs: &Self) -> Self::Output {
-        <CohSum<F> as Add>::add(self.clone(), (*rhs).clone())
+impl<F: Field> Add<&Sum<F>> for &Sum<F> {
+    type Output = <Sum<F> as Add<Sum<F>>>::Output;
+
+    fn add(self, rhs: &Sum<F>) -> Self::Output {
+        <Sum<F> as Add<Sum<F>>>::add(self.clone(), rhs.clone())
     }
 }
-impl<F: Field> Add<Self> for &CohSum<F> {
-    type Output = <CohSum<F> as Add>::Output;
 
-    fn add(self, rhs: Self) -> Self::Output {
-        <CohSum<F> as Add>::add(self.clone(), rhs.clone())
+impl<F: Field> Add<&Self> for Sum<F> {
+    type Output = <Self as Add<Self>>::Output;
+
+    fn add(self, rhs: &Self) -> Self::Output {
+        <Self as Add<Self>>::add(self, rhs.clone())
+    }
+}
+
+impl<F: Field> Add<Sum<F>> for &Sum<F> {
+    type Output = <Sum<F> as Add<Sum<F>>>::Output;
+
+    fn add(self, rhs: Sum<F>) -> Self::Output {
+        <Sum<F> as Add<Sum<F>>>::add(self.clone(), rhs)
     }
 }
