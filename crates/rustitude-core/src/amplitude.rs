@@ -5,12 +5,37 @@
 //! struct. You can then provide a convenience method for creating a new implementation of your
 //! [`Amplitude`].
 //!
-//! Amplitudes are typically defined first, and then [`Model`]s are built by multiplying and
-//! operating on [`Amplitude`]s. Any sums represent coherent sums ([`CohSum`]) which are then
-//! added incoherently by the [`Model`].
+//! Amplitudes are typically defined first, and then [`Model`]s are built by adding, multiplying
+//! and taking the real/imaginary part of [`Amplitude`]s. [`Model`]s can be built using the
+//! provided [`Model::new`] constructor or with the [`model!`](`crate::model!`) macro. The terms
+//! provided to either of these will be treated as separate coherent sums. The [`Model`] will
+//! implicitly take their absolute square and then add those sums incoherently.
 //!
 //! We can then use [`Manager`](crate::manager::Manager)-like structs to handle computataion
 //! over [`Dataset`]s.
+//!
+//! # Example:
+//!
+//! An example (with no particular physical meaning) is given as follows:
+//!
+//! ```ignore
+//! use rustitude_core::prelude::*;
+//! fn main() {
+//!     let a = scalar("a");   // a(value) = value
+//!     let b = scalar("b");   // b(value) = value
+//!     let c = cscalar("c");  // c(real, imag) = real + i * imag
+//!     let d = pcscalar("d"); // d(mag, phi) = mag * e^{i * phi}
+//!     let abc = a + b + &c; // references avoid losing ownership
+//!     let x = abc * &d + c.real();
+//!     let model = model!(x, d);
+//!     // |(a.value + b.value + c.real + i * c.imag) * (d.mag * e^{i * d.phi}) + c.real|^2 + |d.mag * e^{i * d.phi}|^2
+//! }
+//! ```
+//!
+//! With Rust's ownership rules, if we want to use amplitudes in multiple places, we need to either
+//! reference them or clone them (`a.clone()`, for instance). References typically look nicer and
+//! are more readable, but a clone will happen regardless (although it isn't expensive, only one
+//! copy of each amplitude will ever hold any data).
 use dyn_clone::DynClone;
 use itertools::Itertools;
 use nalgebra::Complex;

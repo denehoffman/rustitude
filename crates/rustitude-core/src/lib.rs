@@ -196,9 +196,8 @@
 //! values, the following convenience methods are provided:
 //! [`real`](`amplitude::AmpLike::real`), and [`imag`](`amplitude::AmpLike::imag`) give the real and
 //! imaginary part of the amplitude, respectively. Additionally, amplitudes can be added and multiplied
-//! together using operator overloading. All sums are interpreted as
-//! [coherent sums](`crate::amplitude::CohSum`), and products with these coherent sums are
-//! distributed. Incoherent sums are handled at the [`Model`](crate::amplitude::Model) level.
+//! together using operator overloading. [`Model`](`amplitude::Model`)s implicitly take the
+//! absolute square of each provided term in their constructor and add those results incoherently.
 //!
 //! To incoherently sum two [`Amplitude`](`amplitude::Amplitude`)s, say `amp1` and `amp2`, we would
 //! first assume that we actually want the absolute square of the given term (or write our
@@ -207,7 +206,7 @@
 //! ```ignore
 //! use rustitude_core::prelude::*;
 //! // Define amp1/amp2: Amplitude here...
-//! let model = Model::new(vec![amp1.as_cohsum(), amp2.as_cohsum()])
+//! let model = model!(amp1, amp2)
 //! ```
 //!
 //! To reiterate, this would yield something like $`\left|\text{amp}_1\right|^2 + \left|\text{amp}_2\right|^2`$.
@@ -229,13 +228,13 @@
 //!
 //! let complex_term = cscalar("my complex scalar");
 //! let omega_dalitz = Amplitude::new("omega dalitz", OmegaDalitz::default());
-//! let term = (complex_term * omega_dalitz).norm_sqr();
+//! let term = complex_term * omega_dalitz;
 //! term.print_tree();
 //! // [ norm sqr ]
 //! //   ┗━[ * ]
 //! //       ┣━ !my complex scalar(real, imag)
 //! //       ┗━ !omega dalitz(alpha, beta, gamma, delta)
-//! let model = Model::new(term);
+//! let model = model!(term);
 //! ```
 //!
 //! # Managing Parameters
@@ -270,8 +269,8 @@
 //!
 //! let complex_term = cscalar("my complex scalar");
 //! let omega_dalitz = Amplitude::new("omega dalitz", OmegaDalitz::default());
-//! let term = (complex_term * omega_dalitz).norm_sqr();
-//! let model = Model::new(term);
+//! let term = complex_term * omega_dalitz;
+//! let model = model!(term);
 //! let dataset = Dataset::from_parquet("path/to/file.parquet").unwrap();
 //! let dataset_mc = Dataset::from_parquet("path/to/monte_carlo_file.parquet").unwrap();
 //! let nll = ExtendedLogLikelihood::new(
@@ -279,6 +278,19 @@
 //!         Manager::new(&model, &dataset_mc)
 //!     );
 //! println!("NLL on 4 threads: {}", nll.evaluate(&nll.get_initial(), 4));
+//! ```
+//!
+//! # Fitting Amplitudes to Data
+//!
+//! Of course, the goal of all of this is to be able to construct a
+//! [`Model`](`crate::amplitude::Model`), load up a [`Dataset`](`crate::dataset::Dataset`), create
+//! an [`ExtendedLogLikelihood`](`crate::manager::ExtendedLogLikelihood`), and fit the model to
+//! data. Here's an example to show how that might be accomplished:
+//!
+//! ```ignore
+//! use rustitude_core::prelude::*
+//! use rustitude_gluex::resonances::BreitWigner;
+//!
 //! ```
 #![warn(
     clippy::nursery,
