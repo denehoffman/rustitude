@@ -14,21 +14,21 @@ mod f64_tests {
         let y11 = Ylm::new(Wave::P1, Frame::Helicity).into_amplitude("y11");
         let y22 = Ylm::new(Wave::D1, Frame::Helicity).into_amplitude("y22");
         let y33 = Ylm::new(Wave::F1, Frame::Helicity).into_amplitude("y33");
-        let manager = Manager::new(&Model::new(vec![y00.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(y00.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.07957747, f64);
-        let manager = Manager::new(&Model::new(vec![y00.imag().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(y00.imag()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.0, f64);
-        let manager = Manager::new(&Model::new(vec![y11.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(y11.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.07321731, f64);
-        let manager = Manager::new(&Model::new(vec![y11.imag().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(y11.imag()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.02033001, f64);
-        let manager = Manager::new(&Model::new(vec![y22.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(y22.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.07918444, f64);
-        let manager = Manager::new(&Model::new(vec![y22.imag().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(y22.imag()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.02198688, f64);
-        let manager = Manager::new(&Model::new(vec![y33.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(y33.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.000_425_627_3, f64);
-        let manager = Manager::new(&Model::new(vec![y33.imag().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(y33.imag()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.000_118_182_5, f64);
         Ok(())
     }
@@ -52,37 +52,37 @@ mod f64_tests {
             Zlm::new(Wave::D1, Reflectivity::Negative, Frame::Helicity).into_amplitude("z22-");
         let z33n =
             Zlm::new(Wave::F1, Reflectivity::Negative, Frame::Helicity).into_amplitude("z33-");
-        let manager = Manager::new(&Model::new(vec![z00p.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z00p.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.014120844, f64);
-        let manager = Manager::new(&Model::new(vec![z00p.imag().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z00p.imag()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.04262128, f64);
-        let manager = Manager::new(&Model::new(vec![z11p.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z11p.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.0018273925, f64);
-        let manager = Manager::new(&Model::new(vec![z11p.imag().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z11p.imag()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.05665150, f64);
-        let manager = Manager::new(&Model::new(vec![z22p.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z22p.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.0019763229, f64);
-        let manager = Manager::new(&Model::new(vec![z22p.imag().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z22p.imag()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.06126853, f64);
-        let manager = Manager::new(&Model::new(vec![z33p.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z33p.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.000_010_623_025, f64);
-        let manager = Manager::new(&Model::new(vec![z33p.imag().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z33p.imag()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.000_329_326_8, f64);
-        let manager = Manager::new(&Model::new(vec![z00n.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z00n.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.006259242, f64);
-        let manager = Manager::new(&Model::new(vec![z00n.imag().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z00n.imag()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.09615357, f64);
-        let manager = Manager::new(&Model::new(vec![z11n.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z11n.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.0008100147, f64);
-        let manager = Manager::new(&Model::new(vec![z11n.imag().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z11n.imag()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.12780573, f64);
-        let manager = Manager::new(&Model::new(vec![z22n.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z22n.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.0008760300, f64);
-        let manager = Manager::new(&Model::new(vec![z22n.imag().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z22n.imag()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.13822176, f64);
-        let manager = Manager::new(&Model::new(vec![z33n.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z33n.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.000_004_708_789, f64);
-        let manager = Manager::new(&Model::new(vec![z33n.imag().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z33n.imag()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.000_742_961, f64);
         Ok(())
     }
@@ -91,7 +91,7 @@ mod f64_tests {
     fn test_f0() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f64()]);
         let f0 = KMatrixF0::new(2).into_amplitude("F0(2)");
-        let manager = Manager::new(&Model::new(vec![f0.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(f0.real()), &dataset)?;
         assert_is_close!(
             manager.evaluate(&[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])?[0],
             0.030680506,
@@ -154,7 +154,7 @@ mod f64_tests {
     fn test_f2() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f64()]);
         let f2 = KMatrixF2::new(2).into_amplitude("F2(2)");
-        let manager = Manager::new(&Model::new(vec![f2.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(f2.real()), &dataset)?;
         assert_is_close!(
             manager.evaluate(&[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])?[0],
             0.079874652,
@@ -207,7 +207,7 @@ mod f64_tests {
     fn test_a0() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f64()]);
         let a0 = KMatrixA0::new(1).into_amplitude("A0(1)");
-        let manager = Manager::new(&Model::new(vec![a0.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(a0.real()), &dataset)?;
         assert_is_close!(
             manager.evaluate(&[1.0, 0.0, 0.0, 0.0])?[0],
             0.084485367,
@@ -236,7 +236,7 @@ mod f64_tests {
     fn test_a2() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f64()]);
         let a2 = KMatrixA2::new(1).into_amplitude("A2(1)");
-        let manager = Manager::new(&Model::new(vec![a2.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(a2.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[1.0, 0.0, 0.0, 0.0])?[0], 0.34870050, f64);
         assert_is_close!(
             manager.evaluate(&[0.0, 1.0, 0.0, 0.0])?[0],
@@ -261,7 +261,7 @@ mod f64_tests {
     fn test_rho() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f64()]);
         let rho = KMatrixRho::new(1).into_amplitude("Rho(1)");
-        let manager = Manager::new(&Model::new(vec![rho.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(rho.real()), &dataset)?;
         assert_is_close!(
             manager.evaluate(&[1.0, 0.0, 0.0, 0.0])?[0],
             0.0007601991,
@@ -290,7 +290,7 @@ mod f64_tests {
     fn test_pi1() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f64()]);
         let pi1 = KMatrixPi1::new(1).into_amplitude("Rho(1)");
-        let manager = Manager::new(&Model::new(vec![pi1.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(pi1.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[1.0, 0.0])?[0], 0.6947747815, f64);
         assert_is_close!(manager.evaluate(&[0.0, 1.0])?[0], 0.9365046503, f64);
         assert_is_close!(manager.evaluate(&[0.0, 0.0])?[0], 0.0, f64);
@@ -314,21 +314,21 @@ mod f32_tests {
         let y11 = Ylm::new(Wave::P1, Frame::Helicity).into_amplitude("y11");
         let y22 = Ylm::new(Wave::D1, Frame::Helicity).into_amplitude("y22");
         let y33 = Ylm::new(Wave::F1, Frame::Helicity).into_amplitude("y33");
-        let manager = Manager::new(&Model::new(vec![y00.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(y00.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.07957747, f32);
-        let manager = Manager::new(&Model::new(vec![y00.imag().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(y00.imag()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.0, f32);
-        let manager = Manager::new(&Model::new(vec![y11.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(y11.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.07321755, f32);
-        let manager = Manager::new(&Model::new(vec![y11.imag().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(y11.imag()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.020_330_08, f32);
-        let manager = Manager::new(&Model::new(vec![y22.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(y22.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.079_183_795, f32);
-        let manager = Manager::new(&Model::new(vec![y22.imag().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(y22.imag()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.021_986_704, f32);
-        let manager = Manager::new(&Model::new(vec![y33.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(y33.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.000_425_394_8, f32);
-        let manager = Manager::new(&Model::new(vec![y33.imag().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(y33.imag()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.000_118_118_02, f32);
         Ok(())
     }
@@ -352,37 +352,37 @@ mod f32_tests {
             Zlm::new(Wave::D1, Reflectivity::Negative, Frame::Helicity).into_amplitude("z22-");
         let z33n =
             Zlm::new(Wave::F1, Reflectivity::Negative, Frame::Helicity).into_amplitude("z33-");
-        let manager = Manager::new(&Model::new(vec![z00p.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z00p.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.014120844, f32);
-        let manager = Manager::new(&Model::new(vec![z00p.imag().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z00p.imag()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.04262128, f32);
-        let manager = Manager::new(&Model::new(vec![z11p.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z11p.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.0018273992, f32);
-        let manager = Manager::new(&Model::new(vec![z11p.imag().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z11p.imag()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.056_651_685, f32);
-        let manager = Manager::new(&Model::new(vec![z22p.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z22p.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.001_976_306_6, f32);
-        let manager = Manager::new(&Model::new(vec![z22p.imag().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z22p.imag()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.061_268_03, f32);
-        let manager = Manager::new(&Model::new(vec![z33p.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z33p.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.000_010_617_216_5, f32);
-        let manager = Manager::new(&Model::new(vec![z33p.imag().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z33p.imag()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.000_329_146_95, f32);
-        let manager = Manager::new(&Model::new(vec![z00n.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z00n.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.006259242, f32);
-        let manager = Manager::new(&Model::new(vec![z00n.imag().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z00n.imag()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.09615357, f32);
-        let manager = Manager::new(&Model::new(vec![z11n.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z11n.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.000_810_017_7, f32);
-        let manager = Manager::new(&Model::new(vec![z11n.imag().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z11n.imag()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.127_806_13, f32);
-        let manager = Manager::new(&Model::new(vec![z22n.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z22n.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.000_876_022_74, f32);
-        let manager = Manager::new(&Model::new(vec![z22n.imag().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z22n.imag()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.138_220_62, f32);
-        let manager = Manager::new(&Model::new(vec![z33n.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z33n.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.000_004_706_215_3, f32);
-        let manager = Manager::new(&Model::new(vec![z33n.imag().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(z33n.imag()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.000_742_555_25, f32);
         Ok(())
     }
@@ -391,7 +391,7 @@ mod f32_tests {
     fn test_f0() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f32()]);
         let f0 = KMatrixF0::new(2).into_amplitude("F0(2)");
-        let manager = Manager::new(&Model::new(vec![f0.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(f0.real()), &dataset)?;
         assert_is_close!(
             manager.evaluate(&[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])?[0],
             0.030_680_573,
@@ -454,7 +454,7 @@ mod f32_tests {
     fn test_f2() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f32()]);
         let f2 = KMatrixF2::new(2).into_amplitude("F2(2)");
-        let manager = Manager::new(&Model::new(vec![f2.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(f2.real()), &dataset)?;
         assert_is_close!(
             manager.evaluate(&[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])?[0],
             0.079_874_024,
@@ -507,7 +507,7 @@ mod f32_tests {
     fn test_a0() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f32()]);
         let a0 = KMatrixA0::new(1).into_amplitude("A0(1)");
-        let manager = Manager::new(&Model::new(vec![a0.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(a0.real()), &dataset)?;
         assert_is_close!(
             manager.evaluate(&[1.0, 0.0, 0.0, 0.0])?[0],
             0.084_485_64,
@@ -536,7 +536,7 @@ mod f32_tests {
     fn test_a2() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f32()]);
         let a2 = KMatrixA2::new(1).into_amplitude("A2(1)");
-        let manager = Manager::new(&Model::new(vec![a2.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(a2.real()), &dataset)?;
         assert_is_close!(
             manager.evaluate(&[1.0, 0.0, 0.0, 0.0])?[0],
             0.348_697_72,
@@ -565,7 +565,7 @@ mod f32_tests {
     fn test_rho() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f32()]);
         let rho = KMatrixRho::new(1).into_amplitude("Rho(1)");
-        let manager = Manager::new(&Model::new(vec![rho.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(rho.real()), &dataset)?;
         assert_is_close!(
             manager.evaluate(&[1.0, 0.0, 0.0, 0.0])?[0],
             0.000_760_193_04,
@@ -594,7 +594,7 @@ mod f32_tests {
     fn test_pi1() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f32()]);
         let pi1 = KMatrixPi1::new(1).into_amplitude("Rho(1)");
-        let manager = Manager::new(&Model::new(vec![pi1.real().as_cohsum()]), &dataset)?;
+        let manager = Manager::new(&model!(pi1.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[1.0, 0.0])?[0], 0.694_777_7, f32);
         assert_is_close!(manager.evaluate(&[0.0, 1.0])?[0], 0.936_495_9, f32);
         assert_is_close!(manager.evaluate(&[0.0, 0.0])?[0], 0.0, f32);

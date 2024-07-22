@@ -28,7 +28,7 @@ pub fn criterion_kmatrix_f64(c: &mut Criterion) {
     let pos_imag = (&f0p + &a0p) * s0p.imag() + (&f2 + &a2) * d2.imag();
     let neg_real = (&f0n + &a0n) * s0n.real();
     let neg_imag = (&f0n + &a0n) * s0n.imag();
-    let mut model = Model::new(vec![pos_real + pos_imag + neg_real + neg_imag]);
+    let mut model = model!(pos_real, pos_imag, neg_real, neg_imag);
     model.fix("f0+", "f0_500 re", 0.0).unwrap();
     model.fix("f0+", "f0_500 im", 0.0).unwrap();
     model.fix("f0+", "f0_980 im", 0.0).unwrap();
@@ -90,7 +90,7 @@ pub fn criterion_kmatrix_f32(c: &mut Criterion) {
     let pos_imag = (&f0p + &a0p) * s0p.imag() + (&f2 + &a2) * d2.imag();
     let neg_real = (&f0n + &a0n) * s0n.real();
     let neg_imag = (&f0n + &a0n) * s0n.imag();
-    let mut model = Model::new(vec![pos_real + pos_imag + neg_real + neg_imag]);
+    let mut model = model!(pos_real, pos_imag, neg_real, neg_imag);
     model.fix("f0+", "f0_500 re", 0.0).unwrap();
     model.fix("f0+", "f0_500 im", 0.0).unwrap();
     model.fix("f0+", "f0_980 im", 0.0).unwrap();
