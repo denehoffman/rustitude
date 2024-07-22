@@ -40,8 +40,10 @@ from .amplitude import (
     Imag_32,
     Product_64,
     Product_32,
-    CohSum_64,
-    CohSum_32,
+    Sum_64,
+    Sum_32,
+    NormSqr_64,
+    NormSqr_32,
     Node_64,
     Node_32,
 )
@@ -67,7 +69,8 @@ Amplitude = Amplitude_64
 Real = Real_64
 Imag = Imag_64
 Product = Product_64
-CohSum = CohSum_64
+Sum = Sum_64
+NormSqr = NormSqr_64
 Node = Node_64
 Event = Event_64
 Dataset = Dataset_64
@@ -107,9 +110,12 @@ __all__ = [
     'Product',
     'Product_64',
     'Product_32',
-    'CohSum',
-    'CohSum_64',
-    'CohSum_32',
+    'Sum',
+    'Sum_64',
+    'Sum_32',
+    'NormSqr',
+    'NormSqr_64',
+    'NormSqr_32',
     'Scalar',
     'Scalar_64',
     'Scalar_32',

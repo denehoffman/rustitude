@@ -5,7 +5,7 @@ use rustitude_core as rust;
 
 use crate::{
     amplitude::{
-        Amplitude_32, Amplitude_64, CohSum_32, CohSum_64, Model_32, Model_64, Parameter_32,
+        Amplitude_32, Amplitude_64, Model_32, Model_64, NormSqr_32, NormSqr_64, Parameter_32,
         Parameter_64,
     },
     dataset::{Dataset_32, Dataset_64},
@@ -26,13 +26,13 @@ impl Manager_64 {
         format!("{:?}", self.0)
     }
     #[getter]
-    fn cohsums(&self) -> Vec<CohSum_64> {
+    fn cohsums(&self) -> Vec<NormSqr_64> {
         self.0
             .model
             .cohsums
             .clone()
             .into_iter()
-            .map(CohSum_64::from)
+            .map(NormSqr_64::from)
             .collect()
     }
     #[getter]
@@ -214,13 +214,13 @@ impl Manager_32 {
         format!("{:?}", self.0)
     }
     #[getter]
-    fn cohsums(&self) -> Vec<CohSum_32> {
+    fn cohsums(&self) -> Vec<NormSqr_32> {
         self.0
             .model
             .cohsums
             .clone()
             .into_iter()
-            .map(CohSum_32::from)
+            .map(NormSqr_32::from)
             .collect()
     }
     #[getter]
@@ -414,14 +414,14 @@ impl ExtendedLogLikelihood_64 {
     }
 
     #[getter]
-    fn cohsums(&self) -> Vec<CohSum_64> {
+    fn cohsums(&self) -> Vec<NormSqr_64> {
         self.0
             .data_manager
             .model
             .cohsums
             .clone()
             .into_iter()
-            .map(CohSum_64::from)
+            .map(NormSqr_64::from)
             .collect()
     }
 
@@ -687,14 +687,14 @@ impl ExtendedLogLikelihood_32 {
     }
 
     #[getter]
-    fn cohsums(&self) -> Vec<CohSum_32> {
+    fn cohsums(&self) -> Vec<NormSqr_32> {
         self.0
             .data_manager
             .model
             .cohsums
             .clone()
             .into_iter()
-            .map(CohSum_32::from)
+            .map(NormSqr_32::from)
             .collect()
     }
 
