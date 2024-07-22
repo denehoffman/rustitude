@@ -267,17 +267,20 @@
 //! pub struct OmegaDalitz { ... }
 //! impl Node for OmegaDalitz { ... }
 //!
-//! let complex_term = cscalar("my complex scalar");
-//! let omega_dalitz = Amplitude::new("omega dalitz", OmegaDalitz::default());
-//! let term = complex_term * omega_dalitz;
-//! let model = model!(term);
-//! let dataset = Dataset::from_parquet("path/to/file.parquet").unwrap();
-//! let dataset_mc = Dataset::from_parquet("path/to/monte_carlo_file.parquet").unwrap();
-//! let nll = ExtendedLogLikelihood::new(
+//! fn main() -> Result<(), RustitudeError> {
+//!     let complex_term = cscalar("my complex scalar");
+//!     let omega_dalitz = Amplitude::new("omega dalitz", OmegaDalitz::default());
+//!     let term = complex_term * omega_dalitz;
+//!     let model = model!(term);
+//!     let dataset = Dataset::from_parquet("path/to/file.parquet")?;
+//!     let dataset_mc = Dataset::from_parquet("path/to/monte_carlo_file.parquet")?;
+//!     let nll = ExtendedLogLikelihood::new(
 //!         Manager::new(&model, &dataset),
 //!         Manager::new(&model, &dataset_mc)
 //!     );
-//! println!("NLL on 4 threads: {}", nll.evaluate(&nll.get_initial(), 4));
+//!     println!("NLL: {}", nll.evaluate(&nll.get_initial())?);
+//!     Ok(())
+//! }
 //! ```
 //!
 //! # Fitting Amplitudes to Data
