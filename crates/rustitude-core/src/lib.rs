@@ -326,8 +326,8 @@
 //!     let neg_imag =
 //!         zlm_s0n.imag() * &pw_s_wave + &a2_1320 * &neg_d_wave.imag() + &a2_1700 * &neg_d_wave.imag();
 //!     let model = model!(pos_real, pos_imag, neg_real, neg_imag);
-//!     let ds_data = Dataset::from_parquet_eps_in_beam("path/to/data.root")?;
-//!     let ds_accmc = Dataset::from_parquet_eps_in_beam("path/to/accmc.root")?;
+//!     let ds_data = Dataset::from_parquet("path/to/data.root", ReadMethod::EPSInBeam)?;
+//!     let ds_accmc = Dataset::from_parquet("path/to/accmc.root", ReadMethod::EPSInBeam)?;
 //!     let mut ell = ExtendedLogLikelihood::new(
 //!         Manager::new(&model, &ds_data)?,
 //!         Manager::new(&model, &ds_accmc)?,
