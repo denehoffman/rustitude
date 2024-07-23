@@ -9,6 +9,7 @@ import uproot
 from iminuit import Minuit
 from scipy.optimize import OptimizeResult
 import scipy.optimize as opt
+from uproot.behaviors.TBranch import HasBranches
 
 from ._rustitude import (
     amplitude,
@@ -17,55 +18,132 @@ from ._rustitude import (
     gluex,
     manager,
     __version__,
-    __rustitude_precision__,
 )
 from .amplitude import (
-    CScalar,
-    PCScalar,
-    Scalar,
-    PiecewiseM,
-    Parameter,
-    Model,
-    Amplitude,
-    Real,
-    Imag,
-    Product,
-    CohSum,
-    Node,
+    Scalar_64,
+    Scalar_32,
+    CScalar_64,
+    CScalar_32,
+    PCScalar_64,
+    PCScalar_32,
+    PiecewiseM_64,
+    PiecewiseM_32,
+    Parameter_64,
+    Parameter_32,
+    Model_64,
+    Model_32,
+    Amplitude_64,
+    Amplitude_32,
+    Real_64,
+    Real_32,
+    Imag_64,
+    Imag_32,
+    Product_64,
+    Product_32,
+    Sum_64,
+    Sum_32,
+    NormSqr_64,
+    NormSqr_32,
+    Node_64,
+    Node_32,
 )
-from .dataset import Event, Dataset
-from .manager import ExtendedLogLikelihood, Manager
+from .dataset import Event_64, Event_32, Dataset_64, Dataset_32
+from .manager import (
+    ExtendedLogLikelihood_64,
+    ExtendedLogLikelihood_32,
+    Manager_64,
+    Manager_32,
+    NelderMead_64,
+    NelderMead_32,
+)
 
 from abc import ABCMeta, abstractmethod
 
+Scalar = Scalar_64
+CScalar = CScalar_64
+PCScalar = PCScalar_64
+PiecewiseM = PiecewiseM_64
+Parameter = Parameter_64
+Model = Model_64
+Amplitude = Amplitude_64
+Real = Real_64
+Imag = Imag_64
+Product = Product_64
+Sum = Sum_64
+NormSqr = NormSqr_64
+Node = Node_64
+Event = Event_64
+Dataset = Dataset_64
+ExtendedLogLikelihood = ExtendedLogLikelihood_64
+Manager = Manager_64
+NelderMead = NelderMead_64
+
 __version__: str = __version__
-__rustitude_precision__: str = __rustitude_precision__
 
 __all__ = [
     '__version__',
-    '__rustitude_precision__',
     'dataset',
     'manager',
     'amplitude',
     'four_momentum',
     'Event',
+    'Event_64',
+    'Event_32',
     'Dataset',
+    'Dataset_64',
+    'Dataset_32',
     'Manager',
+    'Manager_64',
+    'Manager_32',
     'ExtendedLogLikelihood',
+    'ExtendedLogLikelihood_64',
+    'ExtendedLogLikelihood_32',
     'Amplitude',
+    'Amplitude_64',
+    'Amplitude_32',
     'Real',
+    'Real_64',
+    'Real_32',
     'Imag',
+    'Imag_64',
+    'Imag_32',
     'Product',
-    'CohSum',
+    'Product_64',
+    'Product_32',
+    'Sum',
+    'Sum_64',
+    'Sum_32',
+    'NormSqr',
+    'NormSqr_64',
+    'NormSqr_32',
     'Scalar',
+    'Scalar_64',
+    'Scalar_32',
     'CScalar',
+    'CScalar_64',
+    'CScalar_32',
     'PCScalar',
+    'PCScalar_64',
+    'PCScalar_32',
     'PiecewiseM',
+    'PiecewiseM_64',
+    'PiecewiseM_32',
     'Parameter',
+    'Parameter_64',
+    'Parameter_32',
     'Model',
-    'gluex',
+    'Model_64',
+    'Model_32',
+    'NelderMead',
+    'NelderMead_64',
+    'NelderMead_32',
     'Node',
+    'Node_64',
+    'Node_32',
     'PyNode',
+    'PyNode_64',
+    'PyNode_32',
+    'gluex',
     'open',
     'minimizer',
 ]
@@ -77,11 +155,17 @@ def __dir__():
 
 # TODO: add a method to calculate EPS from a given polarization angle and amount
 def open(
-    file_name: str | Path, tree_name: str | None = None, *, pol_in_beam: bool = False
-) -> Dataset:  # noqa: A001
+    file_name: str | Path,
+    tree_name: str | None = None,
+    *,
+    pol_in_beam: bool = False,
+    f32: bool = False,
+) -> Dataset_64 | Dataset_32:  # noqa: A001
     filepath = (file_name if isinstance(file_name, Path) else Path(file_name)).resolve()
     tfile = uproot.open(filepath)
     ttree = tfile[tree_name] if tree_name else tfile.get(tfile.keys()[0])
+    if not isinstance(ttree, HasBranches):
+        raise Exception('TTree has no branches!')
     requested_branches = [
         'E_Beam',
         'Px_Beam',
@@ -104,16 +188,36 @@ def open(
         tree_arrays['Py_Beam'] = np.zeros_like(tree_arrays['Py_Beam'])
         tree_arrays['Pz_Beam'] = tree_arrays['E_Beam']
         tree_arrays['EPS'] = [np.array([ex, ey, ez]) for ex, ey, ez in zip(eps_x, eps_y, eps_z)]
-    return Dataset.from_dict(tree_arrays)
+    if f32:
+        return Dataset_32.from_dict(tree_arrays)
+    else:
+        return Dataset_64.from_dict(tree_arrays)
 
 
-class PyNode(metaclass=ABCMeta):
+class PyNode_64(metaclass=ABCMeta):
     @abstractmethod
     def precalculate(self, dataset: Dataset) -> None:
         pass
 
     @abstractmethod
     def calculate(self, parameters: list[float], event: Event) -> complex:
+        pass
+
+    @abstractmethod
+    def parameters(self) -> list[str]:
+        pass
+
+
+PyNode = PyNode_64
+
+
+class PyNode_32(metaclass=ABCMeta):
+    @abstractmethod
+    def precalculate(self, dataset: Dataset_32) -> None:
+        pass
+
+    @abstractmethod
+    def calculate(self, parameters: list[float], event: Event_32) -> complex:
         pass
 
     @abstractmethod
@@ -151,7 +255,7 @@ class ScipyMinCallable(Protocol):
 
 
 def minimizer(
-    ell: ExtendedLogLikelihood,
+    ell: ExtendedLogLikelihood_64 | ExtendedLogLikelihood_32,
     method: Literal['Minuit'] | ScipyOptMethods | ScipyMinCallable | None = None,
     *args: Any,
     indices_data: list[int] | None = None,
@@ -173,7 +277,7 @@ def minimizer(
         if unbounded:
             bounds = None
 
-        def fcn_scipy(x: ArrayLike, *args: Any):
+        def fcn_scipy(x: ArrayLike, *_args: Any):
             return ell(x, indices_data=indices_data, indices_mc=indices_mc, parallel=parallel)
 
         def fit() -> OptimizeResult:

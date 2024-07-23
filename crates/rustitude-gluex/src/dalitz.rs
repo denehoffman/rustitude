@@ -2,14 +2,14 @@ use rayon::prelude::*;
 use rustitude_core::prelude::*;
 
 #[derive(Default, Clone)]
-pub struct OmegaDalitz {
-    dalitz_z: Vec<Field>,
-    dalitz_sin3theta: Vec<Field>,
-    lambda: Vec<Field>,
+pub struct OmegaDalitz<F: Field> {
+    dalitz_z: Vec<F>,
+    dalitz_sin3theta: Vec<F>,
+    lambda: Vec<F>,
 }
 
-impl Node for OmegaDalitz {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
+impl<F: Field> Node<F> for OmegaDalitz<F> {
+    fn precalculate(&mut self, dataset: &Dataset<F>) -> Result<(), RustitudeError> {
         (self.dalitz_z, (self.dalitz_sin3theta, self.lambda)) = dataset
             .events
             .par_iter()
@@ -23,22 +23,22 @@ impl Node for OmegaDalitz {
                 let dalitz_t = (pip + pi0).m2();
                 let dalitz_u = (pim + pi0).m2();
 
-                let m3pi = (2.0 * pip.m()) + pi0.m();
-                let dalitz_d = 2.0 * omega.m() * (omega.m() - m3pi);
-                let dalitz_sc = (1.0 / 3.0) * (omega.m2() + pip.m2() + pim.m2() + pi0.m2());
-                let dalitz_x = Field::sqrt(3.0) * (dalitz_t - dalitz_u) / dalitz_d;
-                let dalitz_y = 3.0 * (dalitz_sc - dalitz_s) / dalitz_d;
+                let m3pi = (F::TWO * pip.m()) + pi0.m();
+                let dalitz_d = F::TWO * omega.m() * (omega.m() - m3pi);
+                let dalitz_sc = (F::ONE / F::THREE) * (omega.m2() + pip.m2() + pim.m2() + pi0.m2());
+                let dalitz_x = F::fsqrt(F::THREE) * (dalitz_t - dalitz_u) / dalitz_d;
+                let dalitz_y = F::THREE * (dalitz_sc - dalitz_s) / dalitz_d;
 
                 let dalitz_z = dalitz_x * dalitz_x + dalitz_y * dalitz_y;
-                let dalitz_sin3theta =
-                    Field::sin(3.0 * Field::asin(dalitz_y / Field::sqrt(dalitz_z)));
+                let dalitz_sin3theta = F::fsin(F::THREE * F::fasin(dalitz_y / F::fsqrt(dalitz_z)));
 
                 let pip_omega = pip.boost_along(&omega);
                 let pim_omega = pim.boost_along(&omega);
                 let pi_cross = pip_omega.momentum().cross(&pim_omega.momentum());
 
-                let lambda = (4.0 / 3.0) * Field::abs(pi_cross.dot(&pi_cross))
-                    / ((1.0 / 9.0) * (omega.m2() - (2.0 * pip.m() + pi0.m()).powi(2)).powi(2));
+                let lambda = (F::FOUR / F::THREE) * F::fabs(pi_cross.dot(&pi_cross))
+                    / ((F::ONE / F::NINE)
+                        * (omega.m2() - (F::TWO * pip.m() + pi0.m()).fpowi(2)).fpowi(2));
 
                 (dalitz_z, (dalitz_sin3theta, lambda))
             })
@@ -46,11 +46,7 @@ impl Node for OmegaDalitz {
         Ok(())
     }
 
-    fn calculate(
-        &self,
-        parameters: &[Field],
-        event: &Event,
-    ) -> Result<ComplexField, RustitudeError> {
+    fn calculate(&self, parameters: &[F], event: &Event<F>) -> Result<Complex<F>, RustitudeError> {
         let dalitz_z = self.dalitz_z[event.index];
         let dalitz_sin3theta = self.dalitz_sin3theta[event.index];
         let lambda = self.lambda[event.index];
@@ -58,13 +54,13 @@ impl Node for OmegaDalitz {
         let beta = parameters[1];
         let gamma = parameters[2];
         let delta = parameters[3];
-        Ok(Field::sqrt(Field::abs(
+        Ok(F::fsqrt(F::fabs(
             lambda
-                * (1.0
-                    + 2.0 * alpha * dalitz_z
-                    + 2.0 * beta * dalitz_z.powf(3.0 / 2.0) * dalitz_sin3theta
-                    + 2.0 * gamma * dalitz_z.powi(2)
-                    + 2.0 * delta * dalitz_z.powf(5.0 / 2.0) * dalitz_sin3theta),
+                * (F::ONE
+                    + F::TWO * alpha * dalitz_z
+                    + F::TWO * beta * dalitz_z.fpowf(F::THREE / F::TWO) * dalitz_sin3theta
+                    + F::TWO * gamma * dalitz_z.fpowi(2)
+                    + F::TWO * delta * dalitz_z.fpowf(F::FIVE / F::TWO) * dalitz_sin3theta),
         ))
         .into())
     }

@@ -5,14 +5,40 @@
 //! struct. You can then provide a convenience method for creating a new implementation of your
 //! [`Amplitude`].
 //!
-//! Amplitudes are typically defined first, and then [`Model`]s are built by multiplying and
-//! operating on [`Amplitude`]s. Any sums represent coherent sums ([`CohSum`]) which are then
-//! added incoherently by the [`Model`].
+//! Amplitudes are typically defined first, and then [`Model`]s are built by adding, multiplying
+//! and taking the real/imaginary part of [`Amplitude`]s. [`Model`]s can be built using the
+//! provided [`Model::new`] constructor or with the [`model!`](`crate::model!`) macro. The terms
+//! provided to either of these will be treated as separate coherent sums. The [`Model`] will
+//! implicitly take their absolute square and then add those sums incoherently.
 //!
 //! We can then use [`Manager`](crate::manager::Manager)-like structs to handle computataion
 //! over [`Dataset`]s.
+//!
+//! # Example:
+//!
+//! An example (with no particular physical meaning) is given as follows:
+//!
+//! ```ignore
+//! use rustitude_core::prelude::*;
+//! fn main() {
+//!     let a = scalar("a");   // a(value) = value
+//!     let b = scalar("b");   // b(value) = value
+//!     let c = cscalar("c");  // c(real, imag) = real + i * imag
+//!     let d = pcscalar("d"); // d(mag, phi) = mag * e^{i * phi}
+//!     let abc = a + b + &c; // references avoid losing ownership
+//!     let x = abc * &d + c.real();
+//!     let model = model!(x, d);
+//!     // |(a.value + b.value + c.real + i * c.imag) * (d.mag * e^{i * d.phi}) + c.real|^2 + |d.mag * e^{i * d.phi}|^2
+//! }
+//! ```
+//!
+//! With Rust's ownership rules, if we want to use amplitudes in multiple places, we need to either
+//! reference them or clone them (`a.clone()`, for instance). References typically look nicer and
+//! are more readable, but a clone will happen regardless (although it isn't expensive, only one
+//! copy of each amplitude will ever hold any data).
 use dyn_clone::DynClone;
 use itertools::Itertools;
+use nalgebra::Complex;
 use rayon::prelude::*;
 use std::{
     collections::HashSet,
@@ -24,12 +50,12 @@ use tracing::{debug, info};
 use crate::{
     dataset::{Dataset, Event},
     errors::RustitudeError,
-    ComplexField, Field,
+    Field,
 };
 
 /// A single parameter within an [`Amplitude`].
 #[derive(Clone)]
-pub struct Parameter {
+pub struct Parameter<F: Field> {
     /// Name of the parent [`Amplitude`] containing this parameter.
     pub amplitude: String,
     /// Name of the parameter.
@@ -42,12 +68,12 @@ pub struct Parameter {
     pub fixed_index: Option<usize>,
     /// The initial value the parameter takes, or alternatively the value of the parameter if it is
     /// fixed in the fit.
-    pub initial: Field,
+    pub initial: F,
     /// Bounds for the given parameter (defaults to +/- infinity). This is mostly optional and
     /// isn't used in any Rust code asside from being able to get and set it.
-    pub bounds: (Field, Field),
+    pub bounds: (F, F),
 }
-impl Parameter {
+impl<F: Field> Parameter<F> {
     /// Creates a new [`Parameter`] within an [`Amplitude`] using the name of the [`Amplitude`],
     /// the name of the [`Parameter`], and the index of the parameter within the [`Model`].
     ///
@@ -59,13 +85,23 @@ impl Parameter {
             name: name.to_string(),
             index: Some(index),
             fixed_index: None,
-            initial: 1.0,
-            bounds: (Field::NEG_INFINITY, Field::INFINITY),
+            initial: F::one(),
+            bounds: (F::NEG_INFINITY, F::INFINITY),
         }
+    }
+
+    /// Returns `true` if the [`Parameter`] is free, `false` otherwise.
+    pub const fn is_free(&self) -> bool {
+        self.index.is_some()
+    }
+
+    /// Returns `true` if the [`Parameter`] is fixed, `false` otherwise.
+    pub const fn is_fixed(&self) -> bool {
+        self.index.is_none()
     }
 }
 
-impl Debug for Parameter {
+impl<F: Field> Debug for Parameter<F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.index.is_none() {
             write!(
@@ -82,7 +118,7 @@ impl Debug for Parameter {
         }
     }
 }
-impl Display for Parameter {
+impl<F: Field> Display for Parameter<F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.name)
     }
@@ -143,38 +179,48 @@ impl Display for Parameter {
 /// }
 ///
 /// #[derive(Clone)]
-/// struct Ylm(Wave, Vec<ComplexField>);
-/// impl Ylm {
-///     fn new(wave: Wave) -> Self {
-///         Self(wave, Vec::default())
+/// pub struct Ylm<F: Field> {
+///     wave: Wave,
+///     data: Vec<Complex<F>>,
+/// }
+/// impl<F: Field> Ylm<F> {
+///     pub fn new(wave: Wave) -> Self {
+///         Self {
+///             wave,
+///             data: Vec::default(),
+///         }
 ///     }
 /// }
-/// impl Node for Ylm {
-///     fn parameters(&self) -> Vec<String> { vec![] }
-///     fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
-///         self.1 = dataset.events
+/// impl<F: Field> Node<F> for Ylm<F> {
+///     fn precalculate(&mut self, dataset: &Dataset<F>) -> Result<(), RustitudeError> {
+///         self.data = dataset
+///             .events
 ///             .par_iter()
 ///             .map(|event| {
 ///                 let resonance = event.daughter_p4s[0] + event.daughter_p4s[1];
-///                 let p1 = event.daughter_p4s[0];
-///                 let recoil_res = event.recoil_p4.boost_along(&resonance); // Boost to helicity frame
-///                 let p1_res = p1.boost_along(&resonance);
-///                 let z = -1.0 * recoil_res.momentum().normalize();
+///                 let beam_res_vec = event.beam_p4.boost_along(&resonance).momentum();
+///                 let recoil_res_vec = event.recoil_p4.boost_along(&resonance).momentum();
+///                 let daughter_res_vec = event.daughter_p4s[0].boost_along(&resonance).momentum();
+///                 let z = -recoil_res_vec.normalize();
 ///                 let y = event
 ///                     .beam_p4
 ///                     .momentum()
-///                     .cross(&(-1.0 * event.recoil_p4.momentum()));
+///                     .cross(&(-recoil_res_vec))
+///                     .normalize();
 ///                 let x = y.cross(&z);
-///                 let p1_vec = p1_res.momentum();
-///                 let p = Coordinates::cartesian(p1_vec.dot(&x), p1_vec.dot(&y), p1_vec.dot(&z));
-///                 ComplexSH::Spherical.eval(self.0.l(), self.0.m(), &p)
+///                 let p = Coordinates::cartesian(
+///                     daughter_res_vec.dot(&x),
+///                     daughter_res_vec.dot(&y),
+///                     daughter_res_vec.dot(&z)
+///                 );
+///                 ComplexSH::Spherical.eval(self.wave.l(), self.wave.m(), &p)
 ///             })
 ///             .collect();
 ///         Ok(())
 ///     }
 ///
-///     fn calculate(&self, _parameters: &[Field], event: &Event) -> Result<ComplexField, RustitudeError> {
-///         Ok(self.1[event.index])
+///     fn calculate(&self, _parameters: &[F], event: &Event<F>) -> Result<Complex<F>, RustitudeError> {
+///         Ok(self.data[event.index])
 ///     }
 /// }
 /// ```
@@ -185,9 +231,9 @@ impl Display for Parameter {
 /// use rustitude_core::prelude::*;
 /// #[derive(Clone)]
 /// struct ComplexScalar;
-/// impl Node for ComplexScalar {
-///     fn calculate(&self, parameters: &[Field], _event: &Event) -> Result<ComplexField, RustitudeError> {
-///         Ok(ComplexField::new(parameters[0], parameters[1]))
+/// impl<F: Field> Node<F> for ComplexScalar {
+///     fn calculate(&self, parameters: &[F], _event: &Event<F>) -> Result<Complex<F>, RustitudeError> {
+///         Ok(Complex::new(parameters[0], parameters[1]))
 ///     }
 ///
 ///     fn parameters(&self) -> Vec<String> {
@@ -195,7 +241,7 @@ impl Display for Parameter {
 ///     }
 /// }
 /// ```
-pub trait Node: Sync + Send + DynClone {
+pub trait Node<F: Field>: Sync + Send + DynClone {
     /// A method that is run once and stores some precalculated values given a [`Dataset`] input.
     ///
     /// This method is intended to run expensive calculations which don't actually depend on the
@@ -207,7 +253,7 @@ pub trait Node: Sync + Send + DynClone {
     ///
     /// This function should be written to return a [`RustitudeError`] if any part of the
     /// calculation fails.
-    fn precalculate(&mut self, _dataset: &Dataset) -> Result<(), RustitudeError> {
+    fn precalculate(&mut self, _dataset: &Dataset<F>) -> Result<(), RustitudeError> {
         Ok(())
     }
 
@@ -224,11 +270,7 @@ pub trait Node: Sync + Send + DynClone {
     ///
     /// This function should be written to return a [`RustitudeError`] if any part of the
     /// calculation fails.
-    fn calculate(
-        &self,
-        parameters: &[Field],
-        event: &Event,
-    ) -> Result<ComplexField, RustitudeError>;
+    fn calculate(&self, parameters: &[F], event: &Event<F>) -> Result<Complex<F>, RustitudeError>;
 
     /// A method which specifies the number and order of parameters used by the [`Node`].
     ///
@@ -241,11 +283,20 @@ pub trait Node: Sync + Send + DynClone {
     }
 
     /// A convenience method for turning [`Node`]s into [`Amplitude`]s.
-    fn into_amplitude(self, name: &str) -> Amplitude
+    fn into_amplitude(self, name: &str) -> Amplitude<F>
     where
         Self: std::marker::Sized + 'static,
     {
         Amplitude::new(name, self)
+    }
+
+    /// A convenience method for turning [`Node`]s into [`Amplitude`]s. This method has a
+    /// shorter name than [`Node::into_amplitude`], which it calls.
+    fn named(self, name: &str) -> Amplitude<F>
+    where
+        Self: std::marker::Sized + 'static,
+    {
+        self.into_amplitude(name)
     }
 
     /// A flag which says if the [`Node`] was written in Python. This matters because the GIL
@@ -256,38 +307,39 @@ pub trait Node: Sync + Send + DynClone {
         false
     }
 }
-dyn_clone::clone_trait_object!(Node);
+
+dyn_clone::clone_trait_object!(<F> Node<F>);
 
 /// This trait is used to implement operations which can be performed on [`Amplitude`]s (and other
 /// operations themselves). Currently, there are only a limited number of defined operations,
 /// namely [`Real`], [`Imag`], and [`Product`]. Others may be added in the future, but they
 /// should probably only be added through this crate and not externally, since they require several
 /// operator overloads to be implemented for nice syntax.
-pub trait AmpLike: DynClone + Send + Sync + Debug + Display + AsTree {
+pub trait AmpLike<F: Field>: Send + Sync + Debug + Display + AsTree + DynClone {
     /// This method walks through an [`AmpLike`] struct and recursively amalgamates a list of
     /// [`Amplitude`]s contained within. Note that these [`Amplitude`]s are owned clones of the
     /// interior structures.
-    fn walk(&self) -> Vec<Amplitude>;
+    fn walk(&self) -> Vec<Amplitude<F>>;
     /// This method is similar to [`AmpLike::walk`], but returns mutable references rather than
     /// clones.
-    fn walk_mut(&mut self) -> Vec<&mut Amplitude>;
+    fn walk_mut(&mut self) -> Vec<&mut Amplitude<F>>;
     /// Given a cache of complex values calculated from a list of amplitudes, this method will
     /// calculate the desired mathematical structure given by the [`AmpLike`] and any
     /// [`AmpLike`]s it contains.
-    fn compute(&self, cache: &[Option<ComplexField>]) -> Option<ComplexField>;
+    fn compute(&self, cache: &[Option<Complex<F>>]) -> Option<Complex<F>>;
     /// This method returns clones of any [`AmpLike`]s wrapped by the given [`AmpLike`].
-    fn get_cloned_terms(&self) -> Option<Vec<Box<dyn AmpLike>>> {
+    fn get_cloned_terms(&self) -> Option<Vec<Box<dyn AmpLike<F>>>> {
         None
     }
     /// Take the real part of an [`Amplitude`] or [`Amplitude-like`](`AmpLike`) struct.
-    fn real(&self) -> Real
+    fn real(&self) -> Real<F>
     where
         Self: std::marker::Sized + 'static,
     {
         Real(dyn_clone::clone_box(self))
     }
     /// Take the imaginary part of an [`Amplitude`] or [`Amplitude-like`](`AmpLike`) struct.
-    fn imag(&self) -> Imag
+    fn imag(&self) -> Imag<F>
     where
         Self: Sized + 'static,
     {
@@ -295,30 +347,22 @@ pub trait AmpLike: DynClone + Send + Sync + Debug + Display + AsTree {
     }
 
     /// Take the product of a [`Vec`] of [`Amplitude-like`](`AmpLike`) structs.
-    fn prod(als: &Vec<Box<dyn AmpLike>>) -> Product
+    fn prod(als: &Vec<Box<dyn AmpLike<F>>>) -> Product<F>
     where
         Self: Sized + 'static,
     {
         Product(*dyn_clone::clone_box(als))
     }
 
-    /// Take the coherent sum (absolute square of the sum) of a [`Vec`] of [`Amplitude-like`](`AmpLike`) structs.
-    fn sum(als: &Vec<Box<dyn AmpLike>>) -> CohSum
+    /// Take the sum of a [`Vec`] of [`Amplitude-like`](`AmpLike`) structs.
+    fn sum(als: &Vec<Box<dyn AmpLike<F>>>) -> Sum<F>
     where
         Self: Sized + 'static,
     {
-        CohSum(*dyn_clone::clone_box(als))
-    }
-
-    /// Returns the given [`AmpLike`] as a coherent sum containing only itself.
-    fn as_cohsum(&self) -> CohSum
-    where
-        Self: Sized + 'static,
-    {
-        CohSum(vec![dyn_clone::clone_box(self)])
+        Sum(*dyn_clone::clone_box(als))
     }
 }
-dyn_clone::clone_trait_object!(AmpLike);
+dyn_clone::clone_trait_object!(<F> AmpLike<F>);
 
 /// This trait defines some simple methods for pretty-printing tree-like structures.
 pub trait AsTree {
@@ -355,13 +399,13 @@ pub trait AsTree {
 /// associated with the [`Node`]. This allows us to distinguish multiple uses of the same [`Node`]
 /// in an analysis, and makes each [`Node`]'s parameters unique.
 #[derive(Clone)]
-pub struct Amplitude {
+pub struct Amplitude<F: Field> {
     /// A name which uniquely identifies an [`Amplitude`] within a sum and group.
     pub name: String,
     /// A [`Node`] which contains all of the operations needed to compute a [`ComplexField`] from an
     /// [`Event`] in a [`Dataset`], a [`Vec<Field>`] of parameter values, and possibly some
     /// precomputed values.
-    pub node: Box<dyn Node>,
+    pub node: Box<dyn Node<F>>,
     /// Indicates whether the amplitude should be included in calculations or skipped.
     pub active: bool,
     /// Contains the parameter names associated with this amplitude.
@@ -374,12 +418,12 @@ pub struct Amplitude {
     pub parameter_index_start: usize,
 }
 
-impl Debug for Amplitude {
+impl<F: Field> Debug for Amplitude<F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.name)
     }
 }
-impl Display for Amplitude {
+impl<F: Field> Display for Amplitude<F> {
     #[rustfmt::skip]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Amplitude")?;
@@ -389,7 +433,7 @@ impl Display for Amplitude {
         writeln!(f, "  Index of First Parameter: {}", self.parameter_index_start)
     }
 }
-impl AsTree for Amplitude {
+impl<F: Field> AsTree for Amplitude<F> {
     fn _get_tree(&self, _bits: &mut Vec<bool>) -> String {
         let name = if self.active {
             self.name.clone()
@@ -403,9 +447,9 @@ impl AsTree for Amplitude {
         }
     }
 }
-impl Amplitude {
+impl<F: Field> Amplitude<F> {
     /// Creates a new [`Amplitude`] from a name and a [`Node`]-implementing struct.
-    pub fn new(name: &str, node: impl Node + 'static) -> Self {
+    pub fn new(name: &str, node: impl Node<F> + 'static) -> Self {
         info!("Created new amplitude named {name}");
         let parameters = node.parameters();
         Self {
@@ -426,24 +470,20 @@ impl Amplitude {
         &mut self,
         cache_position: usize,
         parameter_index_start: usize,
-        dataset: &Dataset,
+        dataset: &Dataset<F>,
     ) -> Result<(), RustitudeError> {
         self.cache_position = cache_position;
         self.parameter_index_start = parameter_index_start;
         self.precalculate(dataset)
     }
 }
-impl Node for Amplitude {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
+impl<F: Field> Node<F> for Amplitude<F> {
+    fn precalculate(&mut self, dataset: &Dataset<F>) -> Result<(), RustitudeError> {
         self.node.precalculate(dataset)?;
         debug!("Precalculated amplitude {}", self.name);
         Ok(())
     }
-    fn calculate(
-        &self,
-        parameters: &[Field],
-        event: &Event,
-    ) -> Result<ComplexField, RustitudeError> {
+    fn calculate(&self, parameters: &[F], event: &Event<F>) -> Result<Complex<F>, RustitudeError> {
         let res = self.node.calculate(
             &parameters
                 [self.parameter_index_start..self.parameter_index_start + self.parameters.len()],
@@ -465,16 +505,16 @@ impl Node for Amplitude {
         self.node.parameters()
     }
 }
-impl AmpLike for Amplitude {
-    fn walk(&self) -> Vec<Amplitude> {
+impl<F: Field> AmpLike<F> for Amplitude<F> {
+    fn walk(&self) -> Vec<Self> {
         vec![self.clone()]
     }
 
-    fn walk_mut(&mut self) -> Vec<&mut Amplitude> {
+    fn walk_mut(&mut self) -> Vec<&mut Self> {
         vec![self]
     }
 
-    fn compute(&self, cache: &[Option<ComplexField>]) -> Option<ComplexField> {
+    fn compute(&self, cache: &[Option<Complex<F>>]) -> Option<Complex<F>> {
         let res = cache[self.cache_position];
         debug!(
             "Computing {} from cache: {:?}",
@@ -487,28 +527,28 @@ impl AmpLike for Amplitude {
 
 /// An [`AmpLike`] representing the real part of the [`AmpLike`] it contains.
 #[derive(Clone)]
-pub struct Real(Box<dyn AmpLike>);
-impl Debug for Real {
+pub struct Real<F: Field>(Box<dyn AmpLike<F>>);
+impl<F: Field> Debug for Real<F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Real [ {:?} ]", self.0)
     }
 }
-impl Display for Real {
+impl<F: Field> Display for Real<F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "{}", self.get_tree())
     }
 }
-impl AmpLike for Real {
-    fn walk(&self) -> Vec<Amplitude> {
+impl<F: Field> AmpLike<F> for Real<F> {
+    fn walk(&self) -> Vec<Amplitude<F>> {
         self.0.walk()
     }
 
-    fn walk_mut(&mut self) -> Vec<&mut Amplitude> {
+    fn walk_mut(&mut self) -> Vec<&mut Amplitude<F>> {
         self.0.walk_mut()
     }
 
-    fn compute(&self, cache: &[Option<ComplexField>]) -> Option<ComplexField> {
-        let res: Option<ComplexField> = self.0.compute(cache).map(|r| r.re.into());
+    fn compute(&self, cache: &[Option<Complex<F>>]) -> Option<Complex<F>> {
+        let res: Option<Complex<F>> = self.0.compute(cache).map(|r| r.re.into());
         debug!(
             "Computing {:?} from cache: {:?}",
             self,
@@ -517,7 +557,7 @@ impl AmpLike for Real {
         res
     }
 }
-impl AsTree for Real {
+impl<F: Field> AsTree for Real<F> {
     fn _get_tree(&self, bits: &mut Vec<bool>) -> String {
         let mut res = String::from("[ real ]\n");
         res.push_str(&self._get_indent(bits.to_vec()));
@@ -531,28 +571,28 @@ impl AsTree for Real {
 
 /// An [`AmpLike`] representing the imaginary part of the [`AmpLike`] it contains.
 #[derive(Clone)]
-pub struct Imag(Box<dyn AmpLike>);
-impl Debug for Imag {
+pub struct Imag<F: Field>(Box<dyn AmpLike<F>>);
+impl<F: Field> Debug for Imag<F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Imag [ {:?} ]", self.0)
     }
 }
-impl Display for Imag {
+impl<F: Field> Display for Imag<F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "{}", self.get_tree())
     }
 }
-impl AmpLike for Imag {
-    fn walk(&self) -> Vec<Amplitude> {
+impl<F: Field> AmpLike<F> for Imag<F> {
+    fn walk(&self) -> Vec<Amplitude<F>> {
         self.0.walk()
     }
 
-    fn walk_mut(&mut self) -> Vec<&mut Amplitude> {
+    fn walk_mut(&mut self) -> Vec<&mut Amplitude<F>> {
         self.0.walk_mut()
     }
 
-    fn compute(&self, cache: &[Option<ComplexField>]) -> Option<ComplexField> {
-        let res: Option<ComplexField> = self.0.compute(cache).map(|r| r.im.into());
+    fn compute(&self, cache: &[Option<Complex<F>>]) -> Option<Complex<F>> {
+        let res: Option<Complex<F>> = self.0.compute(cache).map(|r| r.im.into());
         debug!(
             "Computing {:?} from cache: {:?}",
             self,
@@ -561,7 +601,7 @@ impl AmpLike for Imag {
         res
     }
 }
-impl AsTree for Imag {
+impl<F: Field> AsTree for Imag<F> {
     fn _get_tree(&self, bits: &mut Vec<bool>) -> String {
         let mut res = String::from("[ imag ]\n");
         res.push_str(&self._get_indent(bits.to_vec()));
@@ -575,8 +615,8 @@ impl AsTree for Imag {
 
 /// An [`AmpLike`] representing the product of the [`AmpLike`]s it contains.
 #[derive(Clone)]
-pub struct Product(Vec<Box<dyn AmpLike>>);
-impl Debug for Product {
+pub struct Product<F: Field>(Vec<Box<dyn AmpLike<F>>>);
+impl<F: Field> Debug for Product<F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Product [ ")?;
         for op in &self.0 {
@@ -585,12 +625,12 @@ impl Debug for Product {
         write!(f, "]")
     }
 }
-impl Display for Product {
+impl<F: Field> Display for Product<F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "{}", self.get_tree())
     }
 }
-impl AsTree for Product {
+impl<F: Field> AsTree for Product<F> {
     fn _get_tree(&self, bits: &mut Vec<bool>) -> String {
         let mut res = String::from("[ * ]\n");
         for (i, op) in self.0.iter().enumerate() {
@@ -608,22 +648,22 @@ impl AsTree for Product {
         res
     }
 }
-impl AmpLike for Product {
-    fn get_cloned_terms(&self) -> Option<Vec<Box<dyn AmpLike>>> {
+impl<F: Field> AmpLike<F> for Product<F> {
+    fn get_cloned_terms(&self) -> Option<Vec<Box<dyn AmpLike<F>>>> {
         Some(self.0.clone())
     }
-    fn walk(&self) -> Vec<Amplitude> {
+    fn walk(&self) -> Vec<Amplitude<F>> {
         self.0.iter().flat_map(|op| op.walk()).collect()
     }
 
-    fn walk_mut(&mut self) -> Vec<&mut Amplitude> {
+    fn walk_mut(&mut self) -> Vec<&mut Amplitude<F>> {
         self.0.iter_mut().flat_map(|op| op.walk_mut()).collect()
     }
 
-    fn compute(&self, cache: &[Option<ComplexField>]) -> Option<ComplexField> {
+    fn compute(&self, cache: &[Option<Complex<F>>]) -> Option<Complex<F>> {
         let mut values = self.0.iter().filter_map(|op| op.compute(cache)).peekable();
-        let res: Option<ComplexField> = if values.peek().is_none() {
-            Some(ComplexField::default())
+        let res: Option<Complex<F>> = if values.peek().is_none() {
+            Some(Complex::default())
         } else {
             Some(values.product())
         };
@@ -636,27 +676,26 @@ impl AmpLike for Product {
     }
 }
 
-/// Struct to hold a coherent sum of [`AmpLike`]s
+/// An [`AmpLike`] representing the sum of the [`AmpLike`]s it contains.
 #[derive(Clone)]
-pub struct CohSum(pub Vec<Box<dyn AmpLike>>);
-
-impl Debug for CohSum {
+pub struct Sum<F: Field>(pub Vec<Box<dyn AmpLike<F>>>);
+impl<F: Field> Debug for Sum<F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "CohSum [ ")?;
+        write!(f, "Sum [ ")?;
         for op in &self.0 {
             write!(f, "{:?} ", op)?;
         }
         write!(f, "]")
     }
 }
-impl Display for CohSum {
+impl<F: Field> Display for Sum<F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "{}", self.get_tree())
     }
 }
-impl AsTree for CohSum {
+impl<F: Field> AsTree for Sum<F> {
     fn _get_tree(&self, bits: &mut Vec<bool>) -> String {
-        let mut res = String::from("[ + (coh) ]\n");
+        let mut res = String::from("[ + ]\n");
         for (i, op) in self.0.iter().enumerate() {
             res.push_str(&self._get_indent(bits.to_vec()));
             if i == self.0.len() - 1 {
@@ -672,50 +711,97 @@ impl AsTree for CohSum {
         res
     }
 }
-impl CohSum {
-    /// Shortcut for computation using a cache of precomputed values. This method will return
-    /// [`None`] if the cache value at the corresponding [`Amplitude`]'s
-    /// [`Amplitude::cache_position`] is also [`None`], otherwise it just returns the corresponding
-    /// cached value. The computation is run across the [`CohSum`]'s terms, and the absolute square
-    /// of the result is returned (coherent sum).
-    pub fn compute(&self, cache: &[Option<ComplexField>]) -> Option<Field> {
-        Some(
-            self.0
-                .iter()
-                .filter_map(|al| al.compute(cache))
-                .sum::<ComplexField>()
-                .norm_sqr(),
-        )
+impl<F: Field> AmpLike<F> for Sum<F> {
+    fn get_cloned_terms(&self) -> Option<Vec<Box<dyn AmpLike<F>>>> {
+        Some(self.0.clone())
     }
-
-    /// Walks through a [`CohSum`] and collects all the contained [`Amplitude`]s recursively.
-    pub fn walk(&self) -> Vec<Amplitude> {
+    fn walk(&self) -> Vec<Amplitude<F>> {
         self.0.iter().flat_map(|op| op.walk()).collect()
     }
 
-    /// Walks through an [`CohSum`] and collects all the contained [`Amplitude`]s recursively. This
-    /// method gives mutable access to said [`Amplitude`]s.
-    pub fn walk_mut(&mut self) -> Vec<&mut Amplitude> {
+    fn walk_mut(&mut self) -> Vec<&mut Amplitude<F>> {
         self.0.iter_mut().flat_map(|op| op.walk_mut()).collect()
+    }
+
+    fn compute(&self, cache: &[Option<Complex<F>>]) -> Option<Complex<F>> {
+        let res = Some(
+            self.0
+                .iter()
+                .filter_map(|al| al.compute(cache))
+                .sum::<Complex<F>>(),
+        );
+        debug!(
+            "Computing {:?} from cache: {:?}",
+            self,
+            res.as_ref().map(|c| c.to_string())
+        );
+        res
     }
 }
 
-/// A model contains an API to interact with a group of [`CohSum`]s by managing their amplitudes
+/// Struct to hold a coherent sum of [`AmpLike`]s
+#[derive(Clone)]
+pub struct NormSqr<F: Field>(pub Box<dyn AmpLike<F>>);
+
+impl<F: Field> Debug for NormSqr<F> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "NormSqr[ {:?} ]", self.0)
+    }
+}
+impl<F: Field> Display for NormSqr<F> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}", self.get_tree())
+    }
+}
+impl<F: Field> AsTree for NormSqr<F> {
+    fn _get_tree(&self, bits: &mut Vec<bool>) -> String {
+        let mut res = String::from("[ |_|^2 ]\n");
+        res.push_str(&self._get_indent(bits.to_vec()));
+        res.push_str(&self._get_end());
+        bits.push(false);
+        res.push_str(&self.0._get_tree(&mut bits.clone()));
+        bits.pop();
+        res
+    }
+}
+impl<F: Field> NormSqr<F> {
+    /// Shortcut for computation using a cache of precomputed values. This method will return
+    /// [`None`] if the cache value at the corresponding [`Amplitude`]'s
+    /// [`Amplitude::cache_position`] is also [`None`], otherwise it just returns the corresponding
+    /// cached value. The computation is run across the [`NormSqr`]'s contained term, and the absolute
+    /// square of the result is returned.
+    pub fn compute(&self, cache: &[Option<Complex<F>>]) -> Option<F> {
+        self.0.compute(cache).map(|res| res.norm_sqr())
+    }
+
+    /// Walks through a [`NormSqr`] and collects all the contained [`Amplitude`]s recursively.
+    pub fn walk(&self) -> Vec<Amplitude<F>> {
+        self.0.walk()
+    }
+
+    /// Walks through an [`NormSqr`] and collects all the contained [`Amplitude`]s recursively. This
+    /// method gives mutable access to said [`Amplitude`]s.
+    pub fn walk_mut(&mut self) -> Vec<&mut Amplitude<F>> {
+        self.0.walk_mut()
+    }
+}
+
+/// A model contains an API to interact with a group of coherent sums by managing their amplitudes
 /// and parameters. Models are typically passed to [`Manager`](crate::manager::Manager)-like
 /// struct.
 #[derive(Clone)]
-pub struct Model {
+pub struct Model<F: Field> {
     /// The set of coherent sums included in the [`Model`].
-    pub cohsums: Vec<CohSum>,
-    /// The unique amplitudes located within all [`CohSum`]s.
-    pub amplitudes: Vec<Amplitude>,
-    /// The unique parameters located within all [`CohSum`]s.
-    pub parameters: Vec<Parameter>,
+    pub cohsums: Vec<NormSqr<F>>,
+    /// The unique amplitudes located within all coherent sums.
+    pub amplitudes: Vec<Amplitude<F>>,
+    /// The unique parameters located within all coherent sums.
+    pub parameters: Vec<Parameter<F>>,
     /// Flag which is `True` iff at least one [`Amplitude`] is written in Python and has a [`Node`]
     /// for which [`Node::is_python_node`] returns `True`.
     pub contains_python_amplitudes: bool,
 }
-impl Debug for Model {
+impl<F: Field> Debug for Model<F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Model [ ")?;
         for op in &self.cohsums {
@@ -724,12 +810,12 @@ impl Debug for Model {
         write!(f, "]")
     }
 }
-impl Display for Model {
+impl<F: Field> Display for Model<F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "{}", self.get_tree())
     }
 }
-impl AsTree for Model {
+impl<F: Field> AsTree for Model<F> {
     fn _get_tree(&self, bits: &mut Vec<bool>) -> String {
         let mut res = String::from("[ + ]\n");
         for (i, op) in self.cohsums.iter().enumerate() {
@@ -747,11 +833,11 @@ impl AsTree for Model {
         res
     }
 }
-impl Model {
-    /// Creates a new [`Model`] from a list of [`CohSum`]s.
-    pub fn new(cohsums: Vec<CohSum>) -> Self {
+impl<F: Field> Model<F> {
+    /// Creates a new [`Model`] from a list of [`Box<AmpLike>`]s.
+    pub fn new(amps: &[Box<dyn AmpLike<F>>]) -> Self {
         let mut amp_names = HashSet::new();
-        let amplitudes: Vec<Amplitude> = cohsums
+        let amplitudes: Vec<Amplitude<F>> = amps
             .iter()
             .flat_map(|cohsum| cohsum.walk())
             .filter_map(|amp| {
@@ -778,26 +864,26 @@ impl Model {
             .collect();
         let contains_python_amplitudes = amplitudes.iter().any(|amp| amp.node.is_python_node());
         Self {
-            cohsums: cohsums.into_iter().map(CohSum::from).collect(),
+            cohsums: amps.iter().map(|inner| NormSqr(inner.clone())).collect(),
             amplitudes,
             parameters,
             contains_python_amplitudes,
         }
     }
     /// Computes the result of evaluating the terms in the model with the given [`Parameter`]s for
-    /// the given [`Event`] by summing the result of [`CohSum::compute`] for each [`CohSum`]
-    /// contained in the [`Model`].
+    /// the given [`Event`] by summing the result of [`NormSqr::compute`] for each [`NormSqr`]
+    /// contained in the [`Model`] (see the `cohsum` field of [`Model`]).
     ///
     /// # Errors
     ///
     /// This method yields a [`RustitudeError`] if any of the [`Amplitude::calculate`] steps fail.
-    pub fn compute(&self, parameters: &[Field], event: &Event) -> Result<Field, RustitudeError> {
+    pub fn compute(&self, parameters: &[F], event: &Event<F>) -> Result<F, RustitudeError> {
         // TODO: Stop reallocating?
 
         // NOTE: This seems to be just as fast as using a Vec<ComplexField> and replacing active
         // amplitudes by multiplying their cached values by 0.0. Branch prediction doesn't get us
         // any performance here I guess.
-        let cache: Vec<Option<ComplexField>> = self
+        let cache: Vec<Option<Complex<F>>> = self
             .amplitudes
             .iter()
             .map(|amp| {
@@ -807,12 +893,12 @@ impl Model {
                     Ok(None)
                 }
             })
-            .collect::<Result<Vec<Option<ComplexField>>, RustitudeError>>()?;
+            .collect::<Result<Vec<Option<Complex<F>>>, RustitudeError>>()?;
         Ok(self
             .cohsums
             .iter()
             .filter_map(|cohsum| cohsum.compute(&cache))
-            .sum::<Field>())
+            .sum::<F>())
     }
     /// Registers the [`Model`] with the [`Dataset`] by [`Amplitude::register`]ing each
     /// [`Amplitude`] and setting the proper cache position and parameter starting index.
@@ -820,7 +906,7 @@ impl Model {
     /// # Errors
     ///
     /// This method will yield a [`RustitudeError`] if any [`Amplitude::precalculate`] steps fail.
-    pub fn load(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
+    pub fn load(&mut self, dataset: &Dataset<F>) -> Result<(), RustitudeError> {
         let mut next_cache_pos = 0;
         let mut parameter_index = 0;
         self.amplitudes.iter_mut().try_for_each(|amp| {
@@ -843,10 +929,10 @@ impl Model {
     ///
     /// # Errors
     /// This will throw a [`RustitudeError`] if the amplitude name is not located within the model.
-    pub fn get_amplitude(&self, amplitude_name: &str) -> Result<Amplitude, RustitudeError> {
+    pub fn get_amplitude(&self, amplitude_name: &str) -> Result<Amplitude<F>, RustitudeError> {
         self.amplitudes
             .iter()
-            .find(|a: &&Amplitude| a.name == amplitude_name)
+            .find(|a: &&Amplitude<F>| a.name == amplitude_name)
             .ok_or_else(|| RustitudeError::AmplitudeNotFoundError(amplitude_name.to_string()))
             .cloned()
     }
@@ -859,11 +945,11 @@ impl Model {
         &self,
         amplitude_name: &str,
         parameter_name: &str,
-    ) -> Result<Parameter, RustitudeError> {
+    ) -> Result<Parameter<F>, RustitudeError> {
         self.get_amplitude(amplitude_name)?;
         self.parameters
             .iter()
-            .find(|p: &&Parameter| p.amplitude == amplitude_name && p.name == parameter_name)
+            .find(|p: &&Parameter<F>| p.amplitude == amplitude_name && p.name == parameter_name)
             .ok_or_else(|| RustitudeError::ParameterNotFoundError(parameter_name.to_string()))
             .cloned()
     }
@@ -887,6 +973,25 @@ impl Model {
             );
         }
     }
+
+    /// Returns a [`Vec<Parameter<F>>`] containing the free parameters in the [`Model`].
+    pub fn free_parameters(&self) -> Vec<Parameter<F>> {
+        self.parameters
+            .iter()
+            .filter(|p| p.is_free())
+            .cloned()
+            .collect()
+    }
+
+    /// Returns a [`Vec<Parameter<F>>`] containing the fixed parameters in the [`Model`].
+    pub fn fixed_parameters(&self) -> Vec<Parameter<F>> {
+        self.parameters
+            .iter()
+            .filter(|p| p.is_fixed())
+            .cloned()
+            .collect()
+    }
+
     /// Constrains two [`Parameter`]s in the [`Model`] to be equal to each other when evaluated.
     ///
     /// # Errors
@@ -940,7 +1045,7 @@ impl Model {
         &mut self,
         amplitude: &str,
         parameter: &str,
-        value: Field,
+        value: F,
     ) -> Result<(), RustitudeError> {
         let search_par = self.get_parameter(amplitude, parameter)?;
         let fixed_index = self.get_min_fixed_index();
@@ -983,7 +1088,7 @@ impl Model {
         &mut self,
         amplitude: &str,
         parameter: &str,
-        bounds: (Field, Field),
+        bounds: (F, F),
     ) -> Result<(), RustitudeError> {
         let search_par = self.get_parameter(amplitude, parameter)?;
         if search_par.index.is_some() {
@@ -1010,7 +1115,7 @@ impl Model {
         &mut self,
         amplitude: &str,
         parameter: &str,
-        initial: Field,
+        initial: F,
     ) -> Result<(), RustitudeError> {
         let search_par = self.get_parameter(amplitude, parameter)?;
         if search_par.index.is_some() {
@@ -1029,7 +1134,7 @@ impl Model {
         Ok(())
     }
     /// Returns a list of bounds of free [`Parameter`]s in the [`Model`].
-    pub fn get_bounds(&self) -> Vec<(Field, Field)> {
+    pub fn get_bounds(&self) -> Vec<(F, F)> {
         let any_fixed = if self.any_fixed() { 1 } else { 0 };
         self.group_by_index()
             .iter()
@@ -1038,7 +1143,7 @@ impl Model {
             .collect()
     }
     /// Returns a list of initial values of free [`Parameter`]s in the [`Model`].
-    pub fn get_initial(&self) -> Vec<Field> {
+    pub fn get_initial(&self) -> Vec<F> {
         let any_fixed = if self.any_fixed() { 1 } else { 0 };
         self.group_by_index()
             .iter()
@@ -1137,7 +1242,7 @@ impl Model {
                 .for_each(|amp| amp.active = false)
         });
     }
-    fn group_by_index(&self) -> Vec<Vec<&Parameter>> {
+    fn group_by_index(&self) -> Vec<Vec<&Parameter<F>>> {
         self.parameters
             .iter()
             .sorted_by_key(|par| par.index)
@@ -1146,7 +1251,7 @@ impl Model {
             .map(|(_, group)| group.collect::<Vec<_>>())
             .collect()
     }
-    fn group_by_index_mut(&mut self) -> Vec<Vec<&mut Parameter>> {
+    fn group_by_index_mut(&mut self) -> Vec<Vec<&mut Parameter<F>>> {
         self.parameters
             .iter_mut()
             .sorted_by_key(|par| par.index)
@@ -1191,16 +1296,12 @@ impl Model {
 /// - `value`: The value of the scalar.
 #[derive(Clone)]
 pub struct Scalar;
-impl Node for Scalar {
+impl<F: Field> Node<F> for Scalar {
     fn parameters(&self) -> Vec<String> {
         vec!["value".to_string()]
     }
-    fn calculate(
-        &self,
-        parameters: &[Field],
-        _event: &Event,
-    ) -> Result<ComplexField, RustitudeError> {
-        Ok(ComplexField::new(parameters[0], 0.0))
+    fn calculate(&self, parameters: &[F], _event: &Event<F>) -> Result<Complex<F>, RustitudeError> {
+        Ok(Complex::new(parameters[0], F::zero()))
     }
 }
 
@@ -1215,10 +1316,10 @@ impl Node for Scalar {
 ///
 /// ```
 /// use rustitude_core::prelude::*;
-/// let my_scalar = scalar("MyScalar");
+/// let my_scalar: Amplitude<f64> = scalar("MyScalar");
 /// assert_eq!(my_scalar.parameters, vec!["value".to_string()]);
 /// ```
-pub fn scalar(name: &str) -> Amplitude {
+pub fn scalar<F: Field>(name: &str) -> Amplitude<F> {
     Amplitude::new(name, Scalar)
 }
 /// A [`Node`] for computing a single complex value from two input parameters.
@@ -1232,13 +1333,9 @@ pub fn scalar(name: &str) -> Amplitude {
 /// - `imag`: The imaginary part of the complex scalar.
 #[derive(Clone)]
 pub struct ComplexScalar;
-impl Node for ComplexScalar {
-    fn calculate(
-        &self,
-        parameters: &[Field],
-        _event: &Event,
-    ) -> Result<ComplexField, RustitudeError> {
-        Ok(ComplexField::new(parameters[0], parameters[1]))
+impl<F: Field> Node<F> for ComplexScalar {
+    fn calculate(&self, parameters: &[F], _event: &Event<F>) -> Result<Complex<F>, RustitudeError> {
+        Ok(Complex::new(parameters[0], parameters[1]))
     }
 
     fn parameters(&self) -> Vec<String> {
@@ -1256,10 +1353,10 @@ impl Node for ComplexScalar {
 ///
 /// ```
 /// use rustitude_core::prelude::*;
-/// let my_cscalar = cscalar("MyComplexScalar");
+/// let my_cscalar: Amplitude<f64> = cscalar("MyComplexScalar");
 /// assert_eq!(my_cscalar.parameters, vec!["real".to_string(), "imag".to_string()]);
 /// ```
-pub fn cscalar(name: &str) -> Amplitude {
+pub fn cscalar<F: Field>(name: &str) -> Amplitude<F> {
     Amplitude::new(name, ComplexScalar)
 }
 
@@ -1274,13 +1371,9 @@ pub fn cscalar(name: &str) -> Amplitude {
 /// - `phi`: The phase of the complex scalar.
 #[derive(Clone)]
 pub struct PolarComplexScalar;
-impl Node for PolarComplexScalar {
-    fn calculate(
-        &self,
-        parameters: &[Field],
-        _event: &Event,
-    ) -> Result<ComplexField, RustitudeError> {
-        Ok(parameters[0] * ComplexField::cis(parameters[1]))
+impl<F: Field + num::Float> Node<F> for PolarComplexScalar {
+    fn calculate(&self, parameters: &[F], _event: &Event<F>) -> Result<Complex<F>, RustitudeError> {
+        Ok(Complex::cis(parameters[1]).mul(parameters[0]))
     }
 
     fn parameters(&self) -> Vec<String> {
@@ -1299,37 +1392,39 @@ impl Node for PolarComplexScalar {
 ///
 /// ```
 /// use rustitude_core::prelude::*;
-/// let my_pcscalar = pcscalar("MyPolarComplexScalar");
+/// let my_pcscalar: Amplitude<f64> = pcscalar("MyPolarComplexScalar");
 /// assert_eq!(my_pcscalar.parameters, vec!["mag".to_string(), "phi".to_string()]);
 /// ```
-pub fn pcscalar(name: &str) -> Amplitude {
+pub fn pcscalar<F: Field + num::Float>(name: &str) -> Amplitude<F> {
     Amplitude::new(name, PolarComplexScalar)
 }
 
 /// A generic struct which can be used to create any kind of piecewise function.
 #[derive(Clone)]
-pub struct Piecewise<F>
+pub struct Piecewise<V, F>
 where
-    F: Fn(&Event) -> Field + Send + Sync + Copy,
+    V: Fn(&Event<F>) -> F + Send + Sync + Copy,
+    F: Field,
 {
-    edges: Vec<(Field, Field)>,
-    variable: F,
-    calculated_variable: Vec<Field>,
+    edges: Vec<(F, F)>,
+    variable: V,
+    calculated_variable: Vec<F>,
 }
 
-impl<F> Piecewise<F>
+impl<V, F> Piecewise<V, F>
 where
-    F: Fn(&Event) -> Field + Send + Sync + Copy,
+    V: Fn(&Event<F>) -> F + Send + Sync + Copy,
+    F: Field + num::Float,
 {
     /// Create a new [`Piecewise`] struct from a number of bins, a range of values, and a callable
     /// which defines a variable over the [`Event`]s in a [`Dataset`].
-    pub fn new(bins: usize, range: (Field, Field), variable: F) -> Self {
-        let diff = (range.1 - range.0) / (bins as Field);
+    pub fn new(bins: usize, range: (F, F), variable: V) -> Self {
+        let diff = (range.1 - range.0) / <F as Field>::convert_usize(bins);
         let edges = (0..bins)
             .map(|i| {
                 (
-                    (i as Field).mul_add(diff, range.0),
-                    ((i + 1) as Field).mul_add(diff, range.0),
+                    num::Float::mul_add(<F as Field>::convert_usize(i), diff, range.0),
+                    num::Float::mul_add(<F as Field>::convert_usize(i + 1), diff, range.0),
                 )
             })
             .collect();
@@ -1341,26 +1436,23 @@ where
     }
 }
 
-impl<F> Node for Piecewise<F>
+impl<V, F> Node<F> for Piecewise<V, F>
 where
-    F: Fn(&Event) -> Field + Send + Sync + Copy,
+    V: Fn(&Event<F>) -> F + Send + Sync + Copy,
+    F: Field,
 {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
+    fn precalculate(&mut self, dataset: &Dataset<F>) -> Result<(), RustitudeError> {
         self.calculated_variable = dataset.events.par_iter().map(self.variable).collect();
         Ok(())
     }
 
-    fn calculate(
-        &self,
-        parameters: &[Field],
-        event: &Event,
-    ) -> Result<ComplexField, RustitudeError> {
+    fn calculate(&self, parameters: &[F], event: &Event<F>) -> Result<Complex<F>, RustitudeError> {
         let val = self.calculated_variable[event.index];
         let opt_i_bin = self.edges.iter().position(|&(l, r)| val >= l && val <= r);
         opt_i_bin.map_or_else(
-            || Ok(ComplexField::default()),
+            || Ok(Complex::default()),
             |i_bin| {
-                Ok(ComplexField::new(
+                Ok(Complex::new(
                     parameters[i_bin * 2],
                     parameters[(i_bin * 2) + 1],
                 ))
@@ -1375,27 +1467,27 @@ where
     }
 }
 
-pub fn piecewise_m(name: &str, bins: usize, range: (Field, Field)) -> Amplitude {
+pub fn piecewise_m<F: Field + num::Float>(name: &str, bins: usize, range: (F, F)) -> Amplitude<F> {
     //! Creates a named [`Piecewise`] amplitude with the resonance mass as the binning variable.
     Amplitude::new(
         name,
-        Piecewise::new(bins, range, |e: &Event| {
+        Piecewise::new(bins, range, |e: &Event<F>| {
             (e.daughter_p4s[0] + e.daughter_p4s[1]).m()
         }),
     )
 }
 
-macro_rules! impl_add {
-    ($a:ty, $b:ty) => {
-        impl Add<$b> for $a {
-            type Output = CohSum;
+macro_rules! impl_sum {
+    ($t:ident, $a:ty, $b:ty) => {
+        impl<$t: Field> Add<$b> for $a {
+            type Output = Sum<$t>;
 
             fn add(self, rhs: $b) -> Self::Output {
-                CohSum(vec![Box::new(self), Box::new(rhs)])
+                Sum(vec![Box::new(self), Box::new(rhs)])
             }
         }
 
-        impl Add<&$b> for &$a {
+        impl<$t: Field> Add<&$b> for &$a {
             type Output = <$a as Add<$b>>::Output;
 
             fn add(self, rhs: &$b) -> Self::Output {
@@ -1403,159 +1495,163 @@ macro_rules! impl_add {
             }
         }
 
-        impl Add<&$b> for $a {
+        impl<$t: Field> Add<&$b> for $a {
             type Output = <$a as Add<$b>>::Output;
 
             fn add(self, rhs: &$b) -> Self::Output {
                 <$a as Add<$b>>::add(self, rhs.clone())
             }
         }
-    };
-}
-macro_rules! impl_cohsum {
-    ($a:ty) => {
-        impl Mul<Box<dyn AmpLike>> for $a {
-            type Output = Product;
 
-            fn mul(self, rhs: Box<dyn AmpLike>) -> Self::Output {
-                match (self.get_cloned_terms(), rhs.get_cloned_terms()) {
-                    (Some(terms_a), Some(terms_b)) => Product([terms_a, terms_b].concat()),
-                    (None, Some(terms)) => {
-                        let mut terms = terms;
-                        terms.insert(0, Box::new(self));
-                        Product(terms)
-                    }
-                    (Some(terms), None) => {
-                        let mut terms = terms;
-                        terms.push(Box::new(self));
-                        Product(terms)
-                    }
-                    (None, None) => Product(vec![Box::new(self), rhs]),
-                }
+        impl<$t: Field> Add<$b> for &$a {
+            type Output = <$a as Add<$b>>::Output;
+
+            fn add(self, rhs: $b) -> Self::Output {
+                <$a as Add<$b>>::add(self.clone(), rhs)
             }
         }
-        impl Mul<$a> for Box<dyn AmpLike> {
-            type Output = Product;
 
-            fn mul(self, rhs: $a) -> Self::Output {
-                match (self.get_cloned_terms(), rhs.get_cloned_terms()) {
-                    (Some(terms_a), Some(terms_b)) => Product([terms_a, terms_b].concat()),
-                    (None, Some(terms)) => {
-                        let mut terms = terms;
-                        terms.insert(0, self);
-                        Product(terms)
-                    }
-                    (Some(terms), None) => {
-                        let mut terms = terms;
-                        terms.push(self);
-                        Product(terms)
-                    }
-                    (None, None) => Product(vec![self, Box::new(rhs)]),
-                }
-            }
-        }
-        impl Mul<$a> for CohSum {
-            type Output = CohSum;
-
-            fn mul(self, rhs: $a) -> Self::Output {
-                let mut terms: Vec<Box<dyn AmpLike>> = Vec::default();
-                for term in self.0.clone() {
-                    terms.push(Box::new(term * rhs.clone()))
-                }
-                CohSum(terms)
-            }
-        }
-        impl Mul<CohSum> for $a {
-            type Output = CohSum;
-
-            fn mul(self, rhs: CohSum) -> Self::Output {
-                let mut terms: Vec<Box<dyn AmpLike>> = Vec::default();
-                for term in rhs.0.clone() {
-                    terms.push(Box::new(self.clone() * term))
-                }
-                CohSum(terms)
-            }
-        }
-        impl Mul<&$a> for &CohSum {
-            type Output = CohSum;
-
-            fn mul(self, rhs: &$a) -> Self::Output {
-                <CohSum as Mul<$a>>::mul(self.clone(), rhs.clone())
-            }
-        }
-        impl Mul<&$a> for CohSum {
-            type Output = CohSum;
-
-            fn mul(self, rhs: &$a) -> Self::Output {
-                <CohSum as Mul<$a>>::mul(self, rhs.clone())
-            }
-        }
-        impl Mul<$a> for &CohSum {
-            type Output = CohSum;
-
-            fn mul(self, rhs: $a) -> Self::Output {
-                <CohSum as Mul<$a>>::mul(self.clone(), rhs)
-            }
-        }
-        impl Add<Box<dyn AmpLike>> for $a {
-            type Output = CohSum;
-
-            fn add(self, rhs: Box<dyn AmpLike>) -> Self::Output {
-                CohSum(vec![Box::new(self), rhs])
-            }
-        }
-        impl Add<$a> for Box<dyn AmpLike> {
-            type Output = CohSum;
+        impl<$t: Field> Add<$a> for $b {
+            type Output = Sum<$t>;
 
             fn add(self, rhs: $a) -> Self::Output {
-                CohSum(vec![self, Box::new(rhs)])
+                Sum(vec![Box::new(self), Box::new(rhs)])
             }
         }
-        impl Add<$a> for CohSum {
-            type Output = CohSum;
+
+        impl<$t: Field> Add<&$a> for &$b {
+            type Output = <$b as Add<$a>>::Output;
+
+            fn add(self, rhs: &$a) -> Self::Output {
+                <$b as Add<$a>>::add(self.clone(), rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Add<&$a> for $b {
+            type Output = <$b as Add<$a>>::Output;
+
+            fn add(self, rhs: &$a) -> Self::Output {
+                <$b as Add<$a>>::add(self, rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Add<$a> for &$b {
+            type Output = <$b as Add<$a>>::Output;
+
+            fn add(self, rhs: $a) -> Self::Output {
+                <$b as Add<$a>>::add(self.clone(), rhs)
+            }
+        }
+    };
+    ($t:ident, $a:ty) => {
+        impl<$t: Field> Add<$a> for $a {
+            type Output = Sum<$t>;
+
+            fn add(self, rhs: $a) -> Self::Output {
+                Sum(vec![Box::new(self), Box::new(rhs)])
+            }
+        }
+
+        impl<$t: Field> Add<&$a> for &$a {
+            type Output = <$a as Add<$a>>::Output;
+
+            fn add(self, rhs: &$a) -> Self::Output {
+                <$a as Add<$a>>::add(self.clone(), rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Add<&$a> for $a {
+            type Output = <$a as Add<$a>>::Output;
+
+            fn add(self, rhs: &$a) -> Self::Output {
+                <$a as Add<$a>>::add(self, rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Add<$a> for &$a {
+            type Output = <$a as Add<$a>>::Output;
+
+            fn add(self, rhs: $a) -> Self::Output {
+                <$a as Add<$a>>::add(self.clone(), rhs)
+            }
+        }
+    };
+}
+macro_rules! impl_appending_sum {
+    ($t:ident, $a:ty) => {
+        impl<$t: Field> Add<Sum<$t>> for $a {
+            type Output = Sum<$t>;
+
+            fn add(self, rhs: Sum<$t>) -> Self::Output {
+                let mut terms = rhs.0;
+                terms.insert(0, Box::new(self));
+                Sum(terms)
+            }
+        }
+
+        impl<$t: Field> Add<$a> for Sum<$t> {
+            type Output = Sum<$t>;
 
             fn add(self, rhs: $a) -> Self::Output {
                 let mut terms = self.0;
                 terms.push(Box::new(rhs));
-                CohSum(terms)
+                Sum(terms)
             }
         }
-        impl Add<CohSum> for $a {
-            type Output = CohSum;
 
-            fn add(self, rhs: CohSum) -> Self::Output {
-                let mut terms = rhs.0;
-                terms.push(Box::new(self));
-                CohSum(terms)
+        impl<$t: Field> Add<&Sum<$t>> for &$a {
+            type Output = <$a as Add<Sum<$t>>>::Output;
+
+            fn add(self, rhs: &Sum<$t>) -> Self::Output {
+                <$a as Add<Sum<$t>>>::add(self.clone(), rhs.clone())
             }
         }
-        impl Add<&$a> for &CohSum {
-            type Output = CohSum;
+
+        impl<$t: Field> Add<&Sum<$t>> for $a {
+            type Output = <$a as Add<Sum<$t>>>::Output;
+
+            fn add(self, rhs: &Sum<$t>) -> Self::Output {
+                <$a as Add<Sum<$t>>>::add(self, rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Add<Sum<$t>> for &$a {
+            type Output = <$a as Add<Sum<$t>>>::Output;
+
+            fn add(self, rhs: Sum<$t>) -> Self::Output {
+                <$a as Add<Sum<$t>>>::add(self.clone(), rhs)
+            }
+        }
+
+        impl<$t: Field> Add<&$a> for &Sum<$t> {
+            type Output = <Sum<$t> as Add<$a>>::Output;
 
             fn add(self, rhs: &$a) -> Self::Output {
-                <CohSum as Add<$a>>::add(self.clone(), rhs.clone())
+                <Sum<$t> as Add<$a>>::add(self.clone(), rhs.clone())
             }
         }
-        impl Add<&$a> for CohSum {
-            type Output = CohSum;
+
+        impl<$t: Field> Add<&$a> for Sum<$t> {
+            type Output = <Sum<$t> as Add<$a>>::Output;
 
             fn add(self, rhs: &$a) -> Self::Output {
-                <CohSum as Add<$a>>::add(self, rhs.clone())
+                <Sum<$t> as Add<$a>>::add(self, rhs.clone())
             }
         }
-        impl Add<$a> for &CohSum {
-            type Output = CohSum;
+
+        impl<$t: Field> Add<$a> for &Sum<$t> {
+            type Output = <Sum<$t> as Add<$a>>::Output;
 
             fn add(self, rhs: $a) -> Self::Output {
-                <CohSum as Add<$a>>::add(self.clone(), rhs)
+                <Sum<$t> as Add<$a>>::add(self.clone(), rhs)
             }
         }
     };
 }
-macro_rules! impl_mul {
-    ($a:ty, $b:ty) => {
-        impl Mul<$b> for $a {
-            type Output = Product;
+macro_rules! impl_prod {
+    ($t:ident, $a:ty, $b:ty) => {
+        impl<$t: Field> Mul<$b> for $a {
+            type Output = Product<$t>;
 
             fn mul(self, rhs: $b) -> Self::Output {
                 match (self.get_cloned_terms(), rhs.get_cloned_terms()) {
@@ -1575,7 +1671,7 @@ macro_rules! impl_mul {
             }
         }
 
-        impl Mul<&$b> for &$a {
+        impl<$t: Field> Mul<&$b> for &$a {
             type Output = <$a as Mul<$b>>::Output;
 
             fn mul(self, rhs: &$b) -> Self::Output {
@@ -1583,71 +1679,346 @@ macro_rules! impl_mul {
             }
         }
 
-        impl Mul<&$b> for $a {
+        impl<$t: Field> Mul<&$b> for $a {
             type Output = <$a as Mul<$b>>::Output;
 
             fn mul(self, rhs: &$b) -> Self::Output {
                 <$a as Mul<$b>>::mul(self, rhs.clone())
             }
         }
+
+        impl<$t: Field> Mul<$b> for &$a {
+            type Output = <$a as Mul<$b>>::Output;
+
+            fn mul(self, rhs: $b) -> Self::Output {
+                <$a as Mul<$b>>::mul(self.clone(), rhs)
+            }
+        }
+
+        impl<$t: Field> Mul<$a> for $b {
+            type Output = Product<$t>;
+
+            fn mul(self, rhs: $a) -> Self::Output {
+                match (self.get_cloned_terms(), rhs.get_cloned_terms()) {
+                    (Some(terms_a), Some(terms_b)) => Product([terms_a, terms_b].concat()),
+                    (None, Some(terms)) => {
+                        let mut terms = terms;
+                        terms.insert(0, Box::new(self));
+                        Product(terms)
+                    }
+                    (Some(terms), None) => {
+                        let mut terms = terms;
+                        terms.push(Box::new(rhs));
+                        Product(terms)
+                    }
+                    (None, None) => Product(vec![Box::new(self), Box::new(rhs)]),
+                }
+            }
+        }
+
+        impl<$t: Field> Mul<&$a> for &$b {
+            type Output = <$b as Mul<$a>>::Output;
+
+            fn mul(self, rhs: &$a) -> Self::Output {
+                <$b as Mul<$a>>::mul(self.clone(), rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Mul<&$a> for $b {
+            type Output = <$b as Mul<$a>>::Output;
+
+            fn mul(self, rhs: &$a) -> Self::Output {
+                <$b as Mul<$a>>::mul(self, rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Mul<$a> for &$b {
+            type Output = <$b as Mul<$a>>::Output;
+
+            fn mul(self, rhs: $a) -> Self::Output {
+                <$b as Mul<$a>>::mul(self.clone(), rhs)
+            }
+        }
+    };
+    ($t:ident, $a:ty) => {
+        impl<$t: Field> Mul<$a> for $a {
+            type Output = Product<$t>;
+
+            fn mul(self, rhs: $a) -> Self::Output {
+                match (self.get_cloned_terms(), rhs.get_cloned_terms()) {
+                    (Some(terms_a), Some(terms_b)) => Product([terms_a, terms_b].concat()),
+                    (None, Some(terms)) => {
+                        let mut terms = terms;
+                        terms.insert(0, Box::new(self));
+                        Product(terms)
+                    }
+                    (Some(terms), None) => {
+                        let mut terms = terms;
+                        terms.push(Box::new(rhs));
+                        Product(terms)
+                    }
+                    (None, None) => Product(vec![Box::new(self), Box::new(rhs)]),
+                }
+            }
+        }
+
+        impl<$t: Field> Mul<&$a> for &$a {
+            type Output = <$a as Mul<$a>>::Output;
+
+            fn mul(self, rhs: &$a) -> Self::Output {
+                <$a as Mul<$a>>::mul(self.clone(), rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Mul<&$a> for $a {
+            type Output = <$a as Mul<$a>>::Output;
+
+            fn mul(self, rhs: &$a) -> Self::Output {
+                <$a as Mul<$a>>::mul(self, rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Mul<$a> for &$a {
+            type Output = <$a as Mul<$a>>::Output;
+
+            fn mul(self, rhs: $a) -> Self::Output {
+                <$a as Mul<$a>>::mul(self.clone(), rhs)
+            }
+        }
+    };
+}
+macro_rules! impl_box_prod {
+    ($t:ident, $a:ty) => {
+        impl<$t: Field> Mul<Box<dyn AmpLike<$t>>> for $a {
+            type Output = Product<$t>;
+            fn mul(self, rhs: Box<dyn AmpLike<$t>>) -> Self::Output {
+                match (self.get_cloned_terms(), rhs.get_cloned_terms()) {
+                    (Some(terms_a), Some(terms_b)) => Product([terms_a, terms_b].concat()),
+                    (None, Some(terms)) => {
+                        let mut terms = terms;
+                        terms.insert(0, Box::new(self));
+                        Product(terms)
+                    }
+                    (Some(terms), None) => {
+                        let mut terms = terms;
+                        terms.push(Box::new(self));
+                        Product(terms)
+                    }
+                    (None, None) => Product(vec![Box::new(self), rhs]),
+                }
+            }
+        }
+        impl<$t: Field> Mul<$a> for Box<dyn AmpLike<$t>> {
+            type Output = Product<$t>;
+            fn mul(self, rhs: $a) -> Self::Output {
+                match (self.get_cloned_terms(), rhs.get_cloned_terms()) {
+                    (Some(terms_a), Some(terms_b)) => Product([terms_a, terms_b].concat()),
+                    (None, Some(terms)) => {
+                        let mut terms = terms;
+                        terms.insert(0, self);
+                        Product(terms)
+                    }
+                    (Some(terms), None) => {
+                        let mut terms = terms;
+                        terms.push(self);
+                        Product(terms)
+                    }
+                    (None, None) => Product(vec![self, Box::new(rhs)]),
+                }
+            }
+        }
+    };
+}
+macro_rules! impl_box_sum {
+    ($t:ident, $a:ty) => {
+        impl<$t: Field> Add<Box<dyn AmpLike<$t>>> for $a {
+            type Output = Sum<$t>;
+            fn add(self, rhs: Box<dyn AmpLike<$t>>) -> Self::Output {
+                match (self.get_cloned_terms(), rhs.get_cloned_terms()) {
+                    (Some(terms_a), Some(terms_b)) => Sum([terms_a, terms_b].concat()),
+                    (None, Some(terms)) => {
+                        let mut terms = terms;
+                        terms.insert(0, Box::new(self));
+                        Sum(terms)
+                    }
+                    (Some(terms), None) => {
+                        let mut terms = terms;
+                        terms.push(Box::new(self));
+                        Sum(terms)
+                    }
+                    (None, None) => Sum(vec![Box::new(self), rhs]),
+                }
+            }
+        }
+        impl<$t: Field> Add<$a> for Box<dyn AmpLike<$t>> {
+            type Output = Sum<$t>;
+            fn add(self, rhs: $a) -> Self::Output {
+                match (self.get_cloned_terms(), rhs.get_cloned_terms()) {
+                    (Some(terms_a), Some(terms_b)) => Sum([terms_a, terms_b].concat()),
+                    (None, Some(terms)) => {
+                        let mut terms = terms;
+                        terms.insert(0, self);
+                        Sum(terms)
+                    }
+                    (Some(terms), None) => {
+                        let mut terms = terms;
+                        terms.push(self);
+                        Sum(terms)
+                    }
+                    (None, None) => Sum(vec![self, Box::new(rhs)]),
+                }
+            }
+        }
+    };
+}
+macro_rules! impl_dist {
+    ($t:ident, $a:ty) => {
+        impl<$t: Field> Mul<Sum<$t>> for $a {
+            type Output = Sum<$t>;
+
+            fn mul(self, rhs: Sum<$t>) -> Self::Output {
+                let mut terms = vec![];
+                for term in rhs.0 {
+                    terms.push(Box::new(self.clone() * term) as Box<dyn AmpLike<$t>>);
+                }
+                Sum(terms)
+            }
+        }
+
+        impl<$t: Field> Mul<$a> for Sum<$t> {
+            type Output = Sum<$t>;
+
+            fn mul(self, rhs: $a) -> Self::Output {
+                let mut terms = vec![];
+                for term in self.0 {
+                    terms.push(Box::new(term * rhs.clone()) as Box<dyn AmpLike<$t>>);
+                }
+                Sum(terms)
+            }
+        }
+
+        impl<$t: Field> Mul<&$a> for &Sum<$t> {
+            type Output = <Sum<$t> as Mul<$a>>::Output;
+
+            fn mul(self, rhs: &$a) -> Self::Output {
+                <Sum<$t> as Mul<$a>>::mul(self.clone(), rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Mul<&$a> for Sum<$t> {
+            type Output = <Sum<$t> as Mul<$a>>::Output;
+
+            fn mul(self, rhs: &$a) -> Self::Output {
+                <Sum<$t> as Mul<$a>>::mul(self, rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Mul<$a> for &Sum<$t> {
+            type Output = <Sum<$t> as Mul<$a>>::Output;
+
+            fn mul(self, rhs: $a) -> Self::Output {
+                <Sum<$t> as Mul<$a>>::mul(self.clone(), rhs)
+            }
+        }
+
+        impl<$t: Field> Mul<&Sum<$t>> for &$a {
+            type Output = <$a as Mul<Sum<$t>>>::Output;
+
+            fn mul(self, rhs: &Sum<$t>) -> Self::Output {
+                <$a as Mul<Sum<$t>>>::mul(self.clone(), rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Mul<&Sum<$t>> for $a {
+            type Output = <$a as Mul<Sum<$t>>>::Output;
+
+            fn mul(self, rhs: &Sum<$t>) -> Self::Output {
+                <$a as Mul<Sum<$t>>>::mul(self, rhs.clone())
+            }
+        }
+
+        impl<$t: Field> Mul<Sum<$t>> for &$a {
+            type Output = <$a as Mul<Sum<$t>>>::Output;
+
+            fn mul(self, rhs: Sum<$t>) -> Self::Output {
+                <$a as Mul<Sum<$t>>>::mul(self.clone(), rhs)
+            }
+        }
     };
 }
 
-impl_cohsum!(Amplitude);
-impl_add!(Amplitude, Amplitude);
-impl_add!(Amplitude, Real);
-impl_add!(Amplitude, Imag);
-impl_add!(Amplitude, Product);
-impl_mul!(Amplitude, Amplitude);
-impl_mul!(Amplitude, Real);
-impl_mul!(Amplitude, Imag);
-impl_mul!(Amplitude, Product);
-impl_cohsum!(Real);
-impl_add!(Real, Amplitude);
-impl_add!(Real, Real);
-impl_add!(Real, Imag);
-impl_add!(Real, Product);
-impl_mul!(Real, Amplitude);
-impl_mul!(Real, Real);
-impl_mul!(Real, Imag);
-impl_mul!(Real, Product);
-impl_cohsum!(Imag);
-impl_add!(Imag, Amplitude);
-impl_add!(Imag, Real);
-impl_add!(Imag, Imag);
-impl_add!(Imag, Product);
-impl_mul!(Imag, Amplitude);
-impl_mul!(Imag, Real);
-impl_mul!(Imag, Imag);
-impl_mul!(Imag, Product);
-impl_cohsum!(Product);
-impl_add!(Product, Amplitude);
-impl_add!(Product, Real);
-impl_add!(Product, Imag);
-impl_add!(Product, Product);
-impl_mul!(Product, Amplitude);
-impl_mul!(Product, Real);
-impl_mul!(Product, Imag);
-impl_mul!(Product, Product);
+impl_sum!(F, Amplitude<F>);
+impl_box_sum!(F, Amplitude<F>);
+impl_sum!(F, Real<F>);
+impl_box_sum!(F, Real<F>);
+impl_sum!(F, Imag<F>);
+impl_box_sum!(F, Imag<F>);
+impl_sum!(F, Product<F>);
+impl_box_sum!(F, Product<F>);
+impl_box_sum!(F, Sum<F>);
 
-impl Add<Self> for CohSum {
+impl_sum!(F, Amplitude<F>, Real<F>);
+impl_sum!(F, Amplitude<F>, Imag<F>);
+impl_sum!(F, Amplitude<F>, Product<F>);
+impl_sum!(F, Real<F>, Imag<F>);
+impl_sum!(F, Real<F>, Product<F>);
+impl_sum!(F, Imag<F>, Product<F>);
+
+impl_appending_sum!(F, Amplitude<F>);
+impl_appending_sum!(F, Real<F>);
+impl_appending_sum!(F, Imag<F>);
+impl_appending_sum!(F, Product<F>);
+
+impl_prod!(F, Amplitude<F>);
+impl_box_prod!(F, Amplitude<F>);
+impl_prod!(F, Real<F>);
+impl_box_prod!(F, Real<F>);
+impl_prod!(F, Imag<F>);
+impl_box_prod!(F, Imag<F>);
+impl_prod!(F, Product<F>);
+impl_box_prod!(F, Product<F>);
+
+impl_prod!(F, Amplitude<F>, Real<F>);
+impl_prod!(F, Amplitude<F>, Imag<F>);
+impl_prod!(F, Amplitude<F>, Product<F>);
+impl_prod!(F, Real<F>, Imag<F>);
+impl_prod!(F, Real<F>, Product<F>);
+impl_prod!(F, Imag<F>, Product<F>);
+
+impl_dist!(F, Amplitude<F>);
+impl_dist!(F, Real<F>);
+impl_dist!(F, Imag<F>);
+impl_dist!(F, Product<F>);
+
+impl<F: Field> Add<Self> for Sum<F> {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
+        println!("adding");
         Self([self.0, rhs.0].concat())
     }
 }
-impl Add<&Self> for &CohSum {
-    type Output = <CohSum as Add>::Output;
 
-    fn add(self, rhs: &Self) -> Self::Output {
-        <CohSum as Add>::add(self.clone(), (*rhs).clone())
+impl<F: Field> Add<&Sum<F>> for &Sum<F> {
+    type Output = <Sum<F> as Add<Sum<F>>>::Output;
+
+    fn add(self, rhs: &Sum<F>) -> Self::Output {
+        <Sum<F> as Add<Sum<F>>>::add(self.clone(), rhs.clone())
     }
 }
-impl Add<Self> for &CohSum {
-    type Output = <CohSum as Add>::Output;
 
-    fn add(self, rhs: Self) -> Self::Output {
-        <CohSum as Add>::add(self.clone(), rhs.clone())
+impl<F: Field> Add<&Self> for Sum<F> {
+    type Output = <Self as Add<Self>>::Output;
+
+    fn add(self, rhs: &Self) -> Self::Output {
+        <Self as Add<Self>>::add(self, rhs.clone())
+    }
+}
+
+impl<F: Field> Add<Sum<F>> for &Sum<F> {
+    type Output = <Sum<F> as Add<Sum<F>>>::Output;
+
+    fn add(self, rhs: Sum<F>) -> Self::Output {
+        <Sum<F> as Add<Sum<F>>>::add(self.clone(), rhs)
     }
 }

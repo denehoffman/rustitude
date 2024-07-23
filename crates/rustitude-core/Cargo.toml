@@ -24,10 +24,10 @@ thiserror = { workspace = true }
 dyn-clone = { workspace = true }
 tracing = { workspace = true }
 fastrand = { workspace = true }
+ganesh = { workspace = true }
 
 [features]
 default = []
-float = []
 
 [dev-dependencies]
 sphrs = { workspace = true }

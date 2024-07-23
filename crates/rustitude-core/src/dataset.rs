@@ -88,22 +88,22 @@ use crate::{errors::RustitudeError, prelude::FourMomentum, Field};
 /// The [`Event`] struct contains all the information concerning a single interaction between
 /// particles in the experiment. See the individual fields for additional information.
 #[derive(Debug, Default, Clone)]
-pub struct Event {
+pub struct Event<F: Field> {
     /// The index of the event with the parent [`Dataset`].
     pub index: usize,
     /// The weight of the event with the parent [`Dataset`].
-    pub weight: Field,
+    pub weight: F,
     /// The beam [`FourMomentum`].
-    pub beam_p4: FourMomentum,
+    pub beam_p4: FourMomentum<F>,
     /// The recoil (target after interaction) [`FourMomentum`].
-    pub recoil_p4: FourMomentum,
+    pub recoil_p4: FourMomentum<F>,
     /// [`FourMomentum`] of each other final state particle.
-    pub daughter_p4s: Vec<FourMomentum>,
+    pub daughter_p4s: Vec<FourMomentum<F>>,
     /// A vector corresponding to the polarization of the beam.
-    pub eps: Vector3<Field>,
+    pub eps: Vector3<F>,
 }
 
-impl Display for Event {
+impl<F: Field> Display for Event<F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Index: {}", self.index)?;
         writeln!(f, "Weight: {}", self.weight)?;
@@ -121,7 +121,7 @@ impl Display for Event {
         Ok(())
     }
 }
-impl Event {
+impl<F: Field> Event<F> {
     /// Reads an [`Event`] from a single [`Row`] in a Parquet file.
     ///
     /// # Panics
@@ -136,32 +136,34 @@ impl Event {
             index,
             ..Default::default()
         };
-        let mut e_fs: Vec<Field> = Vec::new();
-        let mut px_fs: Vec<Field> = Vec::new();
-        let mut py_fs: Vec<Field> = Vec::new();
-        let mut pz_fs: Vec<Field> = Vec::new();
+        let mut e_fs: Vec<F> = Vec::new();
+        let mut px_fs: Vec<F> = Vec::new();
+        let mut py_fs: Vec<F> = Vec::new();
+        let mut pz_fs: Vec<F> = Vec::new();
         for (name, field) in row?.get_column_iter() {
             match (name.as_str(), field) {
                 ("E_Beam", ParquetField::Float(value)) => {
-                    event.beam_p4.set_e(Field::from(*value));
+                    event.beam_p4.set_e(F::convert_f32(*value));
                 }
                 ("Px_Beam", ParquetField::Float(value)) => {
-                    event.beam_p4.set_px(Field::from(*value));
+                    event.beam_p4.set_px(F::convert_f32(*value));
                 }
                 ("Py_Beam", ParquetField::Float(value)) => {
-                    event.beam_p4.set_py(Field::from(*value));
+                    event.beam_p4.set_py(F::convert_f32(*value));
                 }
                 ("Pz_Beam", ParquetField::Float(value)) => {
-                    event.beam_p4.set_pz(Field::from(*value));
+                    event.beam_p4.set_pz(F::convert_f32(*value));
                 }
-                ("Weight", ParquetField::Float(value)) => event.weight = Field::from(*value),
+                ("Weight", ParquetField::Float(value)) => {
+                    event.weight = F::convert_f32(*value);
+                }
                 ("EPS", ParquetField::ListInternal(list)) => {
                     event.eps = Vector3::from_vec(
                         list.elements()
                             .iter()
                             .map(|field| {
                                 if let ParquetField::Float(value) = field {
-                                    Field::from(*value)
+                                    F::convert_f32(*value)
                                 } else {
                                     panic!()
                                 }
@@ -175,7 +177,7 @@ impl Event {
                         .iter()
                         .map(|field| {
                             if let ParquetField::Float(value) = field {
-                                Field::from(*value)
+                                F::convert_f32(*value)
                             } else {
                                 panic!()
                             }
@@ -188,7 +190,7 @@ impl Event {
                         .iter()
                         .map(|field| {
                             if let ParquetField::Float(value) = field {
-                                Field::from(*value)
+                                F::convert_f32(*value)
                             } else {
                                 panic!()
                             }
@@ -201,7 +203,7 @@ impl Event {
                         .iter()
                         .map(|field| {
                             if let ParquetField::Float(value) = field {
-                                Field::from(*value)
+                                F::convert_f32(*value)
                             } else {
                                 panic!()
                             }
@@ -214,7 +216,7 @@ impl Event {
                         .iter()
                         .map(|field| {
                             if let ParquetField::Float(value) = field {
-                                Field::from(*value)
+                                F::convert_f32(*value)
                             } else {
                                 panic!()
                             }
@@ -255,30 +257,32 @@ impl Event {
             index,
             ..Default::default()
         };
-        let mut e_fs: Vec<Field> = Vec::new();
-        let mut px_fs: Vec<Field> = Vec::new();
-        let mut py_fs: Vec<Field> = Vec::new();
-        let mut pz_fs: Vec<Field> = Vec::new();
+        let mut e_fs: Vec<F> = Vec::new();
+        let mut px_fs: Vec<F> = Vec::new();
+        let mut py_fs: Vec<F> = Vec::new();
+        let mut pz_fs: Vec<F> = Vec::new();
         for (name, field) in row?.get_column_iter() {
             match (name.as_str(), field) {
                 ("E_Beam", ParquetField::Float(value)) => {
-                    event.beam_p4.set_e(Field::from(*value));
-                    event.beam_p4.set_pz(Field::from(*value));
+                    event.beam_p4.set_e(F::convert_f32(*value));
+                    event.beam_p4.set_pz(F::convert_f32(*value));
                 }
                 ("Px_Beam", ParquetField::Float(value)) => {
-                    event.eps[0] = Field::from(*value);
+                    event.eps[0] = F::convert_f32(*value);
                 }
                 ("Py_Beam", ParquetField::Float(value)) => {
-                    event.eps[1] = Field::from(*value);
+                    event.eps[1] = F::convert_f32(*value);
                 }
-                ("Weight", ParquetField::Float(value)) => event.weight = Field::from(*value),
+                ("Weight", ParquetField::Float(value)) => {
+                    event.weight = F::convert_f32(*value);
+                }
                 ("E_FinalState", ParquetField::ListInternal(list)) => {
                     e_fs = list
                         .elements()
                         .iter()
                         .map(|field| {
                             if let ParquetField::Float(value) = field {
-                                Field::from(*value)
+                                F::convert_f32(*value)
                             } else {
                                 panic!()
                             }
@@ -291,7 +295,7 @@ impl Event {
                         .iter()
                         .map(|field| {
                             if let ParquetField::Float(value) = field {
-                                Field::from(*value)
+                                F::convert_f32(*value)
                             } else {
                                 panic!()
                             }
@@ -304,7 +308,7 @@ impl Event {
                         .iter()
                         .map(|field| {
                             if let ParquetField::Float(value) = field {
-                                Field::from(*value)
+                                F::convert_f32(*value)
                             } else {
                                 panic!()
                             }
@@ -317,7 +321,7 @@ impl Event {
                         .iter()
                         .map(|field| {
                             if let ParquetField::Float(value) = field {
-                                Field::from(*value)
+                                F::convert_f32(*value)
                             } else {
                                 panic!()
                             }
@@ -353,39 +357,39 @@ impl Event {
     fn read_parquet_row_with_eps(
         index: usize,
         row: Result<Row, parquet::errors::ParquetError>,
-        eps: Vector3<Field>,
+        eps: Vector3<F>,
     ) -> Result<Self, RustitudeError> {
         let mut event = Self {
             index,
             eps,
             ..Default::default()
         };
-        let mut e_fs: Vec<Field> = Vec::new();
-        let mut px_fs: Vec<Field> = Vec::new();
-        let mut py_fs: Vec<Field> = Vec::new();
-        let mut pz_fs: Vec<Field> = Vec::new();
+        let mut e_fs: Vec<F> = Vec::new();
+        let mut px_fs: Vec<F> = Vec::new();
+        let mut py_fs: Vec<F> = Vec::new();
+        let mut pz_fs: Vec<F> = Vec::new();
         for (name, field) in row?.get_column_iter() {
             match (name.as_str(), field) {
                 ("E_Beam", ParquetField::Float(value)) => {
-                    event.beam_p4.set_e(Field::from(*value));
+                    event.beam_p4.set_e(F::convert_f32(*value));
                 }
                 ("Px_Beam", ParquetField::Float(value)) => {
-                    event.beam_p4.set_px(Field::from(*value));
+                    event.beam_p4.set_px(F::convert_f32(*value));
                 }
                 ("Py_Beam", ParquetField::Float(value)) => {
-                    event.beam_p4.set_py(Field::from(*value));
+                    event.beam_p4.set_py(F::convert_f32(*value));
                 }
                 ("Pz_Beam", ParquetField::Float(value)) => {
-                    event.beam_p4.set_pz(Field::from(*value));
+                    event.beam_p4.set_pz(F::convert_f32(*value));
                 }
-                ("Weight", ParquetField::Float(value)) => event.weight = Field::from(*value),
+                ("Weight", ParquetField::Float(value)) => event.weight = F::convert_f32(*value),
                 ("E_FinalState", ParquetField::ListInternal(list)) => {
                     e_fs = list
                         .elements()
                         .iter()
                         .map(|field| {
                             if let ParquetField::Float(value) = field {
-                                Field::from(*value)
+                                F::convert_f32(*value)
                             } else {
                                 panic!()
                             }
@@ -398,7 +402,7 @@ impl Event {
                         .iter()
                         .map(|field| {
                             if let ParquetField::Float(value) = field {
-                                Field::from(*value)
+                                F::convert_f32(*value)
                             } else {
                                 panic!()
                             }
@@ -411,7 +415,7 @@ impl Event {
                         .iter()
                         .map(|field| {
                             if let ParquetField::Float(value) = field {
-                                Field::from(*value)
+                                F::convert_f32(*value)
                             } else {
                                 panic!()
                             }
@@ -424,7 +428,7 @@ impl Event {
                         .iter()
                         .map(|field| {
                             if let ParquetField::Float(value) = field {
-                                Field::from(*value)
+                                F::convert_f32(*value)
                             } else {
                                 panic!()
                             }
@@ -474,21 +478,21 @@ impl Event {
 /// rarely need to write data to a dataset (splitting/selecting/rejecting events) but often need to
 /// read events from a dataset.
 #[derive(Default, Debug, Clone)]
-pub struct Dataset {
+pub struct Dataset<F: Field> {
     /// Storage for events.
-    pub events: Arc<Vec<Event>>,
+    pub events: Arc<Vec<Event<F>>>,
 }
 
-impl Dataset {
+impl<F: Field> Dataset<F> {
     // TODO: can we make an events(&self) -> &Vec<Field> method that actually works without cloning?
 
     /// Retrieves the weights from the events in the dataset
-    pub fn weights(&self) -> Vec<Field> {
+    pub fn weights(&self) -> Vec<F> {
         self.events.iter().map(|e| e.weight).collect()
     }
 
     /// Retrieves the weights from the events in the dataset which have the given indices.
-    pub fn weights_indexed(&self, indices: &[usize]) -> Vec<Field> {
+    pub fn weights_indexed(&self, indices: &[usize]) -> Vec<F> {
         indices
             .iter()
             .map(|index| self.events[*index].weight)
@@ -503,12 +507,12 @@ impl Dataset {
     /// [`Manager::evaluate_indexed`](`crate::manager::Manager::evaluate_indexed`).
     pub fn split_m(
         &self,
-        range: (Field, Field),
+        range: (F, F),
         bins: usize,
         daughter_indices: Option<Vec<usize>>,
     ) -> (Vec<Vec<usize>>, Vec<usize>, Vec<usize>) {
-        let mass = |e: &Event| {
-            let p4: FourMomentum = daughter_indices
+        let mass = |e: &Event<F>| {
+            let p4: FourMomentum<F> = daughter_indices
                 .clone()
                 .unwrap_or_else(|| vec![0, 1])
                 .iter()
@@ -534,7 +538,7 @@ impl Dataset {
             row_iter
                 .enumerate()
                 .map(|(i, row)| Event::read_parquet_row(i, row))
-                .collect::<Result<Vec<Event>, RustitudeError>>()?,
+                .collect::<Result<Vec<Event<F>>, RustitudeError>>()?,
         ))
     }
 
@@ -554,7 +558,7 @@ impl Dataset {
             row_iter
                 .enumerate()
                 .map(|(i, row)| Event::read_parquet_row_eps_in_beam(i, row))
-                .collect::<Result<Vec<Event>, RustitudeError>>()?,
+                .collect::<Result<Vec<Event<F>>, RustitudeError>>()?,
         ))
     }
 
@@ -564,7 +568,7 @@ impl Dataset {
     ///
     /// This method will fail if any individual event is missing all of the required fields, if
     /// they have the wrong type, or if the file doesn't exist/can't be read for any reason.
-    pub fn from_parquet_with_eps(path: &str, eps: Vec<Field>) -> Result<Self, RustitudeError> {
+    pub fn from_parquet_with_eps(path: &str, eps: Vec<F>) -> Result<Self, RustitudeError> {
         let path = Path::new(path);
         let file = File::open(path)?;
         let reader = SerializedFileReader::new(file)?;
@@ -574,7 +578,7 @@ impl Dataset {
             row_iter
                 .enumerate()
                 .map(|(i, row)| Event::read_parquet_row_with_eps(i, row, eps_vec))
-                .collect::<Result<Vec<Event>, RustitudeError>>()?,
+                .collect::<Result<Vec<Event<F>>, RustitudeError>>()?,
         ))
     }
 
@@ -593,17 +597,13 @@ impl Dataset {
             row_iter
                 .enumerate()
                 .map(|(i, row)| Event::read_parquet_row_unpolarized(i, row))
-                .collect::<Result<Vec<Event>, RustitudeError>>()?,
+                .collect::<Result<Vec<Event<F>>, RustitudeError>>()?,
         ))
     }
 
     /// Extract a branch from a ROOT `TTree` containing a [`Field`] (float in C). This method
     /// converts the underlying element to an [`Field`].
-    fn extract_f32(
-        path: &str,
-        ttree: &ReaderTree,
-        branch: &str,
-    ) -> Result<Vec<Field>, RustitudeError> {
+    fn extract_f32(path: &str, ttree: &ReaderTree, branch: &str) -> Result<Vec<F>, RustitudeError> {
         let res = ttree
             .branch(branch)
             .ok_or_else(|| {
@@ -612,9 +612,9 @@ impl Dataset {
                     branch, path
                 ))
             })?
-            .as_iter::<Field>()
+            .as_iter::<f64>()
             .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
-            .map(Field::from)
+            .map(F::convert_f64)
             .collect();
         Ok(res)
     }
@@ -625,8 +625,8 @@ impl Dataset {
         path: &str,
         ttree: &ReaderTree,
         branch: &str,
-    ) -> Result<Vec<Vec<Field>>, RustitudeError> {
-        let res: Vec<Vec<Field>> = ttree
+    ) -> Result<Vec<Vec<F>>, RustitudeError> {
+        let res: Vec<Vec<F>> = ttree
             .branch(branch)
             .ok_or_else(|| {
                 RustitudeError::OxyrootError(format!(
@@ -634,9 +634,9 @@ impl Dataset {
                     branch, path
                 ))
             })?
-            .as_iter::<Slice<Field>>()
+            .as_iter::<Slice<f64>>()
             .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
-            .map(|v| v.into_vec())
+            .map(|v| v.into_vec().into_iter().map(F::convert_f64).collect())
             .collect();
         Ok(res)
     }
@@ -652,16 +652,16 @@ impl Dataset {
             .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
             .get_tree("kin")
             .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?;
-        let weight: Vec<Field> = Self::extract_f32(path, &ttree, "Weight")?;
-        let e_beam: Vec<Field> = Self::extract_f32(path, &ttree, "E_Beam")?;
-        let px_beam: Vec<Field> = Self::extract_f32(path, &ttree, "Px_Beam")?;
-        let py_beam: Vec<Field> = Self::extract_f32(path, &ttree, "Py_Beam")?;
-        let pz_beam: Vec<Field> = Self::extract_f32(path, &ttree, "Pz_Beam")?;
-        let e_fs: Vec<Vec<Field>> = Self::extract_vec_f32(path, &ttree, "E_FinalState")?;
-        let px_fs: Vec<Vec<Field>> = Self::extract_vec_f32(path, &ttree, "Px_FinalState")?;
-        let py_fs: Vec<Vec<Field>> = Self::extract_vec_f32(path, &ttree, "Py_FinalState")?;
-        let pz_fs: Vec<Vec<Field>> = Self::extract_vec_f32(path, &ttree, "Pz_FinalState")?;
-        let eps: Vec<Vec<Field>> = Self::extract_vec_f32(path, &ttree, "EPS")?;
+        let weight: Vec<F> = Self::extract_f32(path, &ttree, "Weight")?;
+        let e_beam: Vec<F> = Self::extract_f32(path, &ttree, "E_Beam")?;
+        let px_beam: Vec<F> = Self::extract_f32(path, &ttree, "Px_Beam")?;
+        let py_beam: Vec<F> = Self::extract_f32(path, &ttree, "Py_Beam")?;
+        let pz_beam: Vec<F> = Self::extract_f32(path, &ttree, "Pz_Beam")?;
+        let e_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "E_FinalState")?;
+        let px_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "Px_FinalState")?;
+        let py_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "Py_FinalState")?;
+        let pz_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "Pz_FinalState")?;
+        let eps: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "EPS")?;
         Ok(Self::new(
             izip!(weight, e_beam, px_beam, py_beam, pz_beam, e_fs, px_fs, py_fs, pz_fs, eps)
                 .enumerate()
@@ -698,15 +698,15 @@ impl Dataset {
             .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
             .get_tree("kin")
             .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?;
-        let weight: Vec<Field> = Self::extract_f32(path, &ttree, "Weight")?;
-        let e_beam: Vec<Field> = Self::extract_f32(path, &ttree, "E_Beam")?;
-        let px_beam: Vec<Field> = Self::extract_f32(path, &ttree, "Px_Beam")?;
-        let py_beam: Vec<Field> = Self::extract_f32(path, &ttree, "Py_Beam")?;
-        let pz_beam: Vec<Field> = Self::extract_f32(path, &ttree, "E_Beam")?;
-        let e_fs: Vec<Vec<Field>> = Self::extract_vec_f32(path, &ttree, "E_FinalState")?;
-        let px_fs: Vec<Vec<Field>> = Self::extract_vec_f32(path, &ttree, "Px_FinalState")?;
-        let py_fs: Vec<Vec<Field>> = Self::extract_vec_f32(path, &ttree, "Py_FinalState")?;
-        let pz_fs: Vec<Vec<Field>> = Self::extract_vec_f32(path, &ttree, "Pz_FinalState")?;
+        let weight: Vec<F> = Self::extract_f32(path, &ttree, "Weight")?;
+        let e_beam: Vec<F> = Self::extract_f32(path, &ttree, "E_Beam")?;
+        let px_beam: Vec<F> = Self::extract_f32(path, &ttree, "Px_Beam")?;
+        let py_beam: Vec<F> = Self::extract_f32(path, &ttree, "Py_Beam")?;
+        let pz_beam: Vec<F> = Self::extract_f32(path, &ttree, "E_Beam")?;
+        let e_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "E_FinalState")?;
+        let px_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "Px_FinalState")?;
+        let py_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "Py_FinalState")?;
+        let pz_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "Pz_FinalState")?;
         Ok(Self::new(
             izip!(weight, e_beam, px_beam, py_beam, pz_beam, e_fs, px_fs, py_fs, pz_fs)
                 .enumerate()
@@ -714,7 +714,7 @@ impl Dataset {
                     |(i, (w, e_b, px_b, py_b, pz_b, e_f, px_f, py_f, pz_f))| Event {
                         index: i,
                         weight: w,
-                        beam_p4: FourMomentum::new(e_b, 0.0, 0.0, pz_b),
+                        beam_p4: FourMomentum::new(e_b, F::zero(), F::zero(), pz_b),
                         recoil_p4: FourMomentum::new(e_f[0], px_f[0], py_f[0], pz_f[0]),
                         daughter_p4s: izip!(
                             e_f[1..].iter(),
@@ -724,7 +724,7 @@ impl Dataset {
                         )
                         .map(|(e, px, py, pz)| FourMomentum::new(*e, *px, *py, *pz))
                         .collect(),
-                        eps: Vector3::from_vec(vec![px_b, py_b, 0.0]),
+                        eps: Vector3::from_vec(vec![px_b, py_b, F::zero()]),
                     },
                 )
                 .collect(),
@@ -737,20 +737,20 @@ impl Dataset {
     ///
     /// This method will fail if any individual event is missing all of the required fields, if
     /// they have the wrong type, or if the file doesn't exist/can't be read for any reason.
-    pub fn from_root_with_eps(path: &str, eps: Vec<Field>) -> Result<Self, RustitudeError> {
+    pub fn from_root_with_eps(path: &str, eps: Vec<F>) -> Result<Self, RustitudeError> {
         let ttree = RootFile::open(path)
             .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
             .get_tree("kin")
             .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?;
-        let weight: Vec<Field> = Self::extract_f32(path, &ttree, "Weight")?;
-        let e_beam: Vec<Field> = Self::extract_f32(path, &ttree, "E_Beam")?;
-        let px_beam: Vec<Field> = Self::extract_f32(path, &ttree, "Px_Beam")?;
-        let py_beam: Vec<Field> = Self::extract_f32(path, &ttree, "Py_Beam")?;
-        let pz_beam: Vec<Field> = Self::extract_f32(path, &ttree, "Pz_Beam")?;
-        let e_fs: Vec<Vec<Field>> = Self::extract_vec_f32(path, &ttree, "E_FinalState")?;
-        let px_fs: Vec<Vec<Field>> = Self::extract_vec_f32(path, &ttree, "Px_FinalState")?;
-        let py_fs: Vec<Vec<Field>> = Self::extract_vec_f32(path, &ttree, "Py_FinalState")?;
-        let pz_fs: Vec<Vec<Field>> = Self::extract_vec_f32(path, &ttree, "Pz_FinalState")?;
+        let weight: Vec<F> = Self::extract_f32(path, &ttree, "Weight")?;
+        let e_beam: Vec<F> = Self::extract_f32(path, &ttree, "E_Beam")?;
+        let px_beam: Vec<F> = Self::extract_f32(path, &ttree, "Px_Beam")?;
+        let py_beam: Vec<F> = Self::extract_f32(path, &ttree, "Py_Beam")?;
+        let pz_beam: Vec<F> = Self::extract_f32(path, &ttree, "Pz_Beam")?;
+        let e_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "E_FinalState")?;
+        let px_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "Px_FinalState")?;
+        let py_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "Py_FinalState")?;
+        let pz_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "Pz_FinalState")?;
         let eps = Vector3::from_vec(eps);
         Ok(Self::new(
             izip!(weight, e_beam, px_beam, py_beam, pz_beam, e_fs, px_fs, py_fs, pz_fs)
@@ -787,15 +787,15 @@ impl Dataset {
             .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
             .get_tree("kin")
             .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?;
-        let weight: Vec<Field> = Self::extract_f32(path, &ttree, "Weight")?;
-        let e_beam: Vec<Field> = Self::extract_f32(path, &ttree, "E_Beam")?;
-        let px_beam: Vec<Field> = Self::extract_f32(path, &ttree, "Px_Beam")?;
-        let py_beam: Vec<Field> = Self::extract_f32(path, &ttree, "Py_Beam")?;
-        let pz_beam: Vec<Field> = Self::extract_f32(path, &ttree, "Pz_Beam")?;
-        let e_fs: Vec<Vec<Field>> = Self::extract_vec_f32(path, &ttree, "E_FinalState")?;
-        let px_fs: Vec<Vec<Field>> = Self::extract_vec_f32(path, &ttree, "Px_FinalState")?;
-        let py_fs: Vec<Vec<Field>> = Self::extract_vec_f32(path, &ttree, "Py_FinalState")?;
-        let pz_fs: Vec<Vec<Field>> = Self::extract_vec_f32(path, &ttree, "Pz_FinalState")?;
+        let weight: Vec<F> = Self::extract_f32(path, &ttree, "Weight")?;
+        let e_beam: Vec<F> = Self::extract_f32(path, &ttree, "E_Beam")?;
+        let px_beam: Vec<F> = Self::extract_f32(path, &ttree, "Px_Beam")?;
+        let py_beam: Vec<F> = Self::extract_f32(path, &ttree, "Py_Beam")?;
+        let pz_beam: Vec<F> = Self::extract_f32(path, &ttree, "Pz_Beam")?;
+        let e_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "E_FinalState")?;
+        let px_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "Px_FinalState")?;
+        let py_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "Py_FinalState")?;
+        let pz_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "Pz_FinalState")?;
         Ok(Self::new(
             izip!(weight, e_beam, px_beam, py_beam, pz_beam, e_fs, px_fs, py_fs, pz_fs)
                 .enumerate()
@@ -821,7 +821,7 @@ impl Dataset {
     }
 
     /// Generate a new [`Dataset`] from a [`Vec<Event>`].
-    pub fn new(events: Vec<Event>) -> Self {
+    pub fn new(events: Vec<Event<F>>) -> Self {
         info!("Dataset created with {} events", events.len());
         Self {
             events: Arc::new(events),
@@ -855,7 +855,7 @@ impl Dataset {
     /// of events which return `false` will end up in the second member.
     pub fn get_selected_indices(
         &self,
-        query: impl Fn(&Event) -> bool + Sync + Send,
+        query: impl Fn(&Event<F>) -> bool + Sync + Send,
     ) -> (Vec<usize>, Vec<usize>) {
         let (mut indices_selected, mut indices_rejected): (Vec<usize>, Vec<usize>) =
             self.events.par_iter().partition_map(|event| {
@@ -876,14 +876,14 @@ impl Dataset {
     /// [`Manager::evaluate_indexed`](`crate::manager::Manager::evaluate_indexed`).
     pub fn get_binned_indices(
         &self,
-        variable: impl Fn(&Event) -> Field + Sync + Send,
-        range: (Field, Field),
+        variable: impl Fn(&Event<F>) -> F + Sync + Send,
+        range: (F, F),
         nbins: usize,
     ) -> (Vec<Vec<usize>>, Vec<usize>, Vec<usize>) {
-        let mut bins: Vec<Field> = Vec::with_capacity(nbins + 1);
-        let width = (range.1 - range.0) / nbins as Field;
+        let mut bins: Vec<F> = Vec::with_capacity(nbins + 1);
+        let width = (range.1 - range.0) / <F as Field>::convert_usize(nbins);
         for m in 0..=nbins {
-            bins.push(width.mul_add(m as Field, range.0));
+            bins.push(F::fmul_add(width, <F as Field>::convert_usize(m), range.0));
         }
         let (underflow, _) = self.get_selected_indices(|event| variable(event) < bins[0]);
         let (overflow, _) =

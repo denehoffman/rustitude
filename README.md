@@ -1,7 +1,7 @@
 <p align="center">
   <img
     width="800"
-    src="https://raw.githubusercontent.com/denehoffman/rustitude/main/media/logo.png"
+    src="media/logo.png"
   />
 </p>
 <p align="center">

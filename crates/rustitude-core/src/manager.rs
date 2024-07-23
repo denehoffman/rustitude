@@ -2,6 +2,10 @@
 //! method. This module also holds a [`ExtendedLogLikelihood`] struct which holds two [`Manager`]s
 //! and, as the name suggests, calculates an extended log-likelihood using a very basic method over
 //! data and (accepted) Monte-Carlo.
+
+use std::fmt::{Debug, Display};
+
+use ganesh::prelude::Function;
 use rayon::prelude::*;
 
 use crate::{
@@ -13,20 +17,32 @@ use crate::{
 /// The [`Manager`] struct links a [`Model`] to a [`Dataset`] and provides methods to manipulate
 /// the [`Model`] and evaluate it over the [`Dataset`].
 #[derive(Clone)]
-pub struct Manager {
+pub struct Manager<F: Field> {
     /// The associated [`Model`].
-    pub model: Model,
+    pub model: Model<F>,
     /// The associated [`Dataset`].
-    pub dataset: Dataset,
+    pub dataset: Dataset<F>,
 }
-impl Manager {
+impl<F: Field> Debug for Manager<F> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Manager [ ")?;
+        write!(f, "{:?} ", self.model)?;
+        write!(f, "]")
+    }
+}
+impl<F: Field> Display for Manager<F> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}", self.model)
+    }
+}
+impl<F: Field> Manager<F> {
     /// Generates a new [`Manager`] from a [`Model`] and [`Dataset`].
     ///
     /// # Errors
     ///
     /// This method will return a [`RustitudeError`] if the precaluclation phase of the [`Model`]
     /// fails for any events in the [`Dataset`]. See [`Model::load`] for more information.
-    pub fn new(model: &Model, dataset: &Dataset) -> Result<Self, RustitudeError> {
+    pub fn new(model: &Model<F>, dataset: &Dataset<F>) -> Result<Self, RustitudeError> {
         let mut model = model.clone();
         model.load(dataset)?;
         Ok(Self {
@@ -41,8 +57,8 @@ impl Manager {
     ///
     /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
     /// [`Model::compute`] for more information.
-    pub fn evaluate(&self, parameters: &[Field]) -> Result<Vec<Field>, RustitudeError> {
-        let pars: Vec<Field> = self
+    pub fn evaluate(&self, parameters: &[F]) -> Result<Vec<F>, RustitudeError> {
+        let pars: Vec<F> = self
             .model
             .parameters
             .iter()
@@ -51,7 +67,7 @@ impl Manager {
         self.dataset
             .events
             .iter()
-            .map(|event: &Event| self.model.compute(&pars, event))
+            .map(|event: &Event<F>| self.model.compute(&pars, event))
             .collect()
     }
 
@@ -67,16 +83,16 @@ impl Manager {
     /// [`Model::compute`] for more information.
     pub fn evaluate_indexed(
         &self,
-        parameters: &[Field],
+        parameters: &[F],
         indices: &[usize],
-    ) -> Result<Vec<Field>, RustitudeError> {
+    ) -> Result<Vec<F>, RustitudeError> {
         if self.model.contains_python_amplitudes {
             return Err(RustitudeError::PythonError(
                 "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!"
                     .to_string(),
             ));
         }
-        let pars: Vec<Field> = self
+        let pars: Vec<F> = self
             .model
             .parameters
             .iter()
@@ -96,7 +112,7 @@ impl Manager {
     ///
     /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
     /// [`Model::compute`] for more information.
-    pub fn par_evaluate(&self, parameters: &[Field]) -> Result<Vec<Field>, RustitudeError> {
+    pub fn par_evaluate(&self, parameters: &[F]) -> Result<Vec<F>, RustitudeError> {
         if self.model.contains_python_amplitudes {
             return Err(RustitudeError::PythonError(
                 "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!"
@@ -104,7 +120,7 @@ impl Manager {
             ));
         }
         let mut output = Vec::with_capacity(self.dataset.len());
-        let pars: Vec<Field> = self
+        let pars: Vec<F> = self
             .model
             .parameters
             .iter()
@@ -132,9 +148,9 @@ impl Manager {
     /// [`Model::compute`] for more information.
     pub fn par_evaluate_indexed(
         &self,
-        parameters: &[Field],
+        parameters: &[F],
         indices: &[usize],
-    ) -> Result<Vec<Field>, RustitudeError> {
+    ) -> Result<Vec<F>, RustitudeError> {
         if self.model.contains_python_amplitudes {
             return Err(RustitudeError::PythonError(
                 "Python amplitudes cannot be evaluated with Rust parallelism due to the GIL!"
@@ -142,7 +158,7 @@ impl Manager {
             ));
         }
         let mut output = Vec::with_capacity(indices.len());
-        let pars: Vec<Field> = self
+        let pars: Vec<F> = self
             .model
             .parameters
             .iter()
@@ -152,7 +168,7 @@ impl Manager {
         //     .par_iter()
         //     .map(|index| self.model.compute(&pars, &self.dataset.events[*index]))
         //     .collect_into_vec(&mut output);
-        let view: Vec<&Event> = indices
+        let view: Vec<&Event<F>> = indices
             .par_iter()
             .map(|&index| &self.dataset.events[index])
             .collect();
@@ -168,7 +184,7 @@ impl Manager {
     ///
     /// This method will return a [`RustitudeError`] if there is no amplitude found with the given
     /// name in the parent [`Model`]. See [`Model::get_amplitude`] for more information.
-    pub fn get_amplitude(&self, amplitude_name: &str) -> Result<Amplitude, RustitudeError> {
+    pub fn get_amplitude(&self, amplitude_name: &str) -> Result<Amplitude<F>, RustitudeError> {
         self.model.get_amplitude(amplitude_name)
     }
 
@@ -185,7 +201,7 @@ impl Manager {
         &self,
         amplitude_name: &str,
         parameter_name: &str,
-    ) -> Result<Parameter, RustitudeError> {
+    ) -> Result<Parameter<F>, RustitudeError> {
         self.model.get_parameter(amplitude_name, parameter_name)
     }
 
@@ -193,6 +209,20 @@ impl Manager {
     /// information.
     pub fn print_parameters(&self) {
         self.model.print_parameters()
+    }
+
+    /// Returns a [`Vec<Parameter<F>>`] containing the free parameters in the [`Model`].
+    ///
+    /// See [`Model::free_parameters`] for more information.
+    pub fn free_parameters(&self) -> Vec<Parameter<F>> {
+        self.model.free_parameters()
+    }
+
+    /// Returns a [`Vec<Parameter<F>>`] containing the fixed parameters in the [`Model`].
+    ///
+    /// See [`Model::fixed_parameters`] for more information.
+    pub fn fixed_parameters(&self) -> Vec<Parameter<F>> {
+        self.model.fixed_parameters()
     }
 
     /// Constrain two parameters by name, reducing the number of free parameters by one.
@@ -222,7 +252,7 @@ impl Manager {
         &mut self,
         amplitude: &str,
         parameter: &str,
-        value: Field,
+        value: F,
     ) -> Result<(), RustitudeError> {
         self.model.fix(amplitude, parameter, value)
     }
@@ -247,7 +277,7 @@ impl Manager {
         &mut self,
         amplitude: &str,
         parameter: &str,
-        bounds: (Field, Field),
+        bounds: (F, F),
     ) -> Result<(), RustitudeError> {
         self.model.set_bounds(amplitude, parameter, bounds)
     }
@@ -262,20 +292,20 @@ impl Manager {
         &mut self,
         amplitude: &str,
         parameter: &str,
-        initial: Field,
+        initial: F,
     ) -> Result<(), RustitudeError> {
         self.model.set_initial(amplitude, parameter, initial)
     }
 
     /// Get a list of bounds for all free parameters in the [`Model`]. See
     /// [`Model::get_bounds`] for more information.
-    pub fn get_bounds(&self) -> Vec<(Field, Field)> {
+    pub fn get_bounds(&self) -> Vec<(F, F)> {
         self.model.get_bounds()
     }
 
     /// Get a list of initial values for all free parameters in the [`Model`]. See
     /// [`Model::get_initial`] for more information.
-    pub fn get_initial(&self) -> Vec<Field> {
+    pub fn get_initial(&self) -> Vec<F> {
         self.model.get_initial()
     }
 
@@ -326,15 +356,30 @@ impl Manager {
 /// The [`ExtendedLogLikelihood`] stores two [`Manager`]s, one for data and one for a Monte-Carlo
 /// dataset used for acceptance correction. These should probably have the same [`Manager`] in
 /// practice, but this is left to the user.
-pub struct ExtendedLogLikelihood {
+#[derive(Clone)]
+pub struct ExtendedLogLikelihood<F: Field> {
     /// [`Manager`] for data
-    pub data_manager: Manager,
+    pub data_manager: Manager<F>,
     /// [`Manager`] for Monte-Carlo
-    pub mc_manager: Manager,
+    pub mc_manager: Manager<F>,
 }
-impl ExtendedLogLikelihood {
+impl<F: Field> Debug for ExtendedLogLikelihood<F> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ExtendedLogLikelihood [ ")?;
+        write!(f, "{:?} ", self.data_manager)?;
+        write!(f, "{:?} ", self.mc_manager)?;
+        write!(f, "]")
+    }
+}
+impl<F: Field> Display for ExtendedLogLikelihood<F> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}", self.data_manager)?;
+        writeln!(f, "{}", self.mc_manager)
+    }
+}
+impl<F: Field> ExtendedLogLikelihood<F> {
     /// Create a new [`ExtendedLogLikelihood`] from a data and Monte-Carlo [`Manager`]s.
-    pub const fn new(data_manager: Manager, mc_manager: Manager) -> Self {
+    pub const fn new(data_manager: Manager<F>, mc_manager: Manager<F>) -> Self {
         Self {
             data_manager,
             mc_manager,
@@ -348,25 +393,25 @@ impl ExtendedLogLikelihood {
     /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
     /// [`Model::compute`] for more information.
     #[allow(clippy::suboptimal_flops)]
-    pub fn evaluate(&self, parameters: &[Field]) -> Result<Field, RustitudeError> {
+    pub fn evaluate(&self, parameters: &[F]) -> Result<F, RustitudeError> {
         let data_res = self.data_manager.evaluate(parameters)?;
         let data_weights = self.data_manager.dataset.weights();
-        let n_data = data_weights.iter().sum::<Field>();
+        let n_data = data_weights.iter().copied().sum::<F>();
         let mc_norm_int = self.mc_manager.evaluate(parameters)?;
         let mc_weights = self.mc_manager.dataset.weights();
-        let n_mc = mc_weights.iter().sum::<Field>();
+        let n_mc = mc_weights.iter().copied().sum::<F>();
         let ln_l = (data_res
             .iter()
             .zip(data_weights)
-            .map(|(l, w)| w * l.ln())
-            .sum::<Field>())
+            .map(|(l, w)| w * F::fln(*l))
+            .sum::<F>())
             - (n_data / n_mc)
                 * (mc_norm_int
                     .iter()
                     .zip(mc_weights)
-                    .map(|(l, w)| w * l)
-                    .sum::<Field>());
-        Ok(-2.0 * ln_l)
+                    .map(|(l, w)| w * *l)
+                    .sum::<F>());
+        Ok(F::convert_f64(-2.0) * ln_l)
     }
 
     /// Evaluate the [`ExtendedLogLikelihood`] over the [`Dataset`] with the given free parameters.
@@ -382,30 +427,30 @@ impl ExtendedLogLikelihood {
     #[allow(clippy::suboptimal_flops)]
     pub fn evaluate_indexed(
         &self,
-        parameters: &[Field],
+        parameters: &[F],
         indices_data: &[usize],
         indices_mc: &[usize],
-    ) -> Result<Field, RustitudeError> {
+    ) -> Result<F, RustitudeError> {
         let data_res = self
             .data_manager
             .evaluate_indexed(parameters, indices_data)?;
         let data_weights = self.data_manager.dataset.weights_indexed(indices_data);
-        let n_data = data_weights.iter().sum::<Field>();
+        let n_data = data_weights.iter().copied().sum::<F>();
         let mc_norm_int = self.mc_manager.evaluate_indexed(parameters, indices_mc)?;
         let mc_weights = self.mc_manager.dataset.weights_indexed(indices_mc);
-        let n_mc = mc_weights.iter().sum::<Field>();
+        let n_mc = mc_weights.iter().copied().sum::<F>();
         let ln_l = (data_res
             .iter()
             .zip(data_weights)
-            .map(|(l, w)| w * l.ln())
-            .sum::<Field>())
+            .map(|(l, w)| w * F::fln(*l))
+            .sum::<F>())
             - (n_data / n_mc)
                 * (mc_norm_int
                     .iter()
                     .zip(mc_weights)
-                    .map(|(l, w)| w * l)
-                    .sum::<Field>());
-        Ok(-2.0 * ln_l)
+                    .map(|(l, w)| w * *l)
+                    .sum::<F>());
+        Ok(F::convert_f64(-2.0) * ln_l)
     }
 
     /// Evaluate the [`ExtendedLogLikelihood`] over the [`Dataset`] with the given free parameters.
@@ -418,7 +463,7 @@ impl ExtendedLogLikelihood {
     /// This method will return a [`RustitudeError`] if the amplitude calculation fails. See
     /// [`Model::compute`] for more information.
     #[allow(clippy::suboptimal_flops)]
-    pub fn par_evaluate(&self, parameters: &[Field]) -> Result<Field, RustitudeError> {
+    pub fn par_evaluate(&self, parameters: &[F]) -> Result<F, RustitudeError> {
         if self.data_manager.model.contains_python_amplitudes
             || self.mc_manager.model.contains_python_amplitudes
         {
@@ -429,22 +474,22 @@ impl ExtendedLogLikelihood {
         }
         let data_res = self.data_manager.par_evaluate(parameters)?;
         let data_weights = self.data_manager.dataset.weights();
-        let n_data = data_weights.iter().sum::<Field>();
+        let n_data = data_weights.iter().copied().sum::<F>();
         let mc_norm_int = self.mc_manager.par_evaluate(parameters)?;
         let mc_weights = self.mc_manager.dataset.weights();
-        let n_mc = mc_weights.iter().sum::<Field>();
+        let n_mc = mc_weights.iter().copied().sum::<F>();
         let ln_l = (data_res
             .par_iter()
             .zip(data_weights)
-            .map(|(l, w)| w * l.ln())
-            .sum::<Field>())
+            .map(|(l, w)| w * F::fln(*l))
+            .sum::<F>())
             - (n_data / n_mc)
                 * (mc_norm_int
                     .par_iter()
                     .zip(mc_weights)
-                    .map(|(l, w)| w * l)
-                    .sum::<Field>());
-        Ok(-2.0 * ln_l)
+                    .map(|(l, w)| w * *l)
+                    .sum::<F>());
+        Ok(F::convert_f64(-2.0) * ln_l)
     }
 
     /// Evaluate the [`ExtendedLogLikelihood`] over the [`Dataset`] with the given free parameters.
@@ -463,10 +508,10 @@ impl ExtendedLogLikelihood {
     #[allow(clippy::suboptimal_flops)]
     pub fn par_evaluate_indexed(
         &self,
-        parameters: &[Field],
+        parameters: &[F],
         indices_data: &[usize],
         indices_mc: &[usize],
-    ) -> Result<Field, RustitudeError> {
+    ) -> Result<F, RustitudeError> {
         if self.data_manager.model.contains_python_amplitudes
             || self.mc_manager.model.contains_python_amplitudes
         {
@@ -479,24 +524,24 @@ impl ExtendedLogLikelihood {
             .data_manager
             .par_evaluate_indexed(parameters, indices_data)?;
         let data_weights = self.data_manager.dataset.weights_indexed(indices_data);
-        let n_data = data_weights.iter().sum::<Field>();
+        let n_data = data_weights.iter().copied().sum::<F>();
         let mc_norm_int = self
             .mc_manager
             .par_evaluate_indexed(parameters, indices_mc)?;
         let mc_weights = self.mc_manager.dataset.weights_indexed(indices_mc);
-        let n_mc = mc_weights.iter().sum::<Field>();
+        let n_mc = mc_weights.iter().copied().sum::<F>();
         let ln_l = (data_res
             .par_iter()
             .zip(data_weights)
-            .map(|(l, w)| w * l.ln())
-            .sum::<Field>())
+            .map(|(l, w)| w * F::fln(*l))
+            .sum::<F>())
             - (n_data / n_mc)
                 * (mc_norm_int
                     .par_iter()
                     .zip(mc_weights)
-                    .map(|(l, w)| w * l)
-                    .sum::<Field>());
-        Ok(-2.0 * ln_l)
+                    .map(|(l, w)| w * *l)
+                    .sum::<F>());
+        Ok(F::convert_f64(-2.0) * ln_l)
     }
 
     /// Evaluate the normalized intensity function over the given Monte-Carlo [`Dataset`] with the
@@ -510,15 +555,15 @@ impl ExtendedLogLikelihood {
     #[allow(clippy::suboptimal_flops)]
     pub fn intensity(
         &self,
-        parameters: &[Field],
-        dataset_mc: &Dataset,
-    ) -> Result<Vec<Field>, RustitudeError> {
+        parameters: &[F],
+        dataset_mc: &Dataset<F>,
+    ) -> Result<Vec<F>, RustitudeError> {
         let mc_manager = Manager::new(&self.data_manager.model, dataset_mc)?;
-        let data_len_weighted: Field = self.data_manager.dataset.weights().iter().sum();
-        let mc_len_weighted: Field = dataset_mc.weights().iter().sum();
+        let data_len_weighted: F = self.data_manager.dataset.weights().iter().copied().sum();
+        let mc_len_weighted: F = dataset_mc.weights().iter().copied().sum();
         mc_manager.evaluate(parameters).map(|r_vec| {
             r_vec
-                .iter()
+                .into_iter()
                 .zip(dataset_mc.events.iter())
                 .map(|(r, e)| r * data_len_weighted / mc_len_weighted * e.weight)
                 .collect()
@@ -540,20 +585,25 @@ impl ExtendedLogLikelihood {
     #[allow(clippy::suboptimal_flops)]
     pub fn intensity_indexed(
         &self,
-        parameters: &[Field],
-        dataset_mc: &Dataset,
+        parameters: &[F],
+        dataset_mc: &Dataset<F>,
         indices_data: &[usize],
         indices_mc: &[usize],
-    ) -> Result<Vec<Field>, RustitudeError> {
+    ) -> Result<Vec<F>, RustitudeError> {
         let mc_manager = Manager::new(&self.data_manager.model, dataset_mc)?;
         let data_len_weighted = self
             .data_manager
             .dataset
             .weights_indexed(indices_data)
             .iter()
-            .sum::<Field>();
-        let mc_len_weighted = dataset_mc.weights_indexed(indices_mc).iter().sum::<Field>();
-        let view: Vec<&Event> = indices_mc
+            .copied()
+            .sum::<F>();
+        let mc_len_weighted = dataset_mc
+            .weights_indexed(indices_mc)
+            .iter()
+            .copied()
+            .sum::<F>();
+        let view: Vec<&Event<F>> = indices_mc
             .par_iter()
             .map(|&index| &mc_manager.dataset.events[index])
             .collect();
@@ -561,7 +611,7 @@ impl ExtendedLogLikelihood {
             .evaluate_indexed(parameters, indices_mc)
             .map(|r_vec| {
                 r_vec
-                    .iter()
+                    .into_iter()
                     .zip(view.iter())
                     .map(|(r, e)| r * data_len_weighted / mc_len_weighted * e.weight)
                     .collect()
@@ -581,9 +631,9 @@ impl ExtendedLogLikelihood {
     #[allow(clippy::suboptimal_flops)]
     pub fn par_intensity(
         &self,
-        parameters: &[Field],
-        dataset_mc: &Dataset,
-    ) -> Result<Vec<Field>, RustitudeError> {
+        parameters: &[F],
+        dataset_mc: &Dataset<F>,
+    ) -> Result<Vec<F>, RustitudeError> {
         if self.data_manager.model.contains_python_amplitudes
             || self.mc_manager.model.contains_python_amplitudes
         {
@@ -593,11 +643,11 @@ impl ExtendedLogLikelihood {
             ));
         }
         let mc_manager = Manager::new(&self.data_manager.model, dataset_mc)?;
-        let data_len_weighted: Field = self.data_manager.dataset.weights().iter().sum();
-        let mc_len_weighted: Field = dataset_mc.weights().iter().sum();
+        let data_len_weighted: F = self.data_manager.dataset.weights().iter().copied().sum();
+        let mc_len_weighted: F = dataset_mc.weights().iter().copied().sum();
         mc_manager.par_evaluate(parameters).map(|r_vec| {
             r_vec
-                .iter()
+                .into_iter()
                 .zip(dataset_mc.events.iter())
                 .map(|(r, e)| r * data_len_weighted / mc_len_weighted * e.weight)
                 .collect()
@@ -622,20 +672,21 @@ impl ExtendedLogLikelihood {
     #[allow(clippy::suboptimal_flops)]
     pub fn par_intensity_indexed(
         &self,
-        parameters: &[Field],
-        dataset_mc: &Dataset,
+        parameters: &[F],
+        dataset_mc: &Dataset<F>,
         indices_data: &[usize],
         indices_mc: &[usize],
-    ) -> Result<Vec<Field>, RustitudeError> {
+    ) -> Result<Vec<F>, RustitudeError> {
         let mc_manager = Manager::new(&self.data_manager.model, dataset_mc)?;
-        let data_len_weighted = self
+        let data_len_weighted: F = self
             .data_manager
             .dataset
             .weights_indexed(indices_data)
             .iter()
-            .sum::<Field>();
-        let mc_len_weighted = dataset_mc.weights_indexed(indices_mc).iter().sum::<Field>();
-        let view: Vec<&Event> = indices_mc
+            .copied()
+            .sum();
+        let mc_len_weighted: F = dataset_mc.weights_indexed(indices_mc).iter().copied().sum();
+        let view: Vec<&Event<F>> = indices_mc
             .par_iter()
             .map(|&index| &mc_manager.dataset.events[index])
             .collect();
@@ -643,7 +694,7 @@ impl ExtendedLogLikelihood {
             .par_evaluate_indexed(parameters, indices_mc)
             .map(|r_vec| {
                 r_vec
-                    .par_iter()
+                    .into_par_iter()
                     .zip(view.par_iter())
                     .map(|(r, e)| r * data_len_weighted / mc_len_weighted * e.weight)
                     .collect()
@@ -656,7 +707,7 @@ impl ExtendedLogLikelihood {
     ///
     /// This method will return a [`RustitudeError`] if there is no amplitude found with the given
     /// name in the parent [`Model`]. See [`Model::get_amplitude`] for more information.
-    pub fn get_amplitude(&self, amplitude_name: &str) -> Result<Amplitude, RustitudeError> {
+    pub fn get_amplitude(&self, amplitude_name: &str) -> Result<Amplitude<F>, RustitudeError> {
         self.data_manager.get_amplitude(amplitude_name)
     }
 
@@ -673,7 +724,7 @@ impl ExtendedLogLikelihood {
         &self,
         amplitude_name: &str,
         parameter_name: &str,
-    ) -> Result<Parameter, RustitudeError> {
+    ) -> Result<Parameter<F>, RustitudeError> {
         self.data_manager
             .get_parameter(amplitude_name, parameter_name)
     }
@@ -682,6 +733,20 @@ impl ExtendedLogLikelihood {
     /// information.
     pub fn print_parameters(&self) {
         self.data_manager.print_parameters()
+    }
+
+    /// Returns a [`Vec<Parameter<F>>`] containing the free parameters in the data [`Manager`].
+    ///
+    /// See [`Model::free_parameters`] for more information.
+    pub fn free_parameters(&self) -> Vec<Parameter<F>> {
+        self.data_manager.free_parameters()
+    }
+
+    /// Returns a [`Vec<Parameter<F>>`] containing the fixed parameters in the data [`Manager`].
+    ///
+    /// See [`Model::fixed_parameters`] for more information.
+    pub fn fixed_parameters(&self) -> Vec<Parameter<F>> {
+        self.data_manager.fixed_parameters()
     }
 
     /// Constrain two parameters by name, reducing the number of free parameters by one.
@@ -713,7 +778,7 @@ impl ExtendedLogLikelihood {
         &mut self,
         amplitude: &str,
         parameter: &str,
-        value: Field,
+        value: F,
     ) -> Result<(), RustitudeError> {
         self.data_manager.fix(amplitude, parameter, value)?;
         self.mc_manager.fix(amplitude, parameter, value)
@@ -740,7 +805,7 @@ impl ExtendedLogLikelihood {
         &mut self,
         amplitude: &str,
         parameter: &str,
-        bounds: (Field, Field),
+        bounds: (F, F),
     ) -> Result<(), RustitudeError> {
         self.data_manager.set_bounds(amplitude, parameter, bounds)?;
         self.mc_manager.set_bounds(amplitude, parameter, bounds)
@@ -756,7 +821,7 @@ impl ExtendedLogLikelihood {
         &mut self,
         amplitude: &str,
         parameter: &str,
-        initial: Field,
+        initial: F,
     ) -> Result<(), RustitudeError> {
         self.data_manager
             .set_initial(amplitude, parameter, initial)?;
@@ -765,14 +830,14 @@ impl ExtendedLogLikelihood {
 
     /// Get a list of bounds for all free parameters in the [`Model`]. See
     /// [`Model::get_bounds`] for more information.
-    pub fn get_bounds(&self) -> Vec<(Field, Field)> {
+    pub fn get_bounds(&self) -> Vec<(F, F)> {
         self.data_manager.get_bounds();
         self.mc_manager.get_bounds()
     }
 
     /// Get a list of initial values for all free parameters in the [`Model`]. See
     /// [`Model::get_initial`] for more information.
-    pub fn get_initial(&self) -> Vec<Field> {
+    pub fn get_initial(&self) -> Vec<F> {
         self.data_manager.get_initial();
         self.mc_manager.get_initial()
     }
@@ -824,5 +889,11 @@ impl ExtendedLogLikelihood {
     pub fn deactivate_all(&mut self) {
         self.data_manager.deactivate_all();
         self.mc_manager.deactivate_all()
+    }
+}
+
+impl<F: Field> Function<F, (), RustitudeError> for ExtendedLogLikelihood<F> {
+    fn evaluate(&self, x: &[F], _args: Option<&()>) -> Result<F, RustitudeError> {
+        self.par_evaluate(x)
     }
 }

@@ -4,67 +4,73 @@ use factorial::Factorial;
 use rustitude_core::prelude::*;
 use sphrs::Coordinates;
 
-pub fn breakup_momentum(m0: Field, m1: Field, m2: Field) -> Field {
-    Field::sqrt(Field::abs(
-        m0.powi(4) + m1.powi(4) + m2.powi(4)
-            - 2.0 * (m0.powi(2) * m1.powi(2) + m0.powi(2) * m2.powi(2) + m1.powi(2) * m2.powi(2)),
-    )) / (2.0 * m0)
+pub fn breakup_momentum<F: Field>(m0: F, m1: F, m2: F) -> F {
+    F::fsqrt(F::fabs(
+        m0.fpowi(4) + m1.fpowi(4) + m2.fpowi(4)
+            - F::TWO
+                * (m0.fpowi(2) * m1.fpowi(2)
+                    + m0.fpowi(2) * m2.fpowi(2)
+                    + m1.fpowi(2) * m2.fpowi(2)),
+    )) / (F::TWO * m0)
 }
 
-pub fn blatt_weisskopf(m0: Field, m1: Field, m2: Field, l: usize) -> Field {
+pub fn blatt_weisskopf<F: Field>(m0: F, m1: F, m2: F, l: usize) -> F {
     let q = breakup_momentum(m0, m1, m2);
-    let z = q.powi(2) / Field::powi(0.1973, 2);
+    let z = q.fpowi(2) / F::f(0.1973).fpowi(2);
     match l {
-        0 => 1.0,
-        1 => Field::sqrt((2.0 * z) / (z + 1.0)),
-        2 => Field::sqrt((13.0 * z.powi(2)) / ((z - 3.0).powi(2) + 9.0 * z)),
-        3 => Field::sqrt(
-            (277.0 * z.powi(3)) / (z * (z - 15.0).powi(2) + 9.0 * (2.0 * z - 5.0).powi(2)),
+        0 => F::ONE,
+        1 => F::fsqrt((F::TWO * z) / (z + F::ONE)),
+        2 => F::fsqrt((F::f(13.0) * z.fpowi(2)) / ((z - F::THREE).fpowi(2) + F::NINE * z)),
+        3 => F::fsqrt(
+            (F::f(277.0) * z.fpowi(3))
+                / (z * (z - F::f(15.0)).fpowi(2) + F::NINE * (F::TWO * z - F::FIVE).fpowi(2)),
         ),
-        4 => Field::sqrt(
-            (12746.0 * z.powi(4)) / (z.powi(2) - 45.0 * z + 105.0).powi(2)
-                + 25.0 * z * (2.0 * z - 21.0).powi(2),
+        4 => F::fsqrt(
+            (F::f(12746.0) * z.fpowi(4)) / (z.fpowi(2) - F::f(45.0) * z + F::f(105.0)).fpowi(2)
+                + F::f(25.0) * z * (F::TWO * z - F::f(21.0)).fpowi(2),
         ),
         l => panic!("L = {l} is not yet implemented"),
     }
 }
 
-pub fn small_wigner_d_matrix(beta: Field, j: usize, m: isize, n: isize) -> Field {
+pub fn small_wigner_d_matrix<F: Field>(beta: F, j: usize, m: isize, n: isize) -> F {
     let jpm = (j as i32 + m as i32) as u32;
     let jmm = (j as i32 - m as i32) as u32;
     let jpn = (j as i32 + n as i32) as u32;
     let jmn = (j as i32 - n as i32) as u32;
-    let prefactor = Field::sqrt(
-        (jpm.factorial() * jmm.factorial() * jpn.factorial() * jmn.factorial()) as Field,
-    );
+    let prefactor = F::fsqrt(F::convert_u32(
+        jpm.factorial() * jmm.factorial() * jpn.factorial() * jmn.factorial(),
+    ));
     let s_min = isize::max(0, n - m) as usize;
     let s_max = isize::min(jpn as isize, jmm as isize) as usize;
-    let sum: Field = (s_min..=s_max)
+    let sum: F = (s_min..=s_max)
         .map(|s| {
-            (Field::powi(-1.0, m as i32 - n as i32 + s as i32)
-                * (Field::cos(beta / 2.0)
-                    .powi(2 * (j as i32) + n as i32 - m as i32 - 2 * (s as i32)))
-                * (Field::sin(beta / 2.0).powi(m as i32 - n as i32 + 2 * s as i32)))
-                / ((jpm - s as u32).factorial()
-                    * (s as u32).factorial()
-                    * ((m - n + s as isize) as u32).factorial()
-                    * (jmm - s as u32).factorial()) as Field
+            (F::fpowi(-F::ONE, m as i32 - n as i32 + s as i32)
+                * (F::fcos(beta / F::TWO)
+                    .fpowi(2 * (j as i32) + n as i32 - m as i32 - 2 * (s as i32)))
+                * (F::fsin(beta / F::TWO).fpowi(m as i32 - n as i32 + 2 * s as i32)))
+                / F::convert_u32(
+                    (jpm - s as u32).factorial()
+                        * (s as u32).factorial()
+                        * ((m - n + s as isize) as u32).factorial()
+                        * (jmm - s as u32).factorial(),
+                )
         })
         .sum();
     prefactor * sum
 }
 
-pub fn wigner_d_matrix(
-    alpha: Field,
-    beta: Field,
-    gamma: Field,
+pub fn wigner_d_matrix<F: Field>(
+    alpha: F,
+    beta: F,
+    gamma: F,
     j: usize,
     m: isize,
     n: isize,
-) -> ComplexField {
-    ComplexField::cis(-(m as Field) * alpha)
+) -> Complex<F> {
+    Complex::cis(-(F::convert_isize(m)) * alpha)
         * small_wigner_d_matrix(beta, j, m, n)
-        * ComplexField::cis(-(n as Field) * gamma)
+        * Complex::cis(-(F::convert_isize(n)) * gamma)
 }
 
 #[derive(Clone, Copy, Default)]
@@ -169,18 +175,13 @@ impl FromStr for Frame {
 }
 
 impl Frame {
-    pub fn coordinates(
+    pub fn coordinates<F: Field>(
         &self,
-        beam_res_vec: &Vector3<Field>,
-        recoil_res_vec: &Vector3<Field>,
-        daughter_res_vec: &Vector3<Field>,
-        event: &Event,
-    ) -> (
-        Vector3<Field>,
-        Vector3<Field>,
-        Vector3<Field>,
-        Coordinates<Field>,
-    ) {
+        beam_res_vec: &Vector3<F>,
+        recoil_res_vec: &Vector3<F>,
+        daughter_res_vec: &Vector3<F>,
+        event: &Event<F>,
+    ) -> (Vector3<F>, Vector3<F>, Vector3<F>, Coordinates<F>) {
         match self {
             Frame::Helicity => {
                 let z = -recoil_res_vec.normalize();

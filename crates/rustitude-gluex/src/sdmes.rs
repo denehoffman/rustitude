@@ -5,12 +5,12 @@ use sphrs::SHCoordinates;
 use crate::utils::Frame;
 
 #[derive(Clone)]
-pub struct TwoPiSDME {
+pub struct TwoPiSDME<F: Field> {
     frame: Frame,
-    data: Vec<(Field, Field, Field, Field, Field, Field)>,
+    data: Vec<(F, F, F, F, F, F)>,
 }
 
-impl TwoPiSDME {
+impl<F: Field> TwoPiSDME<F> {
     pub fn new(frame: Frame) -> Self {
         Self {
             frame,
@@ -19,8 +19,8 @@ impl TwoPiSDME {
     }
 }
 
-impl Node for TwoPiSDME {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
+impl<F: Field> Node<F> for TwoPiSDME<F> {
+    fn precalculate(&mut self, dataset: &Dataset<F>) -> Result<(), RustitudeError> {
         self.data = dataset
             .events
             .par_iter()
@@ -35,7 +35,7 @@ impl Node for TwoPiSDME {
                     &daughter_res_vec,
                     event,
                 );
-                let big_phi = y.dot(&event.eps).atan2(
+                let big_phi = y.dot(&event.eps).fatan2(
                     event
                         .beam_p4
                         .momentum()
@@ -45,8 +45,8 @@ impl Node for TwoPiSDME {
                 let pgamma = event.eps.norm();
                 (
                     p.theta_cos(),
-                    p.theta().powi(2),
-                    Field::sin(2.0 * p.theta()),
+                    p.theta().fpowi(2),
+                    F::fsin(F::TWO * p.theta()),
                     p.phi(),
                     big_phi,
                     pgamma,
@@ -56,14 +56,10 @@ impl Node for TwoPiSDME {
         Ok(())
     }
 
-    fn calculate(
-        &self,
-        parameters: &[Field],
-        event: &Event,
-    ) -> Result<ComplexField, RustitudeError> {
+    fn calculate(&self, parameters: &[F], event: &Event<F>) -> Result<Complex<F>, RustitudeError> {
         let (costheta, sinsqtheta, sin2theta, phi, big_phi, pgamma) = self.data[event.index];
-        let pol_angle = event.eps[0].acos();
-        let r_big_phi = pol_angle * 0.017453293 + big_phi;
+        let pol_angle = event.eps[0].facos();
+        let r_big_phi = pol_angle * F::f(0.017453293) + big_phi;
         let rho_000 = parameters[0];
         let rho_100 = parameters[1];
         let rho_1n10 = parameters[2];
@@ -74,20 +70,21 @@ impl Node for TwoPiSDME {
         let rho_102 = parameters[7];
         let rho_1n12 = parameters[8];
 
-        Ok(Field::sqrt(Field::abs(
-            (3.0 / (4.0 * PI))
-                * (0.5 * (1.0 - rho_000) + 0.5 * (3.0 * rho_000 - 1.0) * costheta * costheta
-                    - Field::sqrt(2.0) * rho_100 * sin2theta * Field::cos(phi)
-                    - rho_1n10 * Field::cos(2.0 * phi))
+        Ok(F::fsqrt(F::fabs(
+            (F::THREE / (F::FOUR * F::PI()))
+                * (F::f(0.5) * (F::ONE - rho_000)
+                    + F::f(0.5) * (F::THREE * rho_000 - F::ONE) * costheta * costheta
+                    - F::SQRT_2() * rho_100 * sin2theta * F::fcos(phi)
+                    - rho_1n10 * F::fcos(F::TWO * phi))
                 - pgamma
-                    * Field::cos(2.0 * r_big_phi)
+                    * F::fcos(F::TWO * r_big_phi)
                     * (rho_111 * sinsqtheta + rho_001 * costheta * costheta
-                        - Field::sqrt(2.0) * rho_101 * sin2theta * Field::cos(phi)
-                        - rho_1n11 * sinsqtheta * Field::cos(2.0 * phi))
+                        - F::SQRT_2() * rho_101 * sin2theta * F::fcos(phi)
+                        - rho_1n11 * sinsqtheta * F::fcos(F::TWO * phi))
                 - pgamma
-                    * Field::sin(2.0 * r_big_phi)
-                    * (Field::sqrt(2.0) * rho_102 * sin2theta * Field::sin(phi)
-                        + rho_1n12 * sinsqtheta * Field::sin(2.0 * phi)),
+                    * F::fsin(F::TWO * r_big_phi)
+                    * (F::SQRT_2() * rho_102 * sin2theta * F::fsin(phi)
+                        + rho_1n12 * sinsqtheta * F::fsin(F::TWO * phi)),
         ))
         .into())
     }
@@ -108,12 +105,12 @@ impl Node for TwoPiSDME {
 }
 
 #[derive(Clone)]
-pub struct ThreePiSDME {
+pub struct ThreePiSDME<F: Field> {
     frame: Frame,
-    data: Vec<(Field, Field, Field, Field, Field, Field)>,
+    data: Vec<(F, F, F, F, F, F)>,
 }
 
-impl ThreePiSDME {
+impl<F: Field> ThreePiSDME<F> {
     pub fn new(frame: Frame) -> Self {
         Self {
             frame,
@@ -122,8 +119,8 @@ impl ThreePiSDME {
     }
 }
 
-impl Node for ThreePiSDME {
-    fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError> {
+impl<F: Field> Node<F> for ThreePiSDME<F> {
+    fn precalculate(&mut self, dataset: &Dataset<F>) -> Result<(), RustitudeError> {
         self.data = dataset
             .events
             .par_iter()
@@ -140,7 +137,7 @@ impl Node for ThreePiSDME {
                     event,
                 );
 
-                let big_phi = y.dot(&event.eps).atan2(
+                let big_phi = y.dot(&event.eps).fatan2(
                     event
                         .beam_p4
                         .momentum()
@@ -150,8 +147,8 @@ impl Node for ThreePiSDME {
                 let pgamma = event.eps.norm();
                 (
                     p.theta_cos(),
-                    p.theta().powi(2),
-                    Field::sin(2.0 * p.theta()),
+                    p.theta().fpowi(2),
+                    F::fsin(F::TWO * p.theta()),
                     p.phi(),
                     big_phi,
                     pgamma,
@@ -161,14 +158,10 @@ impl Node for ThreePiSDME {
         Ok(())
     }
 
-    fn calculate(
-        &self,
-        parameters: &[Field],
-        event: &Event,
-    ) -> Result<ComplexField, RustitudeError> {
+    fn calculate(&self, parameters: &[F], event: &Event<F>) -> Result<Complex<F>, RustitudeError> {
         let (costheta, sinsqtheta, sin2theta, phi, big_phi, pgamma) = self.data[event.index];
-        let pol_angle = event.eps[0].acos();
-        let r_big_phi = pol_angle * 0.017453293 + big_phi;
+        let pol_angle = event.eps[0].facos();
+        let r_big_phi = pol_angle * F::f(0.017453293) + big_phi;
         let rho_000 = parameters[0];
         let rho_100 = parameters[1];
         let rho_1n10 = parameters[2];
@@ -179,20 +172,21 @@ impl Node for ThreePiSDME {
         let rho_102 = parameters[7];
         let rho_1n12 = parameters[8];
 
-        Ok(Field::sqrt(Field::abs(
-            (3.0 / (4.0 * PI))
-                * (0.5 * (1.0 - rho_000) + 0.5 * (3.0 * rho_000 - 1.0) * costheta * costheta
-                    - Field::sqrt(2.0) * rho_100 * sin2theta * Field::cos(phi)
-                    - rho_1n10 * Field::cos(2.0 * phi))
+        Ok(F::fsqrt(F::fabs(
+            (F::THREE / (F::FOUR * F::PI()))
+                * (F::f(0.5) * (F::ONE - rho_000)
+                    + F::f(0.5) * (F::THREE * rho_000 - F::ONE) * costheta * costheta
+                    - F::SQRT_2() * rho_100 * sin2theta * F::fcos(phi)
+                    - rho_1n10 * F::fcos(F::TWO * phi))
                 - pgamma
-                    * Field::cos(2.0 * r_big_phi)
+                    * F::fcos(F::TWO * r_big_phi)
                     * (rho_111 * sinsqtheta + rho_001 * costheta * costheta
-                        - Field::sqrt(2.0) * rho_101 * sin2theta * Field::cos(phi)
-                        - rho_1n11 * sinsqtheta * Field::cos(2.0 * phi))
+                        - F::SQRT_2() * rho_101 * sin2theta * F::fcos(phi)
+                        - rho_1n11 * sinsqtheta * F::fcos(F::TWO * phi))
                 - pgamma
-                    * Field::sin(2.0 * r_big_phi)
-                    * (Field::sqrt(2.0) * rho_102 * sin2theta * Field::sin(phi)
-                        + rho_1n12 * sinsqtheta * Field::sin(2.0 * phi)),
+                    * F::fsin(F::TWO * r_big_phi)
+                    * (F::SQRT_2() * rho_102 * sin2theta * F::fsin(phi)
+                        + rho_1n12 * sinsqtheta * F::fsin(F::TWO * phi)),
         ))
         .into())
     }
