@@ -34,11 +34,11 @@ impl Parameter_64 {
     }
     #[getter]
     fn free(&self) -> bool {
-        self.0.index.is_some()
+        self.0.is_free()
     }
     #[getter]
     fn fixed(&self) -> bool {
-        self.0.index.is_none()
+        self.0.is_fixed()
     }
     #[getter]
     fn initial(&self) -> f64 {
