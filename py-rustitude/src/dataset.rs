@@ -124,6 +124,10 @@ impl Dataset_64 {
         Ok(Python::with_gil(|py| Py::new(py, self.events()[idx as usize].clone())).unwrap())
     }
 
+    fn __add__(&self, other: Dataset_64) -> Dataset_64 {
+        (self.0.clone() + other.0).into()
+    }
+
     #[pyo3(signature = (range, bins, daughter_indices=None))]
     fn split_m(
         &self,
@@ -283,6 +287,10 @@ impl Dataset_32 {
 
     fn __getitem__(&self, idx: isize) -> PyResult<Py<Event_32>> {
         Ok(Python::with_gil(|py| Py::new(py, self.events()[idx as usize].clone())).unwrap())
+    }
+
+    fn __add__(&self, other: Dataset_32) -> Dataset_32 {
+        (self.0.clone() + other.0).into()
     }
 
     #[pyo3(signature = (range, bins, daughter_indices=None))]
