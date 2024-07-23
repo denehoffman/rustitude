@@ -70,6 +70,7 @@
 //! operation. There is also a convenience method, [`Dataset::split_m`], to split the dataset by
 //! the mass of the summed four-momentum of any of the daughter particles, specified by their
 //! index.
+use std::ops::Add;
 use std::{fmt::Display, fs::File, iter::repeat_with, path::Path, sync::Arc};
 
 use itertools::{izip, Either, Itertools};
@@ -547,5 +548,18 @@ impl<F: Field> Dataset<F> {
             })
             .collect();
         (binned_indices, underflow, overflow)
+    }
+}
+
+impl<F: Field> Add for Dataset<F> {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self::Output {
+        let mut combined_events = Vec::with_capacity(self.events.len() + other.events.len());
+        combined_events.extend(Arc::try_unwrap(self.events).unwrap_or_else(|arc| (*arc).clone()));
+        combined_events.extend(Arc::try_unwrap(other.events).unwrap_or_else(|arc| (*arc).clone()));
+        Self {
+            events: Arc::new(combined_events),
+        }
     }
 }
