@@ -4,7 +4,7 @@ resolver = "2"
 default-members = ["crates/*"]
 
 [workspace.package]
-version = "0.9.0"
+version = "0.9.1"
 edition = "2021"
 authors = ["Nathaniel Dene Hoffman <dene@cmu.edu>"]
 description = "A library to create and operate models for particle physics amplitude analyses"
@@ -12,9 +12,9 @@ repository = "https://github.com/denehoffman/rustitude/"
 homepage = "https://github.com/denehoffman/rustitude/"
 
 [workspace.dependencies]
-rustitude = { version = "0.9.0", path = "crates/rustitude" }
-rustitude-core = { version = "4.1.0", path = "crates/rustitude-core" }
-rustitude-gluex = { version = "0.4.7", path = "crates/rustitude-gluex" }
+rustitude = { version = "0.9.1", path = "crates/rustitude" }
+rustitude-core = { version = "5.0.0", path = "crates/rustitude-core" }
+rustitude-gluex = { version = "0.4.8", path = "crates/rustitude-gluex" }
 rayon = { version = "1.10.0" }
 approx = { version = "0.5.1", features = ["num-complex"] }
 nalgebra = "0.33.0"

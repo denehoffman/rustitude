@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0](https://github.com/denehoffman/rustitude/compare/rustitude-core-v4.1.0...rustitude-core-v5.0.0) - 2024-07-23
+
+### Added
+- add shorter syntax to turn a `Node` into an `Amplitude`
+- [**breaking**] removed CohSum and replaced with Sum + NormSqr
+- add methods/getters to get free/fixed parameters from Models, Managers, and ELLs
+- add ganesh for fitting with Nelder-Mead algorithm
+- add Debug, Display, and Clone to Manager-like structs
+
+### Fixed
+- add piecewise_m to prelude
+
+### Other
+- add fitting example
+- update crate documentation to reflect some past changes
+- document removal of CohSum and changes to Model
+- update outdated info in crate-level docs, add backticks for style
+- [**breaking**] Major update which implements generics
+
 ## [4.0.0](https://github.com/denehoffman/rustitude/compare/rustitude-core-v3.4.0...rustitude-core-v4.0.0) - 2024-06-27
 
 ### Added
