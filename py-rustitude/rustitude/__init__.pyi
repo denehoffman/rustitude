@@ -331,6 +331,7 @@ class Dataset_64:
 
     def __getitem__(self, index: int) -> Event_64: ...
     def __len__(self) -> int: ...
+    def __add__(self, other: Dataset_64) -> Dataset_64: ...
     def split_m(
         self,
         range: tuple[float, float],  # noqa: A002
@@ -360,6 +361,7 @@ class Dataset_32:
 
     def __getitem__(self, index: int) -> Event_32: ...
     def __len__(self) -> int: ...
+    def __add__(self, other: Dataset_32) -> Dataset_32: ...
     def split_m(
         self,
         range: tuple[float, float],  # noqa: A002
@@ -391,6 +393,7 @@ def open(
     tree_name: str | None = None,
     *,
     pol_in_beam: bool = False,
+    eps: tuple[float, float, float] | None = None,
     f32: Literal[False] = False,
 ) -> Dataset_64: ...  # noqa: A001
 @overload
@@ -399,6 +402,7 @@ def open(
     tree_name: str | None = None,
     *,
     pol_in_beam: bool = False,
+    eps: tuple[float, float, float] | None = None,
     f32: Literal[True],
 ) -> Dataset_32: ...  # noqa: A001
 def open(
@@ -406,6 +410,7 @@ def open(
     tree_name: str | None = None,
     *,
     pol_in_beam: bool = False,
+    eps: tuple[float, float, float] | None = None,
     f32: bool = False,
 ) -> Dataset_64 | Dataset_32: ...  # noqa: A001
 @overload

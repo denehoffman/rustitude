@@ -124,6 +124,10 @@ impl Dataset_64 {
         Ok(Python::with_gil(|py| Py::new(py, self.events()[idx as usize].clone())).unwrap())
     }
 
+    fn __add__(&self, other: Dataset_64) -> Dataset_64 {
+        (self.0.clone() + other.0).into()
+    }
+
     #[pyo3(signature = (range, bins, daughter_indices=None))]
     fn split_m(
         &self,
@@ -226,31 +230,31 @@ impl Dataset_64 {
 
     #[staticmethod]
     fn from_parquet(path: &str) -> PyResult<Self> {
-        rust::Dataset::from_parquet(path)
+        rust::Dataset::from_parquet(path, rust::ReadMethod::Standard)
             .map(Dataset_64::from)
             .map_err(PyErr::from)
     }
     #[staticmethod]
     fn from_parquet_eps_in_beam(path: &str) -> PyResult<Self> {
-        rust::Dataset::from_parquet_eps_in_beam(path)
+        rust::Dataset::from_parquet(path, rust::ReadMethod::EPSInBeam)
             .map(Dataset_64::from)
             .map_err(PyErr::from)
     }
     #[staticmethod]
     fn from_parquet_with_eps(path: &str, eps: Vec<f64>) -> PyResult<Self> {
-        rust::Dataset::from_parquet_with_eps(path, eps)
+        rust::Dataset::from_parquet(path, rust::ReadMethod::EPS(eps[0], eps[1], eps[2]))
             .map(Dataset_64::from)
             .map_err(PyErr::from)
     }
     #[staticmethod]
     fn from_parquet_unpolarized(path: &str) -> PyResult<Self> {
-        rust::Dataset::from_parquet_unpolarized(path)
+        rust::Dataset::from_parquet(path, rust::ReadMethod::EPS(0.0, 0.0, 0.0))
             .map(Dataset_64::from)
             .map_err(PyErr::from)
     }
     #[staticmethod]
     fn from_root(path: &str) -> PyResult<Self> {
-        rust::Dataset::from_root(path)
+        rust::Dataset::from_root(path, rust::ReadMethod::Standard)
             .map(Dataset_64::from)
             .map_err(PyErr::from)
     }
@@ -283,6 +287,10 @@ impl Dataset_32 {
 
     fn __getitem__(&self, idx: isize) -> PyResult<Py<Event_32>> {
         Ok(Python::with_gil(|py| Py::new(py, self.events()[idx as usize].clone())).unwrap())
+    }
+
+    fn __add__(&self, other: Dataset_32) -> Dataset_32 {
+        (self.0.clone() + other.0).into()
     }
 
     #[pyo3(signature = (range, bins, daughter_indices=None))]
@@ -384,34 +392,33 @@ impl Dataset_32 {
                 .collect(),
         )))
     }
-
     #[staticmethod]
     fn from_parquet(path: &str) -> PyResult<Self> {
-        rust::Dataset::from_parquet(path)
+        rust::Dataset::from_parquet(path, rust::ReadMethod::Standard)
             .map(Dataset_32::from)
             .map_err(PyErr::from)
     }
     #[staticmethod]
     fn from_parquet_eps_in_beam(path: &str) -> PyResult<Self> {
-        rust::Dataset::from_parquet_eps_in_beam(path)
+        rust::Dataset::from_parquet(path, rust::ReadMethod::EPSInBeam)
             .map(Dataset_32::from)
             .map_err(PyErr::from)
     }
     #[staticmethod]
     fn from_parquet_with_eps(path: &str, eps: Vec<f32>) -> PyResult<Self> {
-        rust::Dataset::from_parquet_with_eps(path, eps)
+        rust::Dataset::from_parquet(path, rust::ReadMethod::EPS(eps[0], eps[1], eps[2]))
             .map(Dataset_32::from)
             .map_err(PyErr::from)
     }
     #[staticmethod]
     fn from_parquet_unpolarized(path: &str) -> PyResult<Self> {
-        rust::Dataset::from_parquet_unpolarized(path)
+        rust::Dataset::from_parquet(path, rust::ReadMethod::EPS(0.0, 0.0, 0.0))
             .map(Dataset_32::from)
             .map_err(PyErr::from)
     }
     #[staticmethod]
     fn from_root(path: &str) -> PyResult<Self> {
-        rust::Dataset::from_root(path)
+        rust::Dataset::from_root(path, rust::ReadMethod::Standard)
             .map(Dataset_32::from)
             .map_err(PyErr::from)
     }

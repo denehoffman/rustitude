@@ -23,15 +23,15 @@
 //!
 //! The `EPS` branch is optional and files without such a branch can be loaded under the
 //! following conditions. First, if we don't care about polarization, and wish to set `EPS` =
-//! `[0.0, 0.0, 0.0]`, we can do so using the methods [`Dataset::from_root_unpolarized`] or
-//! [`Dataset::from_parquet_unpolarized`]. If a data file contains events with only one
-//! polarization, we can compute the `EPS` vector ourselves and use
-//! [`Dataset::from_root_with_eps`] or [`Dataset::from_parquet_with_eps`] to load the same vector
-//! for every event. Finally, to provide compatibility with the way polarization is sometimes
-//! included in `AmpTools` files, we can note that the beam is often only moving along the
+//! `[0.0, 0.0, 0.0]`, we can do so using the methods [`ReadMethod::EPS(0.0, 0.0, 0.0)`]. If
+//! a data file contains events with only one polarization, we can compute the `EPS` vector
+//! ourselves and use [`ReadMethod::EPS(x, y, z)`] to load the same vector for every event.
+//! Finally, to provide compatibility with the way polarization is sometimes included in
+//! `AmpTools` files, we can note that the beam is often only moving along the
 //! $`z`$-axis, so the $`x`$ and $`y`$ components are typically `0.0` anyway, so we can store
-//! the $`x`$ and $`y`$ components of `EPS` in the beam's four-momentum and use the methods
-//! [`Dataset::from_root_eps_in_beam`] or [`Dataset::from_parquet_eps_in_beam`] to extract it.
+//! the $`x`$, $`y`$, and $`z`$ components of `EPS` in the beam's three-momentum and use the
+//! [`ReadMethod::EPSInBeam`] to extract it. All of these methods are used as an input for either
+//! [`Dataset::from_parquet`] or [`Dataset::from_root`].
 //!
 //! There are also several methods used to split up [`Dataset`]s based on their component
 //! values. The [`Dataset::select`] method takes mutable access to a dataset along with a query
@@ -41,7 +41,7 @@
 //! opposite. For example,
 //!
 //! ```ignore
-//! let ds_original = Dataset::from_root("path.root").unwrap();
+//! let ds_original = Dataset::from_root("path.root", ReadMethod::Standard).unwrap();
 //! let ds_a = ds_original.clone();
 //! let ds_b = ds_original.clone();
 //! let mass_gt_1_gev = |e: &Event| -> bool {
@@ -70,6 +70,7 @@
 //! operation. There is also a convenience method, [`Dataset::split_m`], to split the dataset by
 //! the mass of the summed four-momentum of any of the daughter particles, specified by their
 //! index.
+use std::ops::Add;
 use std::{fmt::Display, fs::File, iter::repeat_with, path::Path, sync::Arc};
 
 use itertools::{izip, Either, Itertools};
@@ -121,6 +122,23 @@ impl<F: Field> Display for Event<F> {
         Ok(())
     }
 }
+
+/// An enum which lists various methods used to read data into [`Event`]s.
+#[derive(Copy, Clone)]
+pub enum ReadMethod<F: Field> {
+    /// The "standard" method assumes an `EPS` column/branch to read.
+    Standard,
+    /// This variant assumes the EPS vec is stored as the beam's 3-momentum.
+    EPSInBeam,
+    /// This variant can be used to provide a custom EPS vec for all events.
+    EPS(F, F, F),
+}
+impl<F: Field> ReadMethod<F> {
+    /// Creates the EPS vector from a polarization magnitude and angle (in radians).
+    pub fn from_linear_polarization(p_gamma: F, phi: F) -> Self {
+        Self::EPS(p_gamma * F::fcos(phi), p_gamma * F::fsin(phi), F::ZERO)
+    }
+}
 impl<F: Field> Event<F> {
     /// Reads an [`Event`] from a single [`Row`] in a Parquet file.
     ///
@@ -131,6 +149,7 @@ impl<F: Field> Event<F> {
     fn read_parquet_row(
         index: usize,
         row: Result<Row, parquet::errors::ParquetError>,
+        method: ReadMethod<F>,
     ) -> Result<Self, RustitudeError> {
         let mut event = Self {
             index,
@@ -144,33 +163,50 @@ impl<F: Field> Event<F> {
             match (name.as_str(), field) {
                 ("E_Beam", ParquetField::Float(value)) => {
                     event.beam_p4.set_e(F::convert_f32(*value));
+                    if matches!(method, ReadMethod::EPSInBeam) {
+                        event.beam_p4.set_pz(F::convert_f32(*value));
+                    }
                 }
                 ("Px_Beam", ParquetField::Float(value)) => {
-                    event.beam_p4.set_px(F::convert_f32(*value));
+                    if matches!(method, ReadMethod::EPSInBeam) {
+                        event.eps[0] = F::convert_f32(*value);
+                    } else {
+                        event.beam_p4.set_px(F::convert_f32(*value));
+                    }
                 }
                 ("Py_Beam", ParquetField::Float(value)) => {
-                    event.beam_p4.set_py(F::convert_f32(*value));
+                    if matches!(method, ReadMethod::EPSInBeam) {
+                        event.eps[1] = F::convert_f32(*value);
+                    } else {
+                        event.beam_p4.set_py(F::convert_f32(*value));
+                    }
                 }
                 ("Pz_Beam", ParquetField::Float(value)) => {
-                    event.beam_p4.set_pz(F::convert_f32(*value));
+                    if !matches!(method, ReadMethod::EPSInBeam) {
+                        event.beam_p4.set_pz(F::convert_f32(*value));
+                    }
                 }
                 ("Weight", ParquetField::Float(value)) => {
                     event.weight = F::convert_f32(*value);
                 }
-                ("EPS", ParquetField::ListInternal(list)) => {
-                    event.eps = Vector3::from_vec(
-                        list.elements()
-                            .iter()
-                            .map(|field| {
-                                if let ParquetField::Float(value) = field {
-                                    F::convert_f32(*value)
-                                } else {
-                                    panic!()
-                                }
-                            })
-                            .collect(),
-                    );
-                }
+                ("EPS", ParquetField::ListInternal(list)) => match method {
+                    ReadMethod::Standard => {
+                        event.eps = Vector3::from_vec(
+                            list.elements()
+                                .iter()
+                                .map(|field| {
+                                    if let ParquetField::Float(value) = field {
+                                        F::convert_f32(*value)
+                                    } else {
+                                        panic!()
+                                    }
+                                })
+                                .collect(),
+                        );
+                    }
+                    ReadMethod::EPS(x, y, z) => *event.eps = *Vector3::new(x, y, z),
+                    _ => {}
+                },
                 ("E_FinalState", ParquetField::ListInternal(list)) => {
                     e_fs = list
                         .elements()
@@ -241,232 +277,6 @@ impl<F: Field> Event<F> {
         //     *dp4 = dp4.boost_along(&final_state_p4);
         // }
         Ok(event)
-    }
-    /// Reads an [`Event`] from a single [`Row`] in a Parquet file, assuming EPS is stored in the
-    /// beam four-momentum.
-    ///
-    /// # Panics
-    ///
-    /// This method currently panics if the list-like group types don't contain floats. This
-    /// eventually needs to be sorted out.
-    fn read_parquet_row_eps_in_beam(
-        index: usize,
-        row: Result<Row, parquet::errors::ParquetError>,
-    ) -> Result<Self, RustitudeError> {
-        let mut event = Self {
-            index,
-            ..Default::default()
-        };
-        let mut e_fs: Vec<F> = Vec::new();
-        let mut px_fs: Vec<F> = Vec::new();
-        let mut py_fs: Vec<F> = Vec::new();
-        let mut pz_fs: Vec<F> = Vec::new();
-        for (name, field) in row?.get_column_iter() {
-            match (name.as_str(), field) {
-                ("E_Beam", ParquetField::Float(value)) => {
-                    event.beam_p4.set_e(F::convert_f32(*value));
-                    event.beam_p4.set_pz(F::convert_f32(*value));
-                }
-                ("Px_Beam", ParquetField::Float(value)) => {
-                    event.eps[0] = F::convert_f32(*value);
-                }
-                ("Py_Beam", ParquetField::Float(value)) => {
-                    event.eps[1] = F::convert_f32(*value);
-                }
-                ("Weight", ParquetField::Float(value)) => {
-                    event.weight = F::convert_f32(*value);
-                }
-                ("E_FinalState", ParquetField::ListInternal(list)) => {
-                    e_fs = list
-                        .elements()
-                        .iter()
-                        .map(|field| {
-                            if let ParquetField::Float(value) = field {
-                                F::convert_f32(*value)
-                            } else {
-                                panic!()
-                            }
-                        })
-                        .collect()
-                }
-                ("Px_FinalState", ParquetField::ListInternal(list)) => {
-                    px_fs = list
-                        .elements()
-                        .iter()
-                        .map(|field| {
-                            if let ParquetField::Float(value) = field {
-                                F::convert_f32(*value)
-                            } else {
-                                panic!()
-                            }
-                        })
-                        .collect()
-                }
-                ("Py_FinalState", ParquetField::ListInternal(list)) => {
-                    py_fs = list
-                        .elements()
-                        .iter()
-                        .map(|field| {
-                            if let ParquetField::Float(value) = field {
-                                F::convert_f32(*value)
-                            } else {
-                                panic!()
-                            }
-                        })
-                        .collect()
-                }
-                ("Pz_FinalState", ParquetField::ListInternal(list)) => {
-                    pz_fs = list
-                        .elements()
-                        .iter()
-                        .map(|field| {
-                            if let ParquetField::Float(value) = field {
-                                F::convert_f32(*value)
-                            } else {
-                                panic!()
-                            }
-                        })
-                        .collect()
-                }
-                _ => {}
-            }
-        }
-        event.recoil_p4 = FourMomentum::new(e_fs[0], px_fs[0], py_fs[0], pz_fs[0]);
-        event.daughter_p4s = e_fs[1..]
-            .iter()
-            .zip(px_fs[1..].iter())
-            .zip(py_fs[1..].iter())
-            .zip(pz_fs[1..].iter())
-            .map(|(((e, px), py), pz)| FourMomentum::new(*e, *px, *py, *pz))
-            .collect();
-        // let final_state_p4 = event.recoil_p4 + event.daughter_p4s.iter().sum();
-        // event.beam_p4 = event.beam_p4.boost_along(&final_state_p4);
-        // event.recoil_p4 = event.recoil_p4.boost_along(&final_state_p4);
-        // for dp4 in event.daughter_p4s.iter_mut() {
-        //     *dp4 = dp4.boost_along(&final_state_p4);
-        // }
-        Ok(event)
-    }
-
-    /// Reads an [`Event`] from a single [`Row`] in a Parquet file and set EPS for all events.
-    ///
-    /// # Panics
-    ///
-    /// This method currently panics if the list-like group types don't contain floats. This
-    /// eventually needs to be sorted out.
-    fn read_parquet_row_with_eps(
-        index: usize,
-        row: Result<Row, parquet::errors::ParquetError>,
-        eps: Vector3<F>,
-    ) -> Result<Self, RustitudeError> {
-        let mut event = Self {
-            index,
-            eps,
-            ..Default::default()
-        };
-        let mut e_fs: Vec<F> = Vec::new();
-        let mut px_fs: Vec<F> = Vec::new();
-        let mut py_fs: Vec<F> = Vec::new();
-        let mut pz_fs: Vec<F> = Vec::new();
-        for (name, field) in row?.get_column_iter() {
-            match (name.as_str(), field) {
-                ("E_Beam", ParquetField::Float(value)) => {
-                    event.beam_p4.set_e(F::convert_f32(*value));
-                }
-                ("Px_Beam", ParquetField::Float(value)) => {
-                    event.beam_p4.set_px(F::convert_f32(*value));
-                }
-                ("Py_Beam", ParquetField::Float(value)) => {
-                    event.beam_p4.set_py(F::convert_f32(*value));
-                }
-                ("Pz_Beam", ParquetField::Float(value)) => {
-                    event.beam_p4.set_pz(F::convert_f32(*value));
-                }
-                ("Weight", ParquetField::Float(value)) => event.weight = F::convert_f32(*value),
-                ("E_FinalState", ParquetField::ListInternal(list)) => {
-                    e_fs = list
-                        .elements()
-                        .iter()
-                        .map(|field| {
-                            if let ParquetField::Float(value) = field {
-                                F::convert_f32(*value)
-                            } else {
-                                panic!()
-                            }
-                        })
-                        .collect()
-                }
-                ("Px_FinalState", ParquetField::ListInternal(list)) => {
-                    px_fs = list
-                        .elements()
-                        .iter()
-                        .map(|field| {
-                            if let ParquetField::Float(value) = field {
-                                F::convert_f32(*value)
-                            } else {
-                                panic!()
-                            }
-                        })
-                        .collect()
-                }
-                ("Py_FinalState", ParquetField::ListInternal(list)) => {
-                    py_fs = list
-                        .elements()
-                        .iter()
-                        .map(|field| {
-                            if let ParquetField::Float(value) = field {
-                                F::convert_f32(*value)
-                            } else {
-                                panic!()
-                            }
-                        })
-                        .collect()
-                }
-                ("Pz_FinalState", ParquetField::ListInternal(list)) => {
-                    pz_fs = list
-                        .elements()
-                        .iter()
-                        .map(|field| {
-                            if let ParquetField::Float(value) = field {
-                                F::convert_f32(*value)
-                            } else {
-                                panic!()
-                            }
-                        })
-                        .collect()
-                }
-                _ => {}
-            }
-        }
-        event.recoil_p4 = FourMomentum::new(e_fs[0], px_fs[0], py_fs[0], pz_fs[0]);
-        event.daughter_p4s = e_fs[1..]
-            .iter()
-            .zip(px_fs[1..].iter())
-            .zip(py_fs[1..].iter())
-            .zip(pz_fs[1..].iter())
-            .map(|(((e, px), py), pz)| FourMomentum::new(*e, *px, *py, *pz))
-            .collect();
-        // let final_state_p4 = event.recoil_p4 + event.daughter_p4s.iter().sum();
-        // event.beam_p4 = event.beam_p4.boost_along(&final_state_p4);
-        // event.recoil_p4 = event.recoil_p4.boost_along(&final_state_p4);
-        // for dp4 in event.daughter_p4s.iter_mut() {
-        //     *dp4 = dp4.boost_along(&final_state_p4);
-        // }
-        Ok(event)
-    }
-
-    /// Reads an [`Event`] from a single [`Row`] in a Parquet file and set EPS = `[0, 0, 0]` for
-    /// all events.
-    ///
-    /// # Panics
-    ///
-    /// This method currently panics if the list-like group types don't contain floats. This
-    /// eventually needs to be sorted out.
-    fn read_parquet_row_unpolarized(
-        index: usize,
-        row: Result<Row, parquet::errors::ParquetError>,
-    ) -> Result<Self, RustitudeError> {
-        Self::read_parquet_row_with_eps(index, row, Vector3::default())
     }
 }
 
@@ -529,7 +339,7 @@ impl<F: Field> Dataset<F> {
     ///
     /// This method will fail if any individual event is missing all of the required fields, if
     /// they have the wrong type, or if the file doesn't exist/can't be read for any reason.
-    pub fn from_parquet(path: &str) -> Result<Self, RustitudeError> {
+    pub fn from_parquet(path: &str, method: ReadMethod<F>) -> Result<Self, RustitudeError> {
         let path = Path::new(path);
         let file = File::open(path)?;
         let reader = SerializedFileReader::new(file)?;
@@ -537,66 +347,7 @@ impl<F: Field> Dataset<F> {
         Ok(Self::new(
             row_iter
                 .enumerate()
-                .map(|(i, row)| Event::read_parquet_row(i, row))
-                .collect::<Result<Vec<Event<F>>, RustitudeError>>()?,
-        ))
-    }
-
-    /// Generates a new [`Dataset`] from a Parquet file, assuming the EPS vector can be constructed
-    /// from the x and y-components of the beam.
-    ///
-    /// # Errors
-    ///
-    /// This method will fail if any individual event is missing all of the required fields, if
-    /// they have the wrong type, or if the file doesn't exist/can't be read for any reason.
-    pub fn from_parquet_eps_in_beam(path: &str) -> Result<Self, RustitudeError> {
-        let path = Path::new(path);
-        let file = File::open(path)?;
-        let reader = SerializedFileReader::new(file)?;
-        let row_iter = reader.get_row_iter(None)?;
-        Ok(Self::new(
-            row_iter
-                .enumerate()
-                .map(|(i, row)| Event::read_parquet_row_eps_in_beam(i, row))
-                .collect::<Result<Vec<Event<F>>, RustitudeError>>()?,
-        ))
-    }
-
-    /// Generates a new [`Dataset`] from a Parquet file with a given EPS polarization vector.
-    ///
-    /// # Errors
-    ///
-    /// This method will fail if any individual event is missing all of the required fields, if
-    /// they have the wrong type, or if the file doesn't exist/can't be read for any reason.
-    pub fn from_parquet_with_eps(path: &str, eps: Vec<F>) -> Result<Self, RustitudeError> {
-        let path = Path::new(path);
-        let file = File::open(path)?;
-        let reader = SerializedFileReader::new(file)?;
-        let row_iter = reader.get_row_iter(None)?;
-        let eps_vec = Vector3::from_vec(eps);
-        Ok(Self::new(
-            row_iter
-                .enumerate()
-                .map(|(i, row)| Event::read_parquet_row_with_eps(i, row, eps_vec))
-                .collect::<Result<Vec<Event<F>>, RustitudeError>>()?,
-        ))
-    }
-
-    /// Generates a new [`Dataset`] from a Parquet file with EPS = `[0, 0, 0]`.
-    ///
-    /// # Errors
-    ///
-    /// This method will fail if any individual event is missing all of the required fields, if
-    /// they have the wrong type, or if the file doesn't exist/can't be read for any reason.
-    pub fn from_parquet_unpolarized(path: &str) -> Result<Self, RustitudeError> {
-        let path = Path::new(path);
-        let file = File::open(path)?;
-        let reader = SerializedFileReader::new(file)?;
-        let row_iter = reader.get_row_iter(None)?;
-        Ok(Self::new(
-            row_iter
-                .enumerate()
-                .map(|(i, row)| Event::read_parquet_row_unpolarized(i, row))
+                .map(|(i, row)| Event::read_parquet_row(i, row, method))
                 .collect::<Result<Vec<Event<F>>, RustitudeError>>()?,
         ))
     }
@@ -647,7 +398,7 @@ impl<F: Field> Dataset<F> {
     ///
     /// This method will fail if any individual event is missing all of the required fields, if
     /// they have the wrong type, or if the file doesn't exist/can't be read for any reason.
-    pub fn from_root(path: &str) -> Result<Self, RustitudeError> {
+    pub fn from_root(path: &str, method: ReadMethod<F>) -> Result<Self, RustitudeError> {
         let ttree = RootFile::open(path)
             .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
             .get_tree("kin")
@@ -661,105 +412,45 @@ impl<F: Field> Dataset<F> {
         let px_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "Px_FinalState")?;
         let py_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "Py_FinalState")?;
         let pz_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "Pz_FinalState")?;
-        let eps: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "EPS")?;
+        let eps_extracted: Vec<Vec<F>> = if matches!(method, ReadMethod::Standard) {
+            Self::extract_vec_f32(path, &ttree, "EPS")?
+        } else {
+            vec![vec![F::ZERO; 3]; weight.len()]
+        };
         Ok(Self::new(
-            izip!(weight, e_beam, px_beam, py_beam, pz_beam, e_fs, px_fs, py_fs, pz_fs, eps)
-                .enumerate()
-                .map(
-                    |(i, (w, e_b, px_b, py_b, pz_b, e_f, px_f, py_f, pz_f, eps_vec))| Event {
+            izip!(
+                weight,
+                e_beam,
+                px_beam,
+                py_beam,
+                pz_beam,
+                e_fs,
+                px_fs,
+                py_fs,
+                pz_fs,
+                eps_extracted
+            )
+            .enumerate()
+            .map(
+                |(i, (w, e_b, px_b, py_b, pz_b, e_f, px_f, py_f, pz_f, eps_vec))| {
+                    let (beam_p4, eps) = match method {
+                        ReadMethod::Standard => (
+                            FourMomentum::new(e_b, px_b, py_b, pz_b),
+                            Vector3::from_vec(eps_vec),
+                        ),
+                        ReadMethod::EPSInBeam => (
+                            FourMomentum::new(e_b, F::ZERO, F::ZERO, e_b),
+                            Vector3::new(px_b, py_b, pz_b),
+                        ),
+                        ReadMethod::EPS(x, y, z) => (
+                            FourMomentum::new(e_b, px_b, py_b, pz_b),
+                            Vector3::new(x, y, z),
+                        ),
+                    };
+                    Event {
                         index: i,
                         weight: w,
-                        beam_p4: FourMomentum::new(e_b, px_b, py_b, pz_b),
-                        recoil_p4: FourMomentum::new(e_f[0], px_f[0], py_f[0], pz_f[0]),
-                        daughter_p4s: izip!(
-                            e_f[1..].iter(),
-                            px_f[1..].iter(),
-                            py_f[1..].iter(),
-                            pz_f[1..].iter()
-                        )
-                        .map(|(e, px, py, pz)| FourMomentum::new(*e, *px, *py, *pz))
-                        .collect(),
-                        eps: Vector3::from_vec(eps_vec),
-                    },
-                )
-                .collect(),
-        ))
-    }
-
-    /// Generates a new [`Dataset`] from a ROOT file, assuming the EPS vector can be constructed
-    /// from the x and y-components of the beam.
-    ///
-    /// # Errors
-    ///
-    /// This method will fail if any individual event is missing all of the required fields, if
-    /// they have the wrong type, or if the file doesn't exist/can't be read for any reason.
-    pub fn from_root_eps_in_beam(path: &str) -> Result<Self, RustitudeError> {
-        let ttree = RootFile::open(path)
-            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
-            .get_tree("kin")
-            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?;
-        let weight: Vec<F> = Self::extract_f32(path, &ttree, "Weight")?;
-        let e_beam: Vec<F> = Self::extract_f32(path, &ttree, "E_Beam")?;
-        let px_beam: Vec<F> = Self::extract_f32(path, &ttree, "Px_Beam")?;
-        let py_beam: Vec<F> = Self::extract_f32(path, &ttree, "Py_Beam")?;
-        let pz_beam: Vec<F> = Self::extract_f32(path, &ttree, "E_Beam")?;
-        let e_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "E_FinalState")?;
-        let px_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "Px_FinalState")?;
-        let py_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "Py_FinalState")?;
-        let pz_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "Pz_FinalState")?;
-        Ok(Self::new(
-            izip!(weight, e_beam, px_beam, py_beam, pz_beam, e_fs, px_fs, py_fs, pz_fs)
-                .enumerate()
-                .map(
-                    |(i, (w, e_b, px_b, py_b, pz_b, e_f, px_f, py_f, pz_f))| Event {
-                        index: i,
-                        weight: w,
-                        beam_p4: FourMomentum::new(e_b, F::zero(), F::zero(), pz_b),
-                        recoil_p4: FourMomentum::new(e_f[0], px_f[0], py_f[0], pz_f[0]),
-                        daughter_p4s: izip!(
-                            e_f[1..].iter(),
-                            px_f[1..].iter(),
-                            py_f[1..].iter(),
-                            pz_f[1..].iter()
-                        )
-                        .map(|(e, px, py, pz)| FourMomentum::new(*e, *px, *py, *pz))
-                        .collect(),
-                        eps: Vector3::from_vec(vec![px_b, py_b, F::zero()]),
-                    },
-                )
-                .collect(),
-        ))
-    }
-
-    /// Generates a new [`Dataset`] from a Parquet file with a given EPS polarization vector.
-    ///
-    /// # Errors
-    ///
-    /// This method will fail if any individual event is missing all of the required fields, if
-    /// they have the wrong type, or if the file doesn't exist/can't be read for any reason.
-    pub fn from_root_with_eps(path: &str, eps: Vec<F>) -> Result<Self, RustitudeError> {
-        let ttree = RootFile::open(path)
-            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
-            .get_tree("kin")
-            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?;
-        let weight: Vec<F> = Self::extract_f32(path, &ttree, "Weight")?;
-        let e_beam: Vec<F> = Self::extract_f32(path, &ttree, "E_Beam")?;
-        let px_beam: Vec<F> = Self::extract_f32(path, &ttree, "Px_Beam")?;
-        let py_beam: Vec<F> = Self::extract_f32(path, &ttree, "Py_Beam")?;
-        let pz_beam: Vec<F> = Self::extract_f32(path, &ttree, "Pz_Beam")?;
-        let e_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "E_FinalState")?;
-        let px_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "Px_FinalState")?;
-        let py_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "Py_FinalState")?;
-        let pz_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "Pz_FinalState")?;
-        let eps = Vector3::from_vec(eps);
-        Ok(Self::new(
-            izip!(weight, e_beam, px_beam, py_beam, pz_beam, e_fs, px_fs, py_fs, pz_fs)
-                .enumerate()
-                .map(
-                    |(i, (w, e_b, px_b, py_b, pz_b, e_f, px_f, py_f, pz_f))| Event {
-                        index: i,
-                        weight: w,
-                        beam_p4: FourMomentum::new(e_b, px_b, py_b, pz_b),
+                        beam_p4,
                         recoil_p4: FourMomentum::new(e_f[0], px_f[0], py_f[0], pz_f[0]),
                         daughter_p4s: izip!(
                             e_f[1..].iter(),
@@ -770,53 +461,10 @@ impl<F: Field> Dataset<F> {
                         .map(|(e, px, py, pz)| FourMomentum::new(*e, *px, *py, *pz))
                         .collect(),
                         eps,
-                    },
-                )
-                .collect(),
-        ))
-    }
-
-    /// Generates a new [`Dataset`] from a Parquet file with EPS = `[0, 0, 0]`.
-    ///
-    /// # Errors
-    ///
-    /// This method will fail if any individual event is missing all of the required fields, if
-    /// they have the wrong type, or if the file doesn't exist/can't be read for any reason.
-    pub fn from_root_unpolarized(path: &str) -> Result<Self, RustitudeError> {
-        let ttree = RootFile::open(path)
-            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
-            .get_tree("kin")
-            .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?;
-        let weight: Vec<F> = Self::extract_f32(path, &ttree, "Weight")?;
-        let e_beam: Vec<F> = Self::extract_f32(path, &ttree, "E_Beam")?;
-        let px_beam: Vec<F> = Self::extract_f32(path, &ttree, "Px_Beam")?;
-        let py_beam: Vec<F> = Self::extract_f32(path, &ttree, "Py_Beam")?;
-        let pz_beam: Vec<F> = Self::extract_f32(path, &ttree, "Pz_Beam")?;
-        let e_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "E_FinalState")?;
-        let px_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "Px_FinalState")?;
-        let py_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "Py_FinalState")?;
-        let pz_fs: Vec<Vec<F>> = Self::extract_vec_f32(path, &ttree, "Pz_FinalState")?;
-        Ok(Self::new(
-            izip!(weight, e_beam, px_beam, py_beam, pz_beam, e_fs, px_fs, py_fs, pz_fs)
-                .enumerate()
-                .map(
-                    |(i, (w, e_b, px_b, py_b, pz_b, e_f, px_f, py_f, pz_f))| Event {
-                        index: i,
-                        weight: w,
-                        beam_p4: FourMomentum::new(e_b, px_b, py_b, pz_b),
-                        recoil_p4: FourMomentum::new(e_f[0], px_f[0], py_f[0], pz_f[0]),
-                        daughter_p4s: izip!(
-                            e_f[1..].iter(),
-                            px_f[1..].iter(),
-                            py_f[1..].iter(),
-                            pz_f[1..].iter()
-                        )
-                        .map(|(e, px, py, pz)| FourMomentum::new(*e, *px, *py, *pz))
-                        .collect(),
-                        eps: Vector3::default(),
-                    },
-                )
-                .collect(),
+                    }
+                },
+            )
+            .collect(),
         ))
     }
 
@@ -900,5 +548,18 @@ impl<F: Field> Dataset<F> {
             })
             .collect();
         (binned_indices, underflow, overflow)
+    }
+}
+
+impl<F: Field> Add for Dataset<F> {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self::Output {
+        let mut combined_events = Vec::with_capacity(self.events.len() + other.events.len());
+        combined_events.extend(Arc::try_unwrap(self.events).unwrap_or_else(|arc| (*arc).clone()));
+        combined_events.extend(Arc::try_unwrap(other.events).unwrap_or_else(|arc| (*arc).clone()));
+        Self {
+            events: Arc::new(combined_events),
+        }
     }
 }

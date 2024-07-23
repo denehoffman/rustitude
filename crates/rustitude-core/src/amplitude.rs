@@ -1994,7 +1994,6 @@ impl<F: Field> Add<Self> for Sum<F> {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        println!("adding");
         Self([self.0, rhs.0].concat())
     }
 }

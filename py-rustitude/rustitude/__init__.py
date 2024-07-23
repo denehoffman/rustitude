@@ -153,12 +153,12 @@ def __dir__():
     return __all__
 
 
-# TODO: add a method to calculate EPS from a given polarization angle and amount
 def open(
     file_name: str | Path,
     tree_name: str | None = None,
     *,
     pol_in_beam: bool = False,
+    eps: tuple[float, float, float] | None = None,
     f32: bool = False,
 ) -> Dataset_64 | Dataset_32:  # noqa: A001
     filepath = (file_name if isinstance(file_name, Path) else Path(file_name)).resolve()
@@ -188,6 +188,8 @@ def open(
         tree_arrays['Py_Beam'] = np.zeros_like(tree_arrays['Py_Beam'])
         tree_arrays['Pz_Beam'] = tree_arrays['E_Beam']
         tree_arrays['EPS'] = [np.array([ex, ey, ez]) for ex, ey, ez in zip(eps_x, eps_y, eps_z)]
+    elif eps is not None:
+        tree_arrays['EPS'] = [np.array(eps) for _ in range(len(tree_arrays['Weight']))]
     if f32:
         return Dataset_32.from_dict(tree_arrays)
     else:
@@ -196,11 +198,11 @@ def open(
 
 class PyNode_64(metaclass=ABCMeta):
     @abstractmethod
-    def precalculate(self, dataset: Dataset) -> None:
+    def precalculate(self, dataset: Dataset_64) -> None:
         pass
 
     @abstractmethod
-    def calculate(self, parameters: list[float], event: Event) -> complex:
+    def calculate(self, parameters: list[float], event: Event_64) -> complex:
         pass
 
     @abstractmethod
