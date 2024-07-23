@@ -132,6 +132,12 @@ pub enum ReadMethod<F: Field> {
     /// This variant can be used to provide a custom EPS vec for all events.
     EPS(F, F, F),
 }
+impl<F: Field> ReadMethod<F> {
+    /// Creates the EPS vector from a polarization magnitude and angle (in radians).
+    pub fn from_linear_polarization(p_gamma: F, phi: F) -> Self {
+        Self::EPS(p_gamma * F::fcos(phi), p_gamma * F::fsin(phi), F::ZERO)
+    }
+}
 impl<F: Field> Event<F> {
     /// Reads an [`Event`] from a single [`Row`] in a Parquet file.
     ///
