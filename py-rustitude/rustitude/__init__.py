@@ -196,11 +196,11 @@ def open(
 
 class PyNode_64(metaclass=ABCMeta):
     @abstractmethod
-    def precalculate(self, dataset: Dataset) -> None:
+    def precalculate(self, dataset: Dataset_64) -> None:
         pass
 
     @abstractmethod
-    def calculate(self, parameters: list[float], event: Event) -> complex:
+    def calculate(self, parameters: list[float], event: Event_64) -> complex:
         pass
 
     @abstractmethod
