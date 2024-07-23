@@ -5,7 +5,7 @@ use rustitude::gluex::utils::{Frame, Reflectivity, Wave};
 use rustitude::prelude::*;
 
 pub fn criterion_kmatrix_f64(c: &mut Criterion) {
-    let dataset = Dataset::from_parquet("benches/test_data.parquet").unwrap();
+    let dataset = Dataset::from_parquet("benches/test_data.parquet", ReadMethod::Standard).unwrap();
     let f0p = Amplitude::new("f0+", KMatrixF0::new(2));
     let f0n = Amplitude::new("f0-", KMatrixF0::new(2));
     let f2 = Amplitude::new("f2", KMatrixF2::new(2));
@@ -44,7 +44,8 @@ pub fn criterion_kmatrix_f64(c: &mut Criterion) {
             criterion::black_box(m.par_evaluate(&v))
         })
     });
-    let dataset_mc = Dataset::from_parquet("benches/test_data.parquet").unwrap();
+    let dataset_mc =
+        Dataset::from_parquet("benches/test_data.parquet", ReadMethod::Standard).unwrap();
     let nll = ExtendedLogLikelihood::new(m, Manager::new(&model, &dataset_mc).unwrap());
     c.bench_function("kmatrix_nll", |b| {
         b.iter(|| {
@@ -67,7 +68,7 @@ pub fn criterion_kmatrix_f64(c: &mut Criterion) {
 }
 
 pub fn criterion_kmatrix_f32(c: &mut Criterion) {
-    let dataset = Dataset::from_parquet("benches/test_data.parquet").unwrap();
+    let dataset = Dataset::from_parquet("benches/test_data.parquet", ReadMethod::Standard).unwrap();
     let f0p = Amplitude::new("f0+", KMatrixF0::new(2));
     let f0n = Amplitude::new("f0-", KMatrixF0::new(2));
     let f2 = Amplitude::new("f2", KMatrixF2::new(2));
@@ -106,7 +107,8 @@ pub fn criterion_kmatrix_f32(c: &mut Criterion) {
             criterion::black_box(m.par_evaluate(&v))
         })
     });
-    let dataset_mc = Dataset::from_parquet("benches/test_data.parquet").unwrap();
+    let dataset_mc =
+        Dataset::from_parquet("benches/test_data.parquet", ReadMethod::Standard).unwrap();
     let nll = ExtendedLogLikelihood::new(m, Manager::new(&model, &dataset_mc).unwrap());
     c.bench_function("kmatrix_nll", |b| {
         b.iter(|| {

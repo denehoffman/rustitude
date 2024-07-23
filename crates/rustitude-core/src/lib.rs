@@ -371,7 +371,7 @@ pub mod prelude {
         cscalar, pcscalar, piecewise_m, scalar, AmpLike, Amplitude, AsTree, Imag, Model, Node,
         Parameter, Piecewise, Product, Real, Sum,
     };
-    pub use crate::dataset::{Dataset, Event};
+    pub use crate::dataset::{Dataset, Event, ReadMethod};
     pub use crate::errors::RustitudeError;
     pub use crate::four_momentum::FourMomentum;
     pub use crate::manager::{ExtendedLogLikelihood, Manager};
