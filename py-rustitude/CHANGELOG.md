@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1](https://github.com/denehoffman/rustitude/compare/py-rustitude-v0.9.0...py-rustitude-v0.9.1) - 2024-07-23
+
+### Added
+- update python API to reflect breaking changes in `rustitude-core`
+- add methods/getters to get free/fixed parameters from Models, Managers, and ELLs
+- adds f64 and f32 variants of each Python binding
+- add ganesh for fitting with Nelder-Mead algorithm
+- add Debug, Display, and Clone to Manager-like structs
+- add getters for datasets, models, and managers under Manager and ELL, as well as __str__ and __repr__ for both
+
+### Fixed
+- update python parameter getters for fixed/free to use the core-level functions
+- remove __rustitude_precision__ field
+- remove some LSP errors in __init__.py
+- add __rustitude_precision__ to pyi
+
+### Other
+- change names to have _64 or _32 endings, make sure there is a backward-compatible ending-less version that matches _64 for all classes
+- remove unused import
+- changed external rust library pathing
+
 ## [0.8.0](https://github.com/denehoffman/rustitude/compare/py-rustitude-v0.7.4...py-rustitude-v0.8.0) - 2024-06-27
 
 ### Added

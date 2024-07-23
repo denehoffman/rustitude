@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1](https://github.com/denehoffman/rustitude/compare/rustitude-v0.9.0...rustitude-v0.9.1) - 2024-07-23
+
+### Added
+- add f32 benchmark
+
+### Other
+- update benchmarks and tests to reflect new breaking syntax
+- add crate-level docs for rustitude to point to rustitude-core and rustitude-gluex
+- change logo url
+- update dependencies
+
 ## [0.8.0](https://github.com/denehoffman/rustitude/compare/rustitude-v0.7.4...rustitude-v0.8.0) - 2024-06-27
 
 ### Added
