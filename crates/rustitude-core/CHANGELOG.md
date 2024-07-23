@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.0.0](https://github.com/denehoffman/rustitude/compare/rustitude-core-v5.0.0...rustitude-core-v6.0.0) - 2024-07-23
+
+### Added
+- create method to add `Dataset`s
+- add methods to allow EPS to be calculated from polarization angle and magnitude
+- remove duplicate methods for loading data and replace with  enum
+
+### Fixed
+- remove print statement from add
+
+### Other
+- update lib doc to use new data reading methods
+
 ## [5.0.0](https://github.com/denehoffman/rustitude/compare/rustitude-core-v4.1.0...rustitude-core-v5.0.0) - 2024-07-23
 
 ### Added
