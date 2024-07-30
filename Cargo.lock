@@ -1345,7 +1345,7 @@ dependencies = [
 
 [[package]]
 name = "rustitude-core"
-version = "6.0.0"
+version = "7.0.0"
 dependencies = [
  "approx",
  "dyn-clone",
