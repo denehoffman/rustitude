@@ -1,154 +1,136 @@
 use crate::amplitude::{Amplitude_32, Amplitude_64};
 use pyo3::prelude::*;
 use rustitude_gluex::harmonics as rust;
-use rustitude_gluex::utils::{Frame, Reflectivity, Wave};
+use rustitude_gluex::utils::{Decay, Frame, Reflectivity, Wave};
 
 #[pyfunction]
-#[pyo3(signature = (name, l, m, frame="helicity"))]
-fn Ylm(name: &str, l: usize, m: isize, frame: &str) -> Amplitude_64 {
-    Amplitude_64::new(
-        name,
-        rust::Ylm::new(
-            Wave::new(l, m),
-            <Frame as std::str::FromStr>::from_str(frame).unwrap(),
-        ),
-    )
+#[pyo3(signature = (name, l, m, decay=Decay::default(), frame=Frame::Helicity))]
+fn Ylm(name: &str, l: usize, m: isize, decay: Decay, frame: Frame) -> Amplitude_64 {
+    Amplitude_64::new(name, rust::Ylm::new(Wave::new(l, m), decay, frame))
 }
 #[pyfunction]
-#[pyo3(signature = (name, l, m, frame="helicity"))]
-fn Ylm_64(name: &str, l: usize, m: isize, frame: &str) -> Amplitude_64 {
-    Amplitude_64::new(
-        name,
-        rust::Ylm::new(
-            Wave::new(l, m),
-            <Frame as std::str::FromStr>::from_str(frame).unwrap(),
-        ),
-    )
+#[pyo3(signature = (name, l, m, decay=Decay::default(), frame=Frame::Helicity))]
+fn Ylm_64(name: &str, l: usize, m: isize, decay: Decay, frame: Frame) -> Amplitude_64 {
+    Amplitude_64::new(name, rust::Ylm::new(Wave::new(l, m), decay, frame))
 }
 
 #[pyfunction]
-#[pyo3(signature = (name, l, m, frame="helicity"))]
-fn Ylm_32(name: &str, l: usize, m: isize, frame: &str) -> Amplitude_32 {
+#[pyo3(signature = (name, l, m, decay=Decay::default(), frame=Frame::Helicity))]
+fn Ylm_32(name: &str, l: usize, m: isize, decay: Decay, frame: Frame) -> Amplitude_32 {
+    Amplitude_32::new(name, rust::Ylm::new(Wave::new(l, m), decay, frame))
+}
+
+#[pyfunction]
+#[pyo3(signature = (name, l, m, reflectivity=Reflectivity::Positive, decay=Decay::default(), frame=Frame::Helicity))]
+fn Zlm(
+    name: &str,
+    l: usize,
+    m: isize,
+    reflectivity: Reflectivity,
+    decay: Decay,
+    frame: Frame,
+) -> Amplitude_64 {
+    Amplitude_64::new(
+        name,
+        rust::Zlm::new(Wave::new(l, m), reflectivity, decay, frame),
+    )
+}
+
+#[pyfunction]
+#[pyo3(signature = (name, l, m, reflectivity=Reflectivity::Positive, decay=Decay::default(), frame=Frame::Helicity))]
+fn Zlm_64(
+    name: &str,
+    l: usize,
+    m: isize,
+    reflectivity: Reflectivity,
+    decay: Decay,
+    frame: Frame,
+) -> Amplitude_64 {
+    Amplitude_64::new(
+        name,
+        rust::Zlm::new(Wave::new(l, m), reflectivity, decay, frame),
+    )
+}
+
+#[pyfunction]
+#[pyo3(signature = (name, l, m, reflectivity=Reflectivity::Positive, decay=Decay::default(), frame=Frame::Helicity))]
+fn Zlm_32(
+    name: &str,
+    l: usize,
+    m: isize,
+    reflectivity: Reflectivity,
+    decay: Decay,
+    frame: Frame,
+) -> Amplitude_32 {
     Amplitude_32::new(
         name,
-        rust::Ylm::new(
-            Wave::new(l, m),
-            <Frame as std::str::FromStr>::from_str(frame).unwrap(),
-        ),
+        rust::Zlm::new(Wave::new(l, m), reflectivity, decay, frame),
     )
 }
 
 #[pyfunction]
-#[pyo3(signature = (name, l, m, reflectivity="positive", frame="helicity"))]
-fn Zlm(name: &str, l: usize, m: isize, reflectivity: &str, frame: &str) -> Amplitude_64 {
+#[pyo3(signature = (name, reflectivity=Reflectivity::Positive, decay=Decay::default(), frame=Frame::Helicity))]
+fn OnePS(name: &str, reflectivity: Reflectivity, decay: Decay, frame: Frame) -> Amplitude_64 {
+    Amplitude_64::new(name, rust::OnePS::new(reflectivity, decay, frame))
+}
+
+#[pyfunction]
+#[pyo3(signature = (name, reflectivity=Reflectivity::Positive, decay=Decay::default(), frame=Frame::Helicity))]
+fn OnePS_64(name: &str, reflectivity: Reflectivity, decay: Decay, frame: Frame) -> Amplitude_64 {
+    Amplitude_64::new(name, rust::OnePS::new(reflectivity, decay, frame))
+}
+
+#[pyfunction]
+#[pyo3(signature = (name, reflectivity=Reflectivity::Positive, decay=Decay::default(), frame=Frame::Helicity))]
+fn OnePS_32(name: &str, reflectivity: Reflectivity, decay: Decay, frame: Frame) -> Amplitude_32 {
+    Amplitude_32::new(name, rust::OnePS::new(reflectivity, decay, frame))
+}
+
+#[pyfunction]
+#[pyo3(signature = (name, l, m, reflectivity=Reflectivity::Positive, decay=Decay::default(), frame=Frame::Helicity))]
+fn TwoPS(
+    name: &str,
+    l: usize,
+    m: isize,
+    reflectivity: Reflectivity,
+    decay: Decay,
+    frame: Frame,
+) -> Amplitude_64 {
     Amplitude_64::new(
         name,
-        rust::Zlm::new(
-            Wave::new(l, m),
-            <Reflectivity as std::str::FromStr>::from_str(reflectivity).unwrap(),
-            <Frame as std::str::FromStr>::from_str(frame).unwrap(),
-        ),
+        rust::TwoPS::new(Wave::new(l, m), reflectivity, decay, frame),
     )
 }
 
 #[pyfunction]
-#[pyo3(signature = (name, l, m, reflectivity="positive", frame="helicity"))]
-fn Zlm_64(name: &str, l: usize, m: isize, reflectivity: &str, frame: &str) -> Amplitude_64 {
+#[pyo3(signature = (name, l, m, reflectivity=Reflectivity::Positive, decay=Decay::default(), frame=Frame::Helicity))]
+fn TwoPS_64(
+    name: &str,
+    l: usize,
+    m: isize,
+    reflectivity: Reflectivity,
+    decay: Decay,
+    frame: Frame,
+) -> Amplitude_64 {
     Amplitude_64::new(
         name,
-        rust::Zlm::new(
-            Wave::new(l, m),
-            <Reflectivity as std::str::FromStr>::from_str(reflectivity).unwrap(),
-            <Frame as std::str::FromStr>::from_str(frame).unwrap(),
-        ),
+        rust::TwoPS::new(Wave::new(l, m), reflectivity, decay, frame),
     )
 }
 
 #[pyfunction]
-#[pyo3(signature = (name, l, m, reflectivity="positive", frame="helicity"))]
-fn Zlm_32(name: &str, l: usize, m: isize, reflectivity: &str, frame: &str) -> Amplitude_32 {
+#[pyo3(signature = (name, l, m, reflectivity=Reflectivity::Positive, decay=Decay::default(), frame=Frame::Helicity))]
+fn TwoPS_32(
+    name: &str,
+    l: usize,
+    m: isize,
+    reflectivity: Reflectivity,
+    decay: Decay,
+    frame: Frame,
+) -> Amplitude_32 {
     Amplitude_32::new(
         name,
-        rust::Zlm::new(
-            Wave::new(l, m),
-            <Reflectivity as std::str::FromStr>::from_str(reflectivity).unwrap(),
-            <Frame as std::str::FromStr>::from_str(frame).unwrap(),
-        ),
-    )
-}
-
-#[pyfunction]
-#[pyo3(signature = (name, reflectivity="positive", frame="helicity"))]
-fn OnePS(name: &str, reflectivity: &str, frame: &str) -> Amplitude_64 {
-    Amplitude_64::new(
-        name,
-        rust::OnePS::new(
-            <Reflectivity as std::str::FromStr>::from_str(reflectivity).unwrap(),
-            <Frame as std::str::FromStr>::from_str(frame).unwrap(),
-        ),
-    )
-}
-
-#[pyfunction]
-#[pyo3(signature = (name, reflectivity="positive", frame="helicity"))]
-fn OnePS_64(name: &str, reflectivity: &str, frame: &str) -> Amplitude_64 {
-    Amplitude_64::new(
-        name,
-        rust::OnePS::new(
-            <Reflectivity as std::str::FromStr>::from_str(reflectivity).unwrap(),
-            <Frame as std::str::FromStr>::from_str(frame).unwrap(),
-        ),
-    )
-}
-
-#[pyfunction]
-#[pyo3(signature = (name, reflectivity="positive", frame="helicity"))]
-fn OnePS_32(name: &str, reflectivity: &str, frame: &str) -> Amplitude_32 {
-    Amplitude_32::new(
-        name,
-        rust::OnePS::new(
-            <Reflectivity as std::str::FromStr>::from_str(reflectivity).unwrap(),
-            <Frame as std::str::FromStr>::from_str(frame).unwrap(),
-        ),
-    )
-}
-
-#[pyfunction]
-#[pyo3(signature = (name, l, m, reflectivity="positive", frame="helicity"))]
-fn TwoPS(name: &str, l: usize, m: isize, reflectivity: &str, frame: &str) -> Amplitude_64 {
-    Amplitude_64::new(
-        name,
-        rust::TwoPS::new(
-            Wave::new(l, m),
-            <Reflectivity as std::str::FromStr>::from_str(reflectivity).unwrap(),
-            <Frame as std::str::FromStr>::from_str(frame).unwrap(),
-        ),
-    )
-}
-
-#[pyfunction]
-#[pyo3(signature = (name, l, m, reflectivity="positive", frame="helicity"))]
-fn TwoPS_64(name: &str, l: usize, m: isize, reflectivity: &str, frame: &str) -> Amplitude_64 {
-    Amplitude_64::new(
-        name,
-        rust::TwoPS::new(
-            Wave::new(l, m),
-            <Reflectivity as std::str::FromStr>::from_str(reflectivity).unwrap(),
-            <Frame as std::str::FromStr>::from_str(frame).unwrap(),
-        ),
-    )
-}
-
-#[pyfunction]
-#[pyo3(signature = (name, l, m, reflectivity="positive", frame="helicity"))]
-fn TwoPS_32(name: &str, l: usize, m: isize, reflectivity: &str, frame: &str) -> Amplitude_32 {
-    Amplitude_32::new(
-        name,
-        rust::TwoPS::new(
-            Wave::new(l, m),
-            <Reflectivity as std::str::FromStr>::from_str(reflectivity).unwrap(),
-            <Frame as std::str::FromStr>::from_str(frame).unwrap(),
-        ),
+        rust::TwoPS::new(Wave::new(l, m), reflectivity, decay, frame),
     )
 }
 

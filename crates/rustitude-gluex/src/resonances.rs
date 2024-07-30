@@ -1,5 +1,6 @@
 use crate::utils::blatt_weisskopf;
 use crate::utils::breakup_momentum;
+use crate::utils::Decay;
 
 use nalgebra::{SMatrix, SVector};
 use rayon::prelude::*;
@@ -7,9 +8,8 @@ use rustitude_core::prelude::*;
 
 #[derive(Default, Clone)]
 pub struct BreitWigner<F: Field> {
-    p1_indices: Vec<usize>,
-    p2_indices: Vec<usize>,
     l: usize,
+    decay: Decay,
     m: Vec<F>,
     m1: Vec<F>,
     m2: Vec<F>,
@@ -17,11 +17,10 @@ pub struct BreitWigner<F: Field> {
     f: Vec<F>,
 }
 impl<F: Field> BreitWigner<F> {
-    pub fn new(p1_indices: &[usize], p2_indices: &[usize], l: usize) -> Self {
+    pub fn new(l: usize, decay: Decay) -> Self {
         Self {
-            p1_indices: p1_indices.into(),
-            p2_indices: p2_indices.into(),
             l,
+            decay,
             ..Default::default()
         }
     }
@@ -32,8 +31,8 @@ impl<F: Field> Node<F> for BreitWigner<F> {
             .events
             .par_iter()
             .map(|event| {
-                let p1: FourMomentum<F> = self.p1_indices.iter().map(|i| event.daughter_p4s[*i]).sum();
-                let p2: FourMomentum<F> = self.p2_indices.iter().map(|i| event.daughter_p4s[*i]).sum();
+                let p1 = self.decay.primary_p4(event);
+                let p2 = self.decay.secondary_p4(event);
                 let m = (p1 + p2).m();
                 let m1 = p1.m();
                 let m2 = p2.m();
@@ -178,16 +177,19 @@ impl<F: Field, const C: usize, const R: usize> KMatrixConstants<F, C, R> {
 }
 #[derive(Clone)]
 #[allow(clippy::type_complexity)]
-pub struct KMatrixF0<F: Field>(
-    usize,
-    KMatrixConstants<F, 5, 5>,
-    Vec<(SVector<Complex<F>, 5>, SMatrix<Complex<F>, 5, 5>)>,
-);
+pub struct KMatrixF0<F: Field> {
+    channel: usize,
+    decay: Decay,
+    constants: KMatrixConstants<F, 5, 5>,
+    data: Vec<(SVector<Complex<F>, 5>, SMatrix<Complex<F>, 5, 5>)>,
+}
 #[rustfmt::skip]
 impl<F: Field> KMatrixF0<F> {
-    pub fn new(channel: usize) -> Self {
-        Self(channel,
-             KMatrixConstants {
+    pub fn new(channel: usize, decay: Decay) -> Self {
+        Self {
+            channel,
+            decay,
+            constants: KMatrixConstants {
                 g: SMatrix::<F, 5, 5>::from_vec(F::fv(vec![
                      0.74987, -0.01257,  0.27536, -0.15102,  0.36103,
                      0.06401,  0.00204,  0.77413,  0.50999,  0.13112,
@@ -211,24 +213,25 @@ impl<F: Field> KMatrixF0<F> {
                 }),
                 l: 0,
             },
-            Vec::default())
+            data: Vec::default(),
+        }
     }
 }
 
 impl<F: Field> Node<F> for KMatrixF0<F> {
     fn precalculate(&mut self, dataset: &Dataset<F>) -> Result<(), RustitudeError> {
-        self.2 = dataset
+        self.data = dataset
             .events
             .par_iter()
             .map(|event| {
-                let s = (event.daughter_p4s[0] + event.daughter_p4s[1]).m2();
-                let barrier_mat = self.1.barrier_matrix(s);
+                let s = self.decay.resonance_p4(event).m2();
+                let barrier_mat = self.constants.barrier_matrix(s);
                 let pvector_constants = SMatrix::<Complex<F>, 5, 5>::from_fn(|i, a| {
                     Complex::from(barrier_mat[(i, a)])
-                        * self.1.g[(i, a)]
-                        * self.1.pole_product_remainder(s, a)
+                        * self.constants.g[(i, a)]
+                        * self.constants.pole_product_remainder(s, a)
                 });
-                (self.1.ikc_inv(s, self.0), pvector_constants)
+                (self.constants.ikc_inv(s, self.channel), pvector_constants)
             })
             .collect();
         Ok(())
@@ -245,7 +248,7 @@ impl<F: Field> Node<F> for KMatrixF0<F> {
             Complex::new(parameters[6], parameters[7]),
             Complex::new(parameters[8], parameters[9]),
         );
-        let (ikc_inv_vec, pvector_constants_mat) = self.2[event.index];
+        let (ikc_inv_vec, pvector_constants_mat) = self.data[event.index];
         Ok(KMatrixConstants::calculate_k_matrix(
             &betas,
             &ikc_inv_vec,
@@ -269,16 +272,19 @@ impl<F: Field> Node<F> for KMatrixF0<F> {
 }
 #[derive(Clone)]
 #[allow(clippy::type_complexity)]
-pub struct KMatrixF2<F: Field>(
-    usize,
-    KMatrixConstants<F, 4, 4>,
-    Vec<(SVector<Complex<F>, 4>, SMatrix<Complex<F>, 4, 4>)>,
-);
+pub struct KMatrixF2<F: Field> {
+    channel: usize,
+    decay: Decay,
+    constants: KMatrixConstants<F, 4, 4>,
+    data: Vec<(SVector<Complex<F>, 4>, SMatrix<Complex<F>, 4, 4>)>,
+}
 #[rustfmt::skip]
 impl<F: Field> KMatrixF2<F> {
-    pub fn new(channel: usize) -> Self {
-        Self(channel,
-             KMatrixConstants {
+    pub fn new(channel: usize, decay: Decay) -> Self {
+        Self {
+            channel,
+            decay,
+            constants: KMatrixConstants {
                 g: SMatrix::<F, 4, 4>::from_vec(F::fv(vec![
                      0.40033,  0.15479, -0.08900, -0.00113,
                      0.01820,  0.17300,  0.32393,  0.15256,
@@ -297,24 +303,25 @@ impl<F: Field> KMatrixF2<F> {
                 adler_zero: None,
                 l: 2,
             },
-            Vec::default())
+            data: Vec::default()
+        }
     }
 }
 
 impl<F: Field> Node<F> for KMatrixF2<F> {
     fn precalculate(&mut self, dataset: &Dataset<F>) -> Result<(), RustitudeError> {
-        self.2 = dataset
+        self.data = dataset
             .events
             .par_iter()
             .map(|event| {
-                let s = (event.daughter_p4s[0] + event.daughter_p4s[1]).m2();
-                let barrier_mat = self.1.barrier_matrix(s);
+                let s = self.decay.resonance_p4(event).m2();
+                let barrier_mat = self.constants.barrier_matrix(s);
                 let pvector_constants = SMatrix::<Complex<F>, 4, 4>::from_fn(|i, a| {
                     Complex::from(barrier_mat[(i, a)])
-                        * self.1.g[(i, a)]
-                        * self.1.pole_product_remainder(s, a)
+                        * self.constants.g[(i, a)]
+                        * self.constants.pole_product_remainder(s, a)
                 });
-                (self.1.ikc_inv(s, self.0), pvector_constants)
+                (self.constants.ikc_inv(s, self.channel), pvector_constants)
             })
             .collect();
         Ok(())
@@ -330,7 +337,7 @@ impl<F: Field> Node<F> for KMatrixF2<F> {
             Complex::new(parameters[4], parameters[5]),
             Complex::new(parameters[6], parameters[7]),
         );
-        let (ikc_inv_vec, pvector_constants_mat) = self.2[event.index];
+        let (ikc_inv_vec, pvector_constants_mat) = self.data[event.index];
         Ok(KMatrixConstants::calculate_k_matrix(
             &betas,
             &ikc_inv_vec,
@@ -353,16 +360,19 @@ impl<F: Field> Node<F> for KMatrixF2<F> {
 
 #[derive(Clone)]
 #[allow(clippy::type_complexity)]
-pub struct KMatrixA0<F: Field>(
-    usize,
-    KMatrixConstants<F, 2, 2>,
-    Vec<(SVector<Complex<F>, 2>, SMatrix<Complex<F>, 2, 2>)>,
-);
+pub struct KMatrixA0<F: Field> {
+    channel: usize,
+    decay: Decay,
+    constants: KMatrixConstants<F, 2, 2>,
+    data: Vec<(SVector<Complex<F>, 2>, SMatrix<Complex<F>, 2, 2>)>,
+}
 #[rustfmt::skip]
 impl<F: Field> KMatrixA0<F> {
-    pub fn new(channel: usize) -> Self {
-        Self(channel,
-             KMatrixConstants {
+    pub fn new(channel: usize, decay: Decay) -> Self {
+        Self {
+            channel,
+            decay,
+            constants: KMatrixConstants {
                 g: SMatrix::<F, 2, 2>::from_vec(F::fv(vec![
                     0.43215, -0.28825, 
                     0.19000,  0.43372
@@ -377,24 +387,25 @@ impl<F: Field> KMatrixA0<F> {
                 adler_zero: None,
                 l: 0,
             },
-            Vec::default())
+            data: Vec::default()
+        }
     }
 }
 
 impl<F: Field> Node<F> for KMatrixA0<F> {
     fn precalculate(&mut self, dataset: &Dataset<F>) -> Result<(), RustitudeError> {
-        self.2 = dataset
+        self.data = dataset
             .events
             .par_iter()
             .map(|event| {
-                let s = (event.daughter_p4s[0] + event.daughter_p4s[1]).m2();
-                let barrier_mat = self.1.barrier_matrix(s);
+                let s = self.decay.resonance_p4(event).m2();
+                let barrier_mat = self.constants.barrier_matrix(s);
                 let pvector_constants = SMatrix::<Complex<F>, 2, 2>::from_fn(|i, a| {
                     Complex::from(barrier_mat[(i, a)])
-                        * self.1.g[(i, a)]
-                        * self.1.pole_product_remainder(s, a)
+                        * self.constants.g[(i, a)]
+                        * self.constants.pole_product_remainder(s, a)
                 });
-                (self.1.ikc_inv(s, self.0), pvector_constants)
+                (self.constants.ikc_inv(s, self.channel), pvector_constants)
             })
             .collect();
         Ok(())
@@ -408,7 +419,7 @@ impl<F: Field> Node<F> for KMatrixA0<F> {
             Complex::new(parameters[0], parameters[1]),
             Complex::new(parameters[2], parameters[3]),
         );
-        let (ikc_inv_vec, pvector_constants_mat) = self.2[event.index];
+        let (ikc_inv_vec, pvector_constants_mat) = self.data[event.index];
         Ok(KMatrixConstants::calculate_k_matrix(
             &betas,
             &ikc_inv_vec,
@@ -427,16 +438,19 @@ impl<F: Field> Node<F> for KMatrixA0<F> {
 
 #[derive(Clone)]
 #[allow(clippy::type_complexity)]
-pub struct KMatrixA2<F: Field>(
-    usize,
-    KMatrixConstants<F, 3, 2>,
-    Vec<(SVector<Complex<F>, 3>, SMatrix<Complex<F>, 3, 2>)>,
-);
+pub struct KMatrixA2<F: Field> {
+    channel: usize,
+    decay: Decay,
+    constants: KMatrixConstants<F, 3, 2>,
+    data: Vec<(SVector<Complex<F>, 3>, SMatrix<Complex<F>, 3, 2>)>,
+}
 #[rustfmt::skip]
 impl<F: Field> KMatrixA2<F> {
-    pub fn new(channel: usize) -> Self {
-        Self(channel,
-             KMatrixConstants {
+    pub fn new(channel: usize, decay: Decay) -> Self {
+        Self {
+            channel,
+            decay,
+            constants: KMatrixConstants {
                 g: SMatrix::<F, 3, 2>::from_vec(F::fv(vec![
                      0.30073,  0.21426, -0.09162,
                      0.68567,  0.12543,  0.00184 
@@ -452,24 +466,25 @@ impl<F: Field> KMatrixA2<F> {
                 adler_zero: None,
                 l: 2,
             },
-            Vec::default())
+            data: Vec::default()
+        }
     }
 }
 
 impl<F: Field> Node<F> for KMatrixA2<F> {
     fn precalculate(&mut self, dataset: &Dataset<F>) -> Result<(), RustitudeError> {
-        self.2 = dataset
+        self.data = dataset
             .events
             .par_iter()
             .map(|event| {
-                let s = (event.daughter_p4s[0] + event.daughter_p4s[1]).m2();
-                let barrier_mat = self.1.barrier_matrix(s);
+                let s = self.decay.resonance_p4(event).m2();
+                let barrier_mat = self.constants.barrier_matrix(s);
                 let pvector_constants = SMatrix::<Complex<F>, 3, 2>::from_fn(|i, a| {
                     Complex::from(barrier_mat[(i, a)])
-                        * self.1.g[(i, a)]
-                        * self.1.pole_product_remainder(s, a)
+                        * self.constants.g[(i, a)]
+                        * self.constants.pole_product_remainder(s, a)
                 });
-                (self.1.ikc_inv(s, self.0), pvector_constants)
+                (self.constants.ikc_inv(s, self.channel), pvector_constants)
             })
             .collect();
         Ok(())
@@ -483,7 +498,7 @@ impl<F: Field> Node<F> for KMatrixA2<F> {
             Complex::new(parameters[0], parameters[1]),
             Complex::new(parameters[2], parameters[3]),
         );
-        let (ikc_inv_vec, pvector_constants_mat) = self.2[event.index];
+        let (ikc_inv_vec, pvector_constants_mat) = self.data[event.index];
         Ok(KMatrixConstants::calculate_k_matrix(
             &betas,
             &ikc_inv_vec,
@@ -502,16 +517,19 @@ impl<F: Field> Node<F> for KMatrixA2<F> {
 
 #[derive(Clone)]
 #[allow(clippy::type_complexity)]
-pub struct KMatrixRho<F: Field>(
-    usize,
-    KMatrixConstants<F, 3, 2>,
-    Vec<(SVector<Complex<F>, 3>, SMatrix<Complex<F>, 3, 2>)>,
-);
+pub struct KMatrixRho<F: Field> {
+    channel: usize,
+    decay: Decay,
+    constants: KMatrixConstants<F, 3, 2>,
+    data: Vec<(SVector<Complex<F>, 3>, SMatrix<Complex<F>, 3, 2>)>,
+}
 #[rustfmt::skip]
 impl<F: Field> KMatrixRho<F> {
-    pub fn new(channel: usize) -> Self {
-        Self(channel,
-             KMatrixConstants {
+    pub fn new(channel: usize, decay: Decay) -> Self {
+        Self {
+            channel,
+            decay,
+            constants: KMatrixConstants {
                 g: SMatrix::<F, 3, 2>::from_vec(F::fv(vec![
                      0.28023,  0.01806,  0.06501,
                      0.16318,  0.53879,  0.00495,
@@ -527,24 +545,25 @@ impl<F: Field> KMatrixRho<F> {
                 adler_zero: None,
                 l: 1,
             },
-            Vec::default())
+            data: Vec::default(),
+        }
     }
 }
 
 impl<F: Field> Node<F> for KMatrixRho<F> {
     fn precalculate(&mut self, dataset: &Dataset<F>) -> Result<(), RustitudeError> {
-        self.2 = dataset
+        self.data = dataset
             .events
             .par_iter()
             .map(|event| {
-                let s = (event.daughter_p4s[0] + event.daughter_p4s[1]).m2();
-                let barrier_mat = self.1.barrier_matrix(s);
+                let s = self.decay.resonance_p4(event).m2();
+                let barrier_mat = self.constants.barrier_matrix(s);
                 let pvector_constants = SMatrix::<Complex<F>, 3, 2>::from_fn(|i, a| {
                     Complex::from(barrier_mat[(i, a)])
-                        * self.1.g[(i, a)]
-                        * self.1.pole_product_remainder(s, a)
+                        * self.constants.g[(i, a)]
+                        * self.constants.pole_product_remainder(s, a)
                 });
-                (self.1.ikc_inv(s, self.0), pvector_constants)
+                (self.constants.ikc_inv(s, self.channel), pvector_constants)
             })
             .collect();
         Ok(())
@@ -558,7 +577,7 @@ impl<F: Field> Node<F> for KMatrixRho<F> {
             Complex::new(parameters[0], parameters[1]),
             Complex::new(parameters[2], parameters[3]),
         );
-        let (ikc_inv_vec, pvector_constants_mat) = self.2[event.index];
+        let (ikc_inv_vec, pvector_constants_mat) = self.data[event.index];
         Ok(KMatrixConstants::calculate_k_matrix(
             &betas,
             &ikc_inv_vec,
@@ -577,16 +596,19 @@ impl<F: Field> Node<F> for KMatrixRho<F> {
 
 #[derive(Clone)]
 #[allow(clippy::type_complexity)]
-pub struct KMatrixPi1<F: Field>(
-    usize,
-    KMatrixConstants<F, 2, 1>,
-    Vec<(SVector<Complex<F>, 2>, SMatrix<Complex<F>, 2, 1>)>,
-);
+pub struct KMatrixPi1<F: Field> {
+    channel: usize,
+    decay: Decay,
+    constants: KMatrixConstants<F, 2, 1>,
+    data: Vec<(SVector<Complex<F>, 2>, SMatrix<Complex<F>, 2, 1>)>,
+}
 #[rustfmt::skip]
 impl<F: Field> KMatrixPi1<F> {
-    pub fn new(channel: usize) -> Self {
-        Self(channel,
-             KMatrixConstants {
+    pub fn new(channel: usize, decay: Decay) -> Self {
+        Self {
+            channel,
+            decay,
+            constants: KMatrixConstants {
                 g: SMatrix::<F, 2, 1>::from_vec(F::fv(vec![
                     0.80564,  1.04595
                 ])),
@@ -600,24 +622,25 @@ impl<F: Field> KMatrixPi1<F> {
                 adler_zero: None,
                 l: 1,
             },
-            Vec::default())
+            data: Vec::default()
+        }
     }
 }
 
 impl<F: Field> Node<F> for KMatrixPi1<F> {
     fn precalculate(&mut self, dataset: &Dataset<F>) -> Result<(), RustitudeError> {
-        self.2 = dataset
+        self.data = dataset
             .events
             .par_iter()
             .map(|event| {
-                let s = (event.daughter_p4s[0] + event.daughter_p4s[1]).m2();
-                let barrier_mat = self.1.barrier_matrix(s);
+                let s = self.decay.resonance_p4(event).m2();
+                let barrier_mat = self.constants.barrier_matrix(s);
                 let pvector_constants = SMatrix::<Complex<F>, 2, 1>::from_fn(|i, a| {
                     Complex::from(barrier_mat[(i, a)])
-                        * self.1.g[(i, a)]
-                        * self.1.pole_product_remainder(s, a)
+                        * self.constants.g[(i, a)]
+                        * self.constants.pole_product_remainder(s, a)
                 });
-                (self.1.ikc_inv(s, self.0), pvector_constants)
+                (self.constants.ikc_inv(s, self.channel), pvector_constants)
             })
             .collect();
         Ok(())
@@ -629,7 +652,7 @@ impl<F: Field> Node<F> for KMatrixPi1<F> {
     ) -> Result<Complex<F>, RustitudeError> {
         let betas =
             SVector::<Complex<F>, 1>::new(Complex::new(parameters[0], parameters[1]));
-        let (ikc_inv_vec, pvector_constants_mat) = self.2[event.index];
+        let (ikc_inv_vec, pvector_constants_mat) = self.data[event.index];
         Ok(KMatrixConstants::calculate_k_matrix(
             &betas,
             &ikc_inv_vec,

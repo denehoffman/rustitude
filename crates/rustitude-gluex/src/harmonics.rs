@@ -2,18 +2,20 @@ use rayon::prelude::*;
 use rustitude_core::prelude::*;
 use sphrs::{ComplexSH, SHEval};
 
-use crate::utils::{Frame, Reflectivity, Wave};
+use crate::utils::{Decay, Frame, Reflectivity, Wave};
 
 #[derive(Clone)]
 pub struct Ylm<F: Field> {
     wave: Wave,
+    decay: Decay,
     frame: Frame,
     data: Vec<Complex<F>>,
 }
 impl<F: Field> Ylm<F> {
-    pub fn new(wave: Wave, frame: Frame) -> Self {
+    pub fn new(wave: Wave, decay: Decay, frame: Frame) -> Self {
         Self {
             wave,
+            decay,
             frame,
             data: Vec::default(),
         }
@@ -25,10 +27,14 @@ impl<F: Field> Node<F> for Ylm<F> {
             .events
             .par_iter()
             .map(|event| {
-                let resonance = event.daughter_p4s[0] + event.daughter_p4s[1];
+                let resonance = self.decay.resonance_p4(event);
                 let beam_res_vec = event.beam_p4.boost_along(&resonance).momentum();
                 let recoil_res_vec = event.recoil_p4.boost_along(&resonance).momentum();
-                let daughter_res_vec = event.daughter_p4s[0].boost_along(&resonance).momentum();
+                let daughter_res_vec = self
+                    .decay
+                    .primary_p4(event)
+                    .boost_along(&resonance)
+                    .momentum();
                 let (_, _, _, p) = self.frame.coordinates(
                     &beam_res_vec,
                     &recoil_res_vec,
@@ -50,14 +56,16 @@ impl<F: Field> Node<F> for Ylm<F> {
 pub struct Zlm<F: Field> {
     wave: Wave,
     reflectivity: Reflectivity,
+    decay: Decay,
     frame: Frame,
     data: Vec<Complex<F>>,
 }
 impl<F: Field> Zlm<F> {
-    pub fn new(wave: Wave, reflectivity: Reflectivity, frame: Frame) -> Self {
+    pub fn new(wave: Wave, reflectivity: Reflectivity, decay: Decay, frame: Frame) -> Self {
         Self {
             wave,
             reflectivity,
+            decay,
             frame,
             data: Vec::default(),
         }
@@ -69,10 +77,14 @@ impl<F: Field + num::Float> Node<F> for Zlm<F> {
             .events
             .par_iter()
             .map(|event| {
-                let resonance = event.daughter_p4s[0] + event.daughter_p4s[1];
+                let resonance = self.decay.resonance_p4(event);
                 let beam_res_vec = event.beam_p4.boost_along(&resonance).momentum();
                 let recoil_res_vec = event.recoil_p4.boost_along(&resonance).momentum();
-                let daughter_res_vec = event.daughter_p4s[0].boost_along(&resonance).momentum();
+                let daughter_res_vec = self
+                    .decay
+                    .primary_p4(event)
+                    .boost_along(&resonance)
+                    .momentum();
                 let (_, y, _, p) = self.frame.coordinates(
                     &beam_res_vec,
                     &recoil_res_vec,
@@ -113,13 +125,15 @@ impl<F: Field + num::Float> Node<F> for Zlm<F> {
 #[derive(Clone)]
 pub struct OnePS<F: Field> {
     reflectivity: Reflectivity,
+    decay: Decay,
     frame: Frame,
     data: Vec<Complex<F>>,
 }
 impl<F: Field> OnePS<F> {
-    pub fn new(reflectivity: Reflectivity, frame: Frame) -> Self {
+    pub fn new(reflectivity: Reflectivity, decay: Decay, frame: Frame) -> Self {
         Self {
             reflectivity,
+            decay,
             frame,
             data: Vec::default(),
         }
@@ -131,10 +145,14 @@ impl<F: Field> Node<F> for OnePS<F> {
             .events
             .par_iter()
             .map(|event| {
-                let resonance = event.daughter_p4s[0] + event.daughter_p4s[1];
+                let resonance = self.decay.resonance_p4(event);
                 let beam_res_vec = event.beam_p4.boost_along(&resonance).momentum();
                 let recoil_res_vec = event.recoil_p4.boost_along(&resonance).momentum();
-                let daughter_res_vec = event.daughter_p4s[0].boost_along(&resonance).momentum();
+                let daughter_res_vec = self
+                    .decay
+                    .primary_p4(event)
+                    .boost_along(&resonance)
+                    .momentum();
                 let (_, y, _, _) = self.frame.coordinates(
                     &beam_res_vec,
                     &recoil_res_vec,
@@ -175,14 +193,16 @@ impl<F: Field> Node<F> for OnePS<F> {
 pub struct TwoPS<F: Field> {
     wave: Wave,
     reflectivity: Reflectivity,
+    decay: Decay,
     frame: Frame,
     data: Vec<Complex<F>>,
 }
 impl<F: Field> TwoPS<F> {
-    pub fn new(wave: Wave, reflectivity: Reflectivity, frame: Frame) -> Self {
+    pub fn new(wave: Wave, reflectivity: Reflectivity, decay: Decay, frame: Frame) -> Self {
         Self {
             wave,
             reflectivity,
+            decay,
             frame,
             data: Vec::default(),
         }
@@ -194,10 +214,14 @@ impl<F: Field> Node<F> for TwoPS<F> {
             .events
             .par_iter()
             .map(|event| {
-                let resonance = event.daughter_p4s[0] + event.daughter_p4s[1];
+                let resonance = self.decay.resonance_p4(event);
                 let beam_res_vec = event.beam_p4.boost_along(&resonance).momentum();
                 let recoil_res_vec = event.recoil_p4.boost_along(&resonance).momentum();
-                let daughter_res_vec = event.daughter_p4s[0].boost_along(&resonance).momentum();
+                let daughter_res_vec = self
+                    .decay
+                    .primary_p4(event)
+                    .boost_along(&resonance)
+                    .momentum();
                 let (_, _, _, p) = self.frame.coordinates(
                     &beam_res_vec,
                     &recoil_res_vec,

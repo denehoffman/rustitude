@@ -2,19 +2,25 @@ use rayon::prelude::*;
 use rustitude_core::prelude::*;
 use sphrs::SHCoordinates;
 
-use crate::utils::Frame;
+use crate::utils::{Decay, Frame};
 
 #[derive(Clone)]
 pub struct TwoPiSDME<F: Field> {
+    decay: Decay,
     frame: Frame,
     data: Vec<(F, F, F, F, F, F)>,
 }
 
 impl<F: Field> TwoPiSDME<F> {
-    pub fn new(frame: Frame) -> Self {
-        Self {
-            frame,
-            data: Vec::default(),
+    pub fn new(decay: Decay, frame: Frame) -> Self {
+        match decay {
+            Decay::TwoBodyDecay(_) => Self {
+                decay,
+                frame,
+                data: Vec::default(),
+            },
+
+            _ => unimplemented!(),
         }
     }
 }
@@ -25,10 +31,14 @@ impl<F: Field> Node<F> for TwoPiSDME<F> {
             .events
             .par_iter()
             .map(|event| {
-                let resonance = event.daughter_p4s[0] + event.daughter_p4s[1];
+                let resonance = self.decay.resonance_p4(event);
                 let beam_res_vec = event.beam_p4.boost_along(&resonance).momentum();
                 let recoil_res_vec = event.recoil_p4.boost_along(&resonance).momentum();
-                let daughter_res_vec = event.daughter_p4s[0].boost_along(&resonance).momentum();
+                let daughter_res_vec = self
+                    .decay
+                    .primary_p4(event)
+                    .boost_along(&resonance)
+                    .momentum();
                 let (_, y, _, p) = self.frame.coordinates(
                     &beam_res_vec,
                     &recoil_res_vec,
@@ -106,15 +116,21 @@ impl<F: Field> Node<F> for TwoPiSDME<F> {
 
 #[derive(Clone)]
 pub struct ThreePiSDME<F: Field> {
+    decay: Decay,
     frame: Frame,
     data: Vec<(F, F, F, F, F, F)>,
 }
 
 impl<F: Field> ThreePiSDME<F> {
-    pub fn new(frame: Frame) -> Self {
-        Self {
-            frame,
-            data: Vec::default(),
+    pub fn new(decay: Decay, frame: Frame) -> Self {
+        match decay {
+            Decay::ThreeBodyDecay(_) => Self {
+                decay,
+                frame,
+                data: Vec::default(),
+            },
+
+            _ => unimplemented!(),
         }
     }
 }
@@ -125,9 +141,12 @@ impl<F: Field> Node<F> for ThreePiSDME<F> {
             .events
             .par_iter()
             .map(|event| {
-                let resonance =
-                    event.daughter_p4s[0] + event.daughter_p4s[1] + event.daughter_p4s[2];
-                let daughter_res_vec = event.daughter_p4s[0].boost_along(&resonance).momentum();
+                let resonance = self.decay.resonance_p4(event);
+                let daughter_res_vec = self
+                    .decay
+                    .primary_p4(event)
+                    .boost_along(&resonance)
+                    .momentum();
                 let beam_res_vec = event.beam_p4.boost_along(&resonance).momentum();
                 let recoil_res_vec = event.recoil_p4.boost_along(&resonance).momentum();
                 let (_, y, _, p) = self.frame.coordinates(

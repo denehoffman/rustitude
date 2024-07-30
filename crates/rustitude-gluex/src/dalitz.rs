@@ -1,11 +1,26 @@
 use rayon::prelude::*;
 use rustitude_core::prelude::*;
 
+use crate::utils::Decay;
+
 #[derive(Default, Clone)]
 pub struct OmegaDalitz<F: Field> {
+    decay: Decay,
     dalitz_z: Vec<F>,
     dalitz_sin3theta: Vec<F>,
     lambda: Vec<F>,
+}
+
+impl<F: Field> OmegaDalitz<F> {
+    pub fn new(decay: Decay) -> Self {
+        match decay {
+            Decay::ThreeBodyDecay(_) => Self {
+                decay,
+                ..Default::default()
+            },
+            _ => unimplemented!(),
+        }
+    }
 }
 
 impl<F: Field> Node<F> for OmegaDalitz<F> {
@@ -14,10 +29,10 @@ impl<F: Field> Node<F> for OmegaDalitz<F> {
             .events
             .par_iter()
             .map(|event| {
-                let pi0 = event.daughter_p4s[0];
-                let pip = event.daughter_p4s[1];
-                let pim = event.daughter_p4s[2];
-                let omega = pi0 + pip + pim;
+                let pi0 = self.decay.primary_p4(event);
+                let pip = self.decay.secondary_p4(event);
+                let pim = self.decay.tertiary_p4(event);
+                let omega = pi0 + pip + *pim;
 
                 let dalitz_s = (pip + pim).m2();
                 let dalitz_t = (pip + pi0).m2();

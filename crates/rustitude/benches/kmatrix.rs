@@ -3,26 +3,42 @@ use rustitude::gluex::harmonics::Zlm;
 use rustitude::gluex::resonances::{KMatrixA0, KMatrixA2, KMatrixF0, KMatrixF2};
 use rustitude::gluex::utils::{Frame, Reflectivity, Wave};
 use rustitude::prelude::*;
+use rustitude_gluex::utils::Decay;
 
 pub fn criterion_kmatrix_f64(c: &mut Criterion) {
     let dataset = Dataset::from_parquet("benches/test_data.parquet", ReadMethod::Standard).unwrap();
-    let f0p = Amplitude::new("f0+", KMatrixF0::new(2));
-    let f0n = Amplitude::new("f0-", KMatrixF0::new(2));
-    let f2 = Amplitude::new("f2", KMatrixF2::new(2));
-    let a0p = Amplitude::new("a0+", KMatrixA0::new(1));
-    let a0n = Amplitude::new("a0-", KMatrixA0::new(1));
-    let a2 = Amplitude::new("a2", KMatrixA2::new(1));
+    let f0p = Amplitude::new("f0+", KMatrixF0::new(2, Decay::default()));
+    let f0n = Amplitude::new("f0-", KMatrixF0::new(2, Decay::default()));
+    let f2 = Amplitude::new("f2", KMatrixF2::new(2, Decay::default()));
+    let a0p = Amplitude::new("a0+", KMatrixA0::new(1, Decay::default()));
+    let a0n = Amplitude::new("a0-", KMatrixA0::new(1, Decay::default()));
+    let a2 = Amplitude::new("a2", KMatrixA2::new(1, Decay::default()));
     let s0p = Amplitude::new(
         "s0+",
-        Zlm::new(Wave::S0, Reflectivity::Positive, Frame::Helicity),
+        Zlm::new(
+            Wave::S0,
+            Reflectivity::Positive,
+            Decay::default(),
+            Frame::Helicity,
+        ),
     );
     let s0n = Amplitude::new(
         "s0-",
-        Zlm::new(Wave::S0, Reflectivity::Negative, Frame::Helicity),
+        Zlm::new(
+            Wave::S0,
+            Reflectivity::Negative,
+            Decay::default(),
+            Frame::Helicity,
+        ),
     );
     let d2 = Amplitude::new(
         "d2",
-        Zlm::new(Wave::D2, Reflectivity::Positive, Frame::Helicity),
+        Zlm::new(
+            Wave::D2,
+            Reflectivity::Positive,
+            Decay::default(),
+            Frame::Helicity,
+        ),
     );
     let pos_real = (&f0p + &a0p) * s0p.real() + (&f2 + &a2) * d2.real();
     let pos_imag = (&f0p + &a0p) * s0p.imag() + (&f2 + &a2) * d2.imag();
@@ -69,23 +85,38 @@ pub fn criterion_kmatrix_f64(c: &mut Criterion) {
 
 pub fn criterion_kmatrix_f32(c: &mut Criterion) {
     let dataset = Dataset::from_parquet("benches/test_data.parquet", ReadMethod::Standard).unwrap();
-    let f0p = Amplitude::new("f0+", KMatrixF0::new(2));
-    let f0n = Amplitude::new("f0-", KMatrixF0::new(2));
-    let f2 = Amplitude::new("f2", KMatrixF2::new(2));
-    let a0p = Amplitude::new("a0+", KMatrixA0::new(1));
-    let a0n = Amplitude::new("a0-", KMatrixA0::new(1));
-    let a2 = Amplitude::new("a2", KMatrixA2::new(1));
+    let f0p = Amplitude::new("f0+", KMatrixF0::new(2, Decay::default()));
+    let f0n = Amplitude::new("f0-", KMatrixF0::new(2, Decay::default()));
+    let f2 = Amplitude::new("f2", KMatrixF2::new(2, Decay::default()));
+    let a0p = Amplitude::new("a0+", KMatrixA0::new(1, Decay::default()));
+    let a0n = Amplitude::new("a0-", KMatrixA0::new(1, Decay::default()));
+    let a2 = Amplitude::new("a2", KMatrixA2::new(1, Decay::default()));
     let s0p = Amplitude::new(
         "s0+",
-        Zlm::new(Wave::S0, Reflectivity::Positive, Frame::Helicity),
+        Zlm::new(
+            Wave::S0,
+            Reflectivity::Positive,
+            Decay::default(),
+            Frame::Helicity,
+        ),
     );
     let s0n = Amplitude::new(
         "s0-",
-        Zlm::new(Wave::S0, Reflectivity::Negative, Frame::Helicity),
+        Zlm::new(
+            Wave::S0,
+            Reflectivity::Negative,
+            Decay::default(),
+            Frame::Helicity,
+        ),
     );
     let d2 = Amplitude::new(
         "d2",
-        Zlm::new(Wave::D2, Reflectivity::Positive, Frame::Helicity),
+        Zlm::new(
+            Wave::D2,
+            Reflectivity::Positive,
+            Decay::default(),
+            Frame::Helicity,
+        ),
     );
     let pos_real = (&f0p + &a0p) * s0p.real() + (&f2 + &a2) * d2.real();
     let pos_imag = (&f0p + &a0p) * s0p.imag() + (&f2 + &a2) * d2.imag();

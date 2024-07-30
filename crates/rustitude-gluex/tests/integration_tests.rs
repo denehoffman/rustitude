@@ -2,6 +2,7 @@ mod f64_tests {
     use rustitude_core::assert_is_close;
     use rustitude_core::prelude::*;
     use rustitude_core::utils::*;
+    use rustitude_gluex::utils::Decay;
     use rustitude_gluex::utils::{Frame, Reflectivity, Wave};
     use rustitude_gluex::{
         harmonics::{Ylm, Zlm},
@@ -10,10 +11,10 @@ mod f64_tests {
     #[test]
     fn test_ylm() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f64()]);
-        let y00 = Ylm::new(Wave::S0, Frame::Helicity).into_amplitude("y00");
-        let y11 = Ylm::new(Wave::P1, Frame::Helicity).into_amplitude("y11");
-        let y22 = Ylm::new(Wave::D1, Frame::Helicity).into_amplitude("y22");
-        let y33 = Ylm::new(Wave::F1, Frame::Helicity).into_amplitude("y33");
+        let y00 = Ylm::new(Wave::S0, Decay::default(), Frame::Helicity).named("y00");
+        let y11 = Ylm::new(Wave::P1, Decay::default(), Frame::Helicity).named("y11");
+        let y22 = Ylm::new(Wave::D1, Decay::default(), Frame::Helicity).named("y22");
+        let y33 = Ylm::new(Wave::F1, Decay::default(), Frame::Helicity).named("y33");
         let manager = Manager::new(&model!(y00.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.07957747, f64);
         let manager = Manager::new(&model!(y00.imag()), &dataset)?;
@@ -36,22 +37,62 @@ mod f64_tests {
     #[test]
     fn test_zlm() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f64()]);
-        let z00p =
-            Zlm::new(Wave::S0, Reflectivity::Positive, Frame::Helicity).into_amplitude("z00+");
-        let z11p =
-            Zlm::new(Wave::P1, Reflectivity::Positive, Frame::Helicity).into_amplitude("z11+");
-        let z22p =
-            Zlm::new(Wave::D1, Reflectivity::Positive, Frame::Helicity).into_amplitude("z22+");
-        let z33p =
-            Zlm::new(Wave::F1, Reflectivity::Positive, Frame::Helicity).into_amplitude("z33+");
-        let z00n =
-            Zlm::new(Wave::S0, Reflectivity::Negative, Frame::Helicity).into_amplitude("z00-");
-        let z11n =
-            Zlm::new(Wave::P1, Reflectivity::Negative, Frame::Helicity).into_amplitude("z11-");
-        let z22n =
-            Zlm::new(Wave::D1, Reflectivity::Negative, Frame::Helicity).into_amplitude("z22-");
-        let z33n =
-            Zlm::new(Wave::F1, Reflectivity::Negative, Frame::Helicity).into_amplitude("z33-");
+        let z00p = Zlm::new(
+            Wave::S0,
+            Reflectivity::Positive,
+            Decay::default(),
+            Frame::Helicity,
+        )
+        .named("z00+");
+        let z11p = Zlm::new(
+            Wave::P1,
+            Reflectivity::Positive,
+            Decay::default(),
+            Frame::Helicity,
+        )
+        .named("z11+");
+        let z22p = Zlm::new(
+            Wave::D1,
+            Reflectivity::Positive,
+            Decay::default(),
+            Frame::Helicity,
+        )
+        .named("z22+");
+        let z33p = Zlm::new(
+            Wave::F1,
+            Reflectivity::Positive,
+            Decay::default(),
+            Frame::Helicity,
+        )
+        .named("z33+");
+        let z00n = Zlm::new(
+            Wave::S0,
+            Reflectivity::Negative,
+            Decay::default(),
+            Frame::Helicity,
+        )
+        .named("z00-");
+        let z11n = Zlm::new(
+            Wave::P1,
+            Reflectivity::Negative,
+            Decay::default(),
+            Frame::Helicity,
+        )
+        .named("z11-");
+        let z22n = Zlm::new(
+            Wave::D1,
+            Reflectivity::Negative,
+            Decay::default(),
+            Frame::Helicity,
+        )
+        .named("z22-");
+        let z33n = Zlm::new(
+            Wave::F1,
+            Reflectivity::Negative,
+            Decay::default(),
+            Frame::Helicity,
+        )
+        .named("z33-");
         let manager = Manager::new(&model!(z00p.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.014120844, f64);
         let manager = Manager::new(&model!(z00p.imag()), &dataset)?;
@@ -90,7 +131,7 @@ mod f64_tests {
     #[test]
     fn test_f0() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f64()]);
-        let f0 = KMatrixF0::new(2).into_amplitude("F0(2)");
+        let f0 = KMatrixF0::new(2, Decay::default()).named("F0(2)");
         let manager = Manager::new(&model!(f0.real()), &dataset)?;
         assert_is_close!(
             manager.evaluate(&[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])?[0],
@@ -153,7 +194,7 @@ mod f64_tests {
     #[test]
     fn test_f2() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f64()]);
-        let f2 = KMatrixF2::new(2).into_amplitude("F2(2)");
+        let f2 = KMatrixF2::new(2, Decay::default()).named("F2(2)");
         let manager = Manager::new(&model!(f2.real()), &dataset)?;
         assert_is_close!(
             manager.evaluate(&[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])?[0],
@@ -206,7 +247,7 @@ mod f64_tests {
     #[test]
     fn test_a0() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f64()]);
-        let a0 = KMatrixA0::new(1).into_amplitude("A0(1)");
+        let a0 = KMatrixA0::new(1, Decay::default()).named("A0(1)");
         let manager = Manager::new(&model!(a0.real()), &dataset)?;
         assert_is_close!(
             manager.evaluate(&[1.0, 0.0, 0.0, 0.0])?[0],
@@ -235,7 +276,7 @@ mod f64_tests {
     #[test]
     fn test_a2() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f64()]);
-        let a2 = KMatrixA2::new(1).into_amplitude("A2(1)");
+        let a2 = KMatrixA2::new(1, Decay::default()).named("A2(1)");
         let manager = Manager::new(&model!(a2.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[1.0, 0.0, 0.0, 0.0])?[0], 0.34870050, f64);
         assert_is_close!(
@@ -260,7 +301,7 @@ mod f64_tests {
     #[test]
     fn test_rho() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f64()]);
-        let rho = KMatrixRho::new(1).into_amplitude("Rho(1)");
+        let rho = KMatrixRho::new(1, Decay::default()).named("Rho(1)");
         let manager = Manager::new(&model!(rho.real()), &dataset)?;
         assert_is_close!(
             manager.evaluate(&[1.0, 0.0, 0.0, 0.0])?[0],
@@ -289,7 +330,7 @@ mod f64_tests {
     #[test]
     fn test_pi1() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f64()]);
-        let pi1 = KMatrixPi1::new(1).into_amplitude("Rho(1)");
+        let pi1 = KMatrixPi1::new(1, Decay::default()).named("Rho(1)");
         let manager = Manager::new(&model!(pi1.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[1.0, 0.0])?[0], 0.6947747815, f64);
         assert_is_close!(manager.evaluate(&[0.0, 1.0])?[0], 0.9365046503, f64);
@@ -301,6 +342,7 @@ mod f32_tests {
     use rustitude_core::assert_is_close;
     use rustitude_core::prelude::*;
     use rustitude_core::utils::*;
+    use rustitude_gluex::utils::Decay;
     use rustitude_gluex::utils::{Frame, Reflectivity, Wave};
     use rustitude_gluex::{
         harmonics::{Ylm, Zlm},
@@ -310,10 +352,10 @@ mod f32_tests {
     #[test]
     fn test_ylm() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f32()]);
-        let y00 = Ylm::new(Wave::S0, Frame::Helicity).into_amplitude("y00");
-        let y11 = Ylm::new(Wave::P1, Frame::Helicity).into_amplitude("y11");
-        let y22 = Ylm::new(Wave::D1, Frame::Helicity).into_amplitude("y22");
-        let y33 = Ylm::new(Wave::F1, Frame::Helicity).into_amplitude("y33");
+        let y00 = Ylm::new(Wave::S0, Decay::default(), Frame::Helicity).named("y00");
+        let y11 = Ylm::new(Wave::P1, Decay::default(), Frame::Helicity).named("y11");
+        let y22 = Ylm::new(Wave::D1, Decay::default(), Frame::Helicity).named("y22");
+        let y33 = Ylm::new(Wave::F1, Decay::default(), Frame::Helicity).named("y33");
         let manager = Manager::new(&model!(y00.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.07957747, f32);
         let manager = Manager::new(&model!(y00.imag()), &dataset)?;
@@ -336,22 +378,62 @@ mod f32_tests {
     #[test]
     fn test_zlm() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f32()]);
-        let z00p =
-            Zlm::new(Wave::S0, Reflectivity::Positive, Frame::Helicity).into_amplitude("z00+");
-        let z11p =
-            Zlm::new(Wave::P1, Reflectivity::Positive, Frame::Helicity).into_amplitude("z11+");
-        let z22p =
-            Zlm::new(Wave::D1, Reflectivity::Positive, Frame::Helicity).into_amplitude("z22+");
-        let z33p =
-            Zlm::new(Wave::F1, Reflectivity::Positive, Frame::Helicity).into_amplitude("z33+");
-        let z00n =
-            Zlm::new(Wave::S0, Reflectivity::Negative, Frame::Helicity).into_amplitude("z00-");
-        let z11n =
-            Zlm::new(Wave::P1, Reflectivity::Negative, Frame::Helicity).into_amplitude("z11-");
-        let z22n =
-            Zlm::new(Wave::D1, Reflectivity::Negative, Frame::Helicity).into_amplitude("z22-");
-        let z33n =
-            Zlm::new(Wave::F1, Reflectivity::Negative, Frame::Helicity).into_amplitude("z33-");
+        let z00p = Zlm::new(
+            Wave::S0,
+            Reflectivity::Positive,
+            Decay::default(),
+            Frame::Helicity,
+        )
+        .named("z00+");
+        let z11p = Zlm::new(
+            Wave::P1,
+            Reflectivity::Positive,
+            Decay::default(),
+            Frame::Helicity,
+        )
+        .named("z11+");
+        let z22p = Zlm::new(
+            Wave::D1,
+            Reflectivity::Positive,
+            Decay::default(),
+            Frame::Helicity,
+        )
+        .named("z22+");
+        let z33p = Zlm::new(
+            Wave::F1,
+            Reflectivity::Positive,
+            Decay::default(),
+            Frame::Helicity,
+        )
+        .named("z33+");
+        let z00n = Zlm::new(
+            Wave::S0,
+            Reflectivity::Negative,
+            Decay::default(),
+            Frame::Helicity,
+        )
+        .named("z00-");
+        let z11n = Zlm::new(
+            Wave::P1,
+            Reflectivity::Negative,
+            Decay::default(),
+            Frame::Helicity,
+        )
+        .named("z11-");
+        let z22n = Zlm::new(
+            Wave::D1,
+            Reflectivity::Negative,
+            Decay::default(),
+            Frame::Helicity,
+        )
+        .named("z22-");
+        let z33n = Zlm::new(
+            Wave::F1,
+            Reflectivity::Negative,
+            Decay::default(),
+            Frame::Helicity,
+        )
+        .named("z33-");
         let manager = Manager::new(&model!(z00p.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.014120844, f32);
         let manager = Manager::new(&model!(z00p.imag()), &dataset)?;
@@ -390,7 +472,7 @@ mod f32_tests {
     #[test]
     fn test_f0() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f32()]);
-        let f0 = KMatrixF0::new(2).into_amplitude("F0(2)");
+        let f0 = KMatrixF0::new(2, Decay::default()).named("F0(2)");
         let manager = Manager::new(&model!(f0.real()), &dataset)?;
         assert_is_close!(
             manager.evaluate(&[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])?[0],
@@ -453,7 +535,7 @@ mod f32_tests {
     #[test]
     fn test_f2() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f32()]);
-        let f2 = KMatrixF2::new(2).into_amplitude("F2(2)");
+        let f2 = KMatrixF2::new(2, Decay::default()).named("F2(2)");
         let manager = Manager::new(&model!(f2.real()), &dataset)?;
         assert_is_close!(
             manager.evaluate(&[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])?[0],
@@ -506,7 +588,7 @@ mod f32_tests {
     #[test]
     fn test_a0() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f32()]);
-        let a0 = KMatrixA0::new(1).into_amplitude("A0(1)");
+        let a0 = KMatrixA0::new(1, Decay::default()).named("A0(1)");
         let manager = Manager::new(&model!(a0.real()), &dataset)?;
         assert_is_close!(
             manager.evaluate(&[1.0, 0.0, 0.0, 0.0])?[0],
@@ -535,7 +617,7 @@ mod f32_tests {
     #[test]
     fn test_a2() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f32()]);
-        let a2 = KMatrixA2::new(1).into_amplitude("A2(1)");
+        let a2 = KMatrixA2::new(1, Decay::default()).named("A2(1)");
         let manager = Manager::new(&model!(a2.real()), &dataset)?;
         assert_is_close!(
             manager.evaluate(&[1.0, 0.0, 0.0, 0.0])?[0],
@@ -564,7 +646,7 @@ mod f32_tests {
     #[test]
     fn test_rho() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f32()]);
-        let rho = KMatrixRho::new(1).into_amplitude("Rho(1)");
+        let rho = KMatrixRho::new(1, Decay::default()).named("Rho(1)");
         let manager = Manager::new(&model!(rho.real()), &dataset)?;
         assert_is_close!(
             manager.evaluate(&[1.0, 0.0, 0.0, 0.0])?[0],
@@ -593,7 +675,7 @@ mod f32_tests {
     #[test]
     fn test_pi1() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f32()]);
-        let pi1 = KMatrixPi1::new(1).into_amplitude("Rho(1)");
+        let pi1 = KMatrixPi1::new(1, Decay::default()).named("Rho(1)");
         let manager = Manager::new(&model!(pi1.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[1.0, 0.0])?[0], 0.694_777_7, f32);
         assert_is_close!(manager.evaluate(&[0.0, 1.0])?[0], 0.936_495_9, f32);
