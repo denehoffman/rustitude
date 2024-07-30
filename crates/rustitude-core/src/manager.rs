@@ -64,10 +64,11 @@ impl<F: Field> Manager<F> {
             .iter()
             .map(|p| p.index.map_or_else(|| p.initial, |i| parameters[i]))
             .collect();
+        let amplitudes = self.model.amplitudes.read();
         self.dataset
             .events
             .iter()
-            .map(|event: &Event<F>| self.model.compute(&pars, event))
+            .map(|event: &Event<F>| self.model.compute(&amplitudes, &pars, event))
             .collect()
     }
 
@@ -98,9 +99,13 @@ impl<F: Field> Manager<F> {
             .iter()
             .map(|p| p.index.map_or_else(|| p.initial, |i| parameters[i]))
             .collect();
+        let amplitudes = self.model.amplitudes.read();
         indices
             .iter()
-            .map(|index| self.model.compute(&pars, &self.dataset.events[*index]))
+            .map(|index| {
+                self.model
+                    .compute(&amplitudes, &pars, &self.dataset.events[*index])
+            })
             .collect()
     }
 
@@ -126,10 +131,11 @@ impl<F: Field> Manager<F> {
             .iter()
             .map(|p| p.index.map_or_else(|| p.initial, |i| parameters[i]))
             .collect();
+        let amplitudes = self.model.amplitudes.read();
         self.dataset
             .events
             .par_iter()
-            .map(|event| self.model.compute(&pars, event))
+            .map(|event| self.model.compute(&amplitudes, &pars, event))
             .collect_into_vec(&mut output);
         output.into_iter().collect()
     }
@@ -168,12 +174,13 @@ impl<F: Field> Manager<F> {
         //     .par_iter()
         //     .map(|index| self.model.compute(&pars, &self.dataset.events[*index]))
         //     .collect_into_vec(&mut output);
+        let amplitudes = self.model.amplitudes.read();
         let view: Vec<&Event<F>> = indices
             .par_iter()
             .map(|&index| &self.dataset.events[index])
             .collect();
         view.par_iter()
-            .map(|&event| self.model.compute(&pars, event))
+            .map(|&event| self.model.compute(&amplitudes, &pars, event))
             .collect_into_vec(&mut output);
         output.into_iter().collect()
     }

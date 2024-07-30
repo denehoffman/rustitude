@@ -39,11 +39,13 @@
 use dyn_clone::DynClone;
 use itertools::Itertools;
 use nalgebra::Complex;
+use parking_lot::RwLock;
 use rayon::prelude::*;
 use std::{
     collections::HashSet,
     fmt::{Debug, Display},
     ops::{Add, Mul},
+    sync::Arc,
 };
 use tracing::{debug, info};
 
@@ -794,7 +796,7 @@ pub struct Model<F: Field> {
     /// The set of coherent sums included in the [`Model`].
     pub cohsums: Vec<NormSqr<F>>,
     /// The unique amplitudes located within all coherent sums.
-    pub amplitudes: Vec<Amplitude<F>>,
+    pub amplitudes: Arc<RwLock<Vec<Amplitude<F>>>>,
     /// The unique parameters located within all coherent sums.
     pub parameters: Vec<Parameter<F>>,
     /// Flag which is `True` iff at least one [`Amplitude`] is written in Python and has a [`Node`]
@@ -865,7 +867,7 @@ impl<F: Field> Model<F> {
         let contains_python_amplitudes = amplitudes.iter().any(|amp| amp.node.is_python_node());
         Self {
             cohsums: amps.iter().map(|inner| NormSqr(inner.clone())).collect(),
-            amplitudes,
+            amplitudes: Arc::new(RwLock::new(amplitudes)),
             parameters,
             contains_python_amplitudes,
         }
@@ -877,14 +879,18 @@ impl<F: Field> Model<F> {
     /// # Errors
     ///
     /// This method yields a [`RustitudeError`] if any of the [`Amplitude::calculate`] steps fail.
-    pub fn compute(&self, parameters: &[F], event: &Event<F>) -> Result<F, RustitudeError> {
+    pub fn compute(
+        &self,
+        amplitudes: &[Amplitude<F>],
+        parameters: &[F],
+        event: &Event<F>,
+    ) -> Result<F, RustitudeError> {
         // TODO: Stop reallocating?
 
         // NOTE: This seems to be just as fast as using a Vec<ComplexField> and replacing active
         // amplitudes by multiplying their cached values by 0.0. Branch prediction doesn't get us
         // any performance here I guess.
-        let cache: Vec<Option<Complex<F>>> = self
-            .amplitudes
+        let cache: Vec<Option<Complex<F>>> = amplitudes
             .iter()
             .map(|amp| {
                 if amp.active {
@@ -909,7 +915,7 @@ impl<F: Field> Model<F> {
     pub fn load(&mut self, dataset: &Dataset<F>) -> Result<(), RustitudeError> {
         let mut next_cache_pos = 0;
         let mut parameter_index = 0;
-        self.amplitudes.iter_mut().try_for_each(|amp| {
+        self.amplitudes.write().iter_mut().try_for_each(|amp| {
             amp.register(next_cache_pos, parameter_index, dataset)?;
             self.cohsums.iter_mut().for_each(|cohsum| {
                 cohsum.walk_mut().iter_mut().for_each(|r_amp| {
@@ -931,6 +937,7 @@ impl<F: Field> Model<F> {
     /// This will throw a [`RustitudeError`] if the amplitude name is not located within the model.
     pub fn get_amplitude(&self, amplitude_name: &str) -> Result<Amplitude<F>, RustitudeError> {
         self.amplitudes
+            .read()
             .iter()
             .find(|a: &&Amplitude<F>| a.name == amplitude_name)
             .ok_or_else(|| RustitudeError::AmplitudeNotFoundError(amplitude_name.to_string()))
@@ -1162,12 +1169,12 @@ impl<F: Field> Model<F> {
     /// This function will return a [`RustitudeError::AmplitudeNotFoundError`] if the given
     /// amplitude is not present in the [`Model`].
     pub fn activate(&mut self, amplitude: &str) -> Result<(), RustitudeError> {
-        if !self.amplitudes.iter().any(|a| a.name == amplitude) {
+        if !self.amplitudes.read().iter().any(|a| a.name == amplitude) {
             return Err(RustitudeError::AmplitudeNotFoundError(
                 amplitude.to_string(),
             ));
         }
-        self.amplitudes.iter_mut().for_each(|amp| {
+        self.amplitudes.write().iter_mut().for_each(|amp| {
             if amp.name == amplitude {
                 amp.active = true
             }
@@ -1183,7 +1190,10 @@ impl<F: Field> Model<F> {
     }
     /// Activates all [`Amplitude`]s in the [`Model`].
     pub fn activate_all(&mut self) {
-        self.amplitudes.iter_mut().for_each(|amp| amp.active = true);
+        self.amplitudes
+            .write()
+            .iter_mut()
+            .for_each(|amp| amp.active = true);
         self.cohsums.iter_mut().for_each(|cohsum| {
             cohsum
                 .walk_mut()
@@ -1211,12 +1221,12 @@ impl<F: Field> Model<F> {
     /// This function will return a [`RustitudeError::AmplitudeNotFoundError`] if the given
     /// amplitude is not present in the [`Model`].
     pub fn deactivate(&mut self, amplitude: &str) -> Result<(), RustitudeError> {
-        if !self.amplitudes.iter().any(|a| a.name == amplitude) {
+        if !self.amplitudes.read().iter().any(|a| a.name == amplitude) {
             return Err(RustitudeError::AmplitudeNotFoundError(
                 amplitude.to_string(),
             ));
         }
-        self.amplitudes.iter_mut().for_each(|amp| {
+        self.amplitudes.write().iter_mut().for_each(|amp| {
             if amp.name == amplitude {
                 amp.active = false
             }
@@ -1233,6 +1243,7 @@ impl<F: Field> Model<F> {
     /// Deactivates all [`Amplitude`]s in the [`Model`].
     pub fn deactivate_all(&mut self) {
         self.amplitudes
+            .write()
             .iter_mut()
             .for_each(|amp| amp.active = false);
         self.cohsums.iter_mut().for_each(|cohsum| {
