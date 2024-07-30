@@ -1,6 +1,7 @@
 use std::{fmt::Display, str::FromStr};
 
 use factorial::Factorial;
+use pyo3::prelude::*;
 use rustitude_core::prelude::*;
 use sphrs::Coordinates;
 
@@ -73,7 +74,8 @@ pub fn wigner_d_matrix<F: Field>(
         * Complex::cis(-(F::convert_isize(n)) * gamma)
 }
 
-#[derive(Clone, Copy, Default)]
+#[pyclass(eq, eq_int)]
+#[derive(Clone, Copy, Default, PartialEq)]
 #[rustfmt::skip]
 pub enum Wave {
     #[default]
@@ -151,7 +153,8 @@ impl Display for Wave {
     }
 }
 
-#[derive(Clone)]
+#[pyclass(eq, eq_int)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum Frame {
     Helicity,
     GottfriedJackson,
@@ -225,7 +228,8 @@ impl Frame {
     }
 }
 
-#[derive(Copy, Clone)]
+#[pyclass(eq, eq_int)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum Reflectivity {
     Positive = 1,
     Negative = -1,
@@ -260,6 +264,45 @@ impl Display for Reflectivity {
         match self {
             Reflectivity::Positive => write!(f, "+"),
             Reflectivity::Negative => write!(f, "-"),
+        }
+    }
+}
+
+#[pyclass]
+#[derive(Clone, Copy)]
+pub enum Decay {
+    TwoBodyDecay([usize; 2]),
+    ThreeBodyDecay([usize; 3]),
+}
+impl Default for Decay {
+    fn default() -> Self {
+        Self::TwoBodyDecay([0, 1])
+    }
+}
+
+impl Decay {
+    pub fn resonance_p4<F: Field>(&self, event: &Event<F>) -> FourMomentum<F> {
+        match self {
+            Decay::TwoBodyDecay(inds) => inds.iter().map(|&i| event.daughter_p4s[i]).sum(),
+            Decay::ThreeBodyDecay(inds) => inds.iter().map(|&i| event.daughter_p4s[i]).sum(),
+        }
+    }
+    pub fn primary_p4<'a, F: Field>(&self, event: &'a Event<F>) -> &'a FourMomentum<F> {
+        match self {
+            Decay::TwoBodyDecay(inds) => &event.daughter_p4s[inds[0]],
+            Decay::ThreeBodyDecay(inds) => &event.daughter_p4s[inds[0]],
+        }
+    }
+    pub fn secondary_p4<'a, F: Field>(&self, event: &'a Event<F>) -> &'a FourMomentum<F> {
+        match self {
+            Decay::TwoBodyDecay(inds) => &event.daughter_p4s[inds[1]],
+            Decay::ThreeBodyDecay(inds) => &event.daughter_p4s[inds[1]],
+        }
+    }
+    pub fn tertiary_p4<'a, F: Field>(&self, event: &'a Event<F>) -> &'a FourMomentum<F> {
+        match self {
+            Decay::TwoBodyDecay(_) => unimplemented!(),
+            Decay::ThreeBodyDecay(inds) => &event.daughter_p4s[inds[2]],
         }
     }
 }
