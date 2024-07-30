@@ -14,7 +14,7 @@ homepage = "https://github.com/denehoffman/rustitude/"
 [workspace.dependencies]
 rustitude-core = { version = "7.0.0", path = "crates/rustitude-core" }
 rustitude = { version = "0.9.3", path = "crates/rustitude" }
-rustitude-gluex = { version = "0.4.8", path = "crates/rustitude-gluex" }
+rustitude-gluex = { version = "0.4.9", path = "crates/rustitude-gluex" }
 rayon = { version = "1.10.0" }
 approx = { version = "0.5.1", features = ["num-complex"] }
 nalgebra = "0.33.0"
