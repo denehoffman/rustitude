@@ -48,6 +48,7 @@ impl Manager_64 {
         self.0
             .model
             .amplitudes
+            .read()
             .clone()
             .into_iter()
             .map(Amplitude_64::from)
@@ -236,6 +237,7 @@ impl Manager_32 {
         self.0
             .model
             .amplitudes
+            .read()
             .clone()
             .into_iter()
             .map(Amplitude_32::from)
@@ -431,6 +433,7 @@ impl ExtendedLogLikelihood_64 {
             .data_manager
             .model
             .amplitudes
+            .read()
             .clone()
             .into_iter()
             .map(Amplitude_64::from)
@@ -704,6 +707,7 @@ impl ExtendedLogLikelihood_32 {
             .data_manager
             .model
             .amplitudes
+            .read()
             .clone()
             .into_iter()
             .map(Amplitude_32::from)

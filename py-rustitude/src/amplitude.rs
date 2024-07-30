@@ -889,6 +889,7 @@ impl Model_64 {
     fn amplitudes(&self) -> Vec<Amplitude_64> {
         self.0
             .amplitudes
+            .read()
             .clone()
             .into_iter()
             .map(Amplitude_64::from)
@@ -1051,6 +1052,7 @@ impl Model_32 {
     fn amplitudes(&self) -> Vec<Amplitude_32> {
         self.0
             .amplitudes
+            .read()
             .clone()
             .into_iter()
             .map(Amplitude_32::from)

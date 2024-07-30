@@ -187,9 +187,11 @@ def open(
         tree_arrays['Px_Beam'] = np.zeros_like(tree_arrays['Px_Beam'])
         tree_arrays['Py_Beam'] = np.zeros_like(tree_arrays['Py_Beam'])
         tree_arrays['Pz_Beam'] = tree_arrays['E_Beam']
-        tree_arrays['EPS'] = [np.array([ex, ey, ez]) for ex, ey, ez in zip(eps_x, eps_y, eps_z)]
+        tree_arrays['EPS'] = np.array([
+            np.array([ex, ey, ez]) for ex, ey, ez in zip(eps_x, eps_y, eps_z)
+        ])
     elif eps is not None:
-        tree_arrays['EPS'] = [np.array(eps) for _ in range(len(tree_arrays['Weight']))]
+        tree_arrays['EPS'] = np.array([np.array(eps) for _ in range(len(tree_arrays['Weight']))])
     if f32:
         return Dataset_32.from_dict(tree_arrays)
     else:

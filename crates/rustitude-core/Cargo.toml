@@ -25,6 +25,7 @@ dyn-clone = { workspace = true }
 tracing = { workspace = true }
 fastrand = { workspace = true }
 ganesh = { workspace = true }
+parking_lot = { workspace = true }
 
 [features]
 default = []
