@@ -221,12 +221,12 @@ impl FromStr for Frame {
 }
 
 pub fn coordinates<F: Field>(
-    x: Vector3<F>,
-    y: Vector3<F>,
-    z: Vector3<F>,
-    p: Vector3<F>,
+    x: &Vector3<F>,
+    y: &Vector3<F>,
+    z: &Vector3<F>,
+    p: &Vector3<F>,
 ) -> Coordinates<F> {
-    Coordinates::cartesian(p.dot(&x), p.dot(&y), p.dot(&z))
+    Coordinates::cartesian(p.dot(x), p.dot(y), p.dot(z))
 }
 
 impl Frame {
@@ -258,7 +258,36 @@ impl Frame {
                 (x, y, z)
             }
         };
-        (x, y, z, coordinates(x, y, z, other_res_vec))
+        (x, y, z, coordinates(&x, &y, &z, &other_res_vec))
+    }
+    pub fn coordinates_from_boosted_vec<F: Field>(
+        &self,
+        decay: Decay,
+        other_res_vec: &Vector3<F>,
+        event: &Event<F>,
+    ) -> (Vector3<F>, Vector3<F>, Vector3<F>, Coordinates<F>) {
+        let resonance_p4 = decay.resonance_p4(event);
+        let beam_res_vec = event.beam_p4.boost_along(&resonance_p4).momentum();
+        let recoil_res_vec = event.recoil_p4.boost_along(&resonance_p4).momentum();
+        let (x, y, z) = match self {
+            Frame::Helicity => {
+                let z = -recoil_res_vec.normalize();
+                let y = beam_res_vec.cross(&z).normalize();
+                let x = y.cross(&z);
+                (x, y, z)
+            }
+            Frame::GottfriedJackson => {
+                let z = beam_res_vec.normalize();
+                let y = event
+                    .beam_p4
+                    .momentum()
+                    .cross(&(-recoil_res_vec))
+                    .normalize();
+                let x = y.cross(&z);
+                (x, y, z)
+            }
+        };
+        (x, y, z, coordinates(&x, &y, &z, other_res_vec))
     }
 }
 
