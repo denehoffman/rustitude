@@ -1,7 +1,7 @@
 use crate::amplitude::{Amplitude_32, Amplitude_64};
 use pyo3::prelude::*;
 use rustitude_gluex::harmonics as rust;
-use rustitude_gluex::utils::{Decay, Frame, Reflectivity, Wave};
+use rustitude_gluex::utils::{Decay, Frame, Sign, Wave};
 
 #[pyfunction]
 #[pyo3(signature = (name, l, m, decay=Decay::default(), frame=Frame::Helicity))]
@@ -21,12 +21,12 @@ fn Ylm_32(name: &str, l: usize, m: isize, decay: Decay, frame: Frame) -> Amplitu
 }
 
 #[pyfunction]
-#[pyo3(signature = (name, l, m, reflectivity=Reflectivity::Positive, decay=Decay::default(), frame=Frame::Helicity))]
+#[pyo3(signature = (name, l, m, reflectivity=Sign::Positive, decay=Decay::default(), frame=Frame::Helicity))]
 fn Zlm(
     name: &str,
     l: usize,
     m: isize,
-    reflectivity: Reflectivity,
+    reflectivity: Sign,
     decay: Decay,
     frame: Frame,
 ) -> Amplitude_64 {
@@ -37,12 +37,12 @@ fn Zlm(
 }
 
 #[pyfunction]
-#[pyo3(signature = (name, l, m, reflectivity=Reflectivity::Positive, decay=Decay::default(), frame=Frame::Helicity))]
+#[pyo3(signature = (name, l, m, reflectivity=Sign::Positive, decay=Decay::default(), frame=Frame::Helicity))]
 fn Zlm_64(
     name: &str,
     l: usize,
     m: isize,
-    reflectivity: Reflectivity,
+    reflectivity: Sign,
     decay: Decay,
     frame: Frame,
 ) -> Amplitude_64 {
@@ -53,12 +53,12 @@ fn Zlm_64(
 }
 
 #[pyfunction]
-#[pyo3(signature = (name, l, m, reflectivity=Reflectivity::Positive, decay=Decay::default(), frame=Frame::Helicity))]
+#[pyo3(signature = (name, l, m, reflectivity=Sign::Positive, decay=Decay::default(), frame=Frame::Helicity))]
 fn Zlm_32(
     name: &str,
     l: usize,
     m: isize,
-    reflectivity: Reflectivity,
+    reflectivity: Sign,
     decay: Decay,
     frame: Frame,
 ) -> Amplitude_32 {
@@ -69,30 +69,30 @@ fn Zlm_32(
 }
 
 #[pyfunction]
-#[pyo3(signature = (name, reflectivity=Reflectivity::Positive, decay=Decay::default(), frame=Frame::Helicity))]
-fn OnePS(name: &str, reflectivity: Reflectivity, decay: Decay, frame: Frame) -> Amplitude_64 {
+#[pyo3(signature = (name, reflectivity=Sign::Positive, decay=Decay::default(), frame=Frame::Helicity))]
+fn OnePS(name: &str, reflectivity: Sign, decay: Decay, frame: Frame) -> Amplitude_64 {
     Amplitude_64::new(name, rust::OnePS::new(reflectivity, decay, frame))
 }
 
 #[pyfunction]
-#[pyo3(signature = (name, reflectivity=Reflectivity::Positive, decay=Decay::default(), frame=Frame::Helicity))]
-fn OnePS_64(name: &str, reflectivity: Reflectivity, decay: Decay, frame: Frame) -> Amplitude_64 {
+#[pyo3(signature = (name, reflectivity=Sign::Positive, decay=Decay::default(), frame=Frame::Helicity))]
+fn OnePS_64(name: &str, reflectivity: Sign, decay: Decay, frame: Frame) -> Amplitude_64 {
     Amplitude_64::new(name, rust::OnePS::new(reflectivity, decay, frame))
 }
 
 #[pyfunction]
-#[pyo3(signature = (name, reflectivity=Reflectivity::Positive, decay=Decay::default(), frame=Frame::Helicity))]
-fn OnePS_32(name: &str, reflectivity: Reflectivity, decay: Decay, frame: Frame) -> Amplitude_32 {
+#[pyo3(signature = (name, reflectivity=Sign::Positive, decay=Decay::default(), frame=Frame::Helicity))]
+fn OnePS_32(name: &str, reflectivity: Sign, decay: Decay, frame: Frame) -> Amplitude_32 {
     Amplitude_32::new(name, rust::OnePS::new(reflectivity, decay, frame))
 }
 
 #[pyfunction]
-#[pyo3(signature = (name, l, m, reflectivity=Reflectivity::Positive, decay=Decay::default(), frame=Frame::Helicity))]
+#[pyo3(signature = (name, l, m, reflectivity=Sign::Positive, decay=Decay::default(), frame=Frame::Helicity))]
 fn TwoPS(
     name: &str,
     l: usize,
     m: isize,
-    reflectivity: Reflectivity,
+    reflectivity: Sign,
     decay: Decay,
     frame: Frame,
 ) -> Amplitude_64 {
@@ -103,12 +103,12 @@ fn TwoPS(
 }
 
 #[pyfunction]
-#[pyo3(signature = (name, l, m, reflectivity=Reflectivity::Positive, decay=Decay::default(), frame=Frame::Helicity))]
+#[pyo3(signature = (name, l, m, reflectivity=Sign::Positive, decay=Decay::default(), frame=Frame::Helicity))]
 fn TwoPS_64(
     name: &str,
     l: usize,
     m: isize,
-    reflectivity: Reflectivity,
+    reflectivity: Sign,
     decay: Decay,
     frame: Frame,
 ) -> Amplitude_64 {
@@ -119,12 +119,12 @@ fn TwoPS_64(
 }
 
 #[pyfunction]
-#[pyo3(signature = (name, l, m, reflectivity=Reflectivity::Positive, decay=Decay::default(), frame=Frame::Helicity))]
+#[pyo3(signature = (name, l, m, reflectivity=Sign::Positive, decay=Decay::default(), frame=Frame::Helicity))]
 fn TwoPS_32(
     name: &str,
     l: usize,
     m: isize,
-    reflectivity: Reflectivity,
+    reflectivity: Sign,
     decay: Decay,
     frame: Frame,
 ) -> Amplitude_32 {

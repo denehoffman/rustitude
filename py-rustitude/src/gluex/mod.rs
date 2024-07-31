@@ -12,7 +12,7 @@ pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     add_submodule(m, "rustitude.gluex.dalitz", dalitz::pyo3_module)?;
     m.add_class::<rustitude_gluex::utils::Wave>()?;
     m.add_class::<rustitude_gluex::utils::Frame>()?;
-    m.add_class::<rustitude_gluex::utils::Reflectivity>()?;
+    m.add_class::<rustitude_gluex::utils::Sign>()?;
     m.add_class::<rustitude_gluex::utils::Decay>()?;
     Ok(())
 }

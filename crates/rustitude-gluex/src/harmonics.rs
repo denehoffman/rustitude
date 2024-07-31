@@ -2,7 +2,7 @@ use rayon::prelude::*;
 use rustitude_core::prelude::*;
 use sphrs::{ComplexSH, SHEval};
 
-use crate::utils::{Decay, Frame, Reflectivity, Wave};
+use crate::utils::{Decay, Frame, Sign, Wave};
 
 #[derive(Clone)]
 pub struct Ylm<F: Field> {
@@ -55,13 +55,13 @@ impl<F: Field> Node<F> for Ylm<F> {
 #[derive(Clone)]
 pub struct Zlm<F: Field> {
     wave: Wave,
-    reflectivity: Reflectivity,
+    reflectivity: Sign,
     decay: Decay,
     frame: Frame,
     data: Vec<Complex<F>>,
 }
 impl<F: Field> Zlm<F> {
-    pub fn new(wave: Wave, reflectivity: Reflectivity, decay: Decay, frame: Frame) -> Self {
+    pub fn new(wave: Wave, reflectivity: Sign, decay: Decay, frame: Frame) -> Self {
         Self {
             wave,
             reflectivity,
@@ -104,11 +104,11 @@ impl<F: Field + num::Float> Node<F> for Zlm<F> {
                 let phase = Complex::cis(-big_phi);
                 let zlm = ylm * phase;
                 match self.reflectivity {
-                    Reflectivity::Positive => Complex::new(
+                    Sign::Positive => Complex::new(
                         F::fsqrt(F::ONE + pgamma) * zlm.re,
                         F::fsqrt(F::ONE - pgamma) * zlm.im,
                     ),
-                    Reflectivity::Negative => Complex::new(
+                    Sign::Negative => Complex::new(
                         F::fsqrt(F::ONE - pgamma) * zlm.re,
                         F::fsqrt(F::ONE + pgamma) * zlm.im,
                     ),
@@ -124,13 +124,13 @@ impl<F: Field + num::Float> Node<F> for Zlm<F> {
 
 #[derive(Clone)]
 pub struct OnePS<F: Field> {
-    reflectivity: Reflectivity,
+    reflectivity: Sign,
     decay: Decay,
     frame: Frame,
     data: Vec<Complex<F>>,
 }
 impl<F: Field> OnePS<F> {
-    pub fn new(reflectivity: Reflectivity, decay: Decay, frame: Frame) -> Self {
+    pub fn new(reflectivity: Sign, decay: Decay, frame: Frame) -> Self {
         Self {
             reflectivity,
             decay,
@@ -170,11 +170,11 @@ impl<F: Field> Node<F> for OnePS<F> {
                 let pgamma = event.eps.norm();
                 let phase = Complex::cis(-(pol_angle + big_phi));
                 match self.reflectivity {
-                    Reflectivity::Positive => Complex::new(
+                    Sign::Positive => Complex::new(
                         F::fsqrt(F::ONE + pgamma) * phase.re,
                         F::fsqrt(F::ONE - pgamma) * phase.im,
                     ),
-                    Reflectivity::Negative => Complex::new(
+                    Sign::Negative => Complex::new(
                         F::fsqrt(F::ONE - pgamma) * phase.re,
                         F::fsqrt(F::ONE + pgamma) * phase.im,
                     ),
@@ -192,13 +192,13 @@ impl<F: Field> Node<F> for OnePS<F> {
 #[derive(Clone)]
 pub struct TwoPS<F: Field> {
     wave: Wave,
-    reflectivity: Reflectivity,
+    reflectivity: Sign,
     decay: Decay,
     frame: Frame,
     data: Vec<Complex<F>>,
 }
 impl<F: Field> TwoPS<F> {
-    pub fn new(wave: Wave, reflectivity: Reflectivity, decay: Decay, frame: Frame) -> Self {
+    pub fn new(wave: Wave, reflectivity: Sign, decay: Decay, frame: Frame) -> Self {
         Self {
             wave,
             reflectivity,

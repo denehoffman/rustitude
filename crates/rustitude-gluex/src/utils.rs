@@ -273,40 +273,40 @@ impl Frame {
 
 #[pyclass(eq, eq_int)]
 #[derive(Copy, Clone, PartialEq)]
-pub enum Reflectivity {
+pub enum Sign {
     Positive = 1,
     Negative = -1,
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct ParseReflectivityError;
+pub struct ParseSignError;
 
-impl FromStr for Reflectivity {
-    type Err = ParseReflectivityError;
+impl FromStr for Sign {
+    type Err = ParseSignError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_ref() {
-            "positive" => Ok(Reflectivity::Positive),
-            "pos" => Ok(Reflectivity::Positive),
-            "p" => Ok(Reflectivity::Positive),
-            "+" => Ok(Reflectivity::Positive),
-            "plus" => Ok(Reflectivity::Positive),
-            "negative" => Ok(Reflectivity::Negative),
-            "neg" => Ok(Reflectivity::Negative),
-            "n" => Ok(Reflectivity::Negative),
-            "-" => Ok(Reflectivity::Negative),
-            "minus" => Ok(Reflectivity::Negative),
-            "m" => Ok(Reflectivity::Negative),
-            _ => Err(ParseReflectivityError),
+            "positive" => Ok(Sign::Positive),
+            "pos" => Ok(Sign::Positive),
+            "p" => Ok(Sign::Positive),
+            "+" => Ok(Sign::Positive),
+            "plus" => Ok(Sign::Positive),
+            "negative" => Ok(Sign::Negative),
+            "neg" => Ok(Sign::Negative),
+            "n" => Ok(Sign::Negative),
+            "-" => Ok(Sign::Negative),
+            "minus" => Ok(Sign::Negative),
+            "m" => Ok(Sign::Negative),
+            _ => Err(ParseSignError),
         }
     }
 }
 
-impl Display for Reflectivity {
+impl Display for Sign {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Reflectivity::Positive => write!(f, "+"),
-            Reflectivity::Negative => write!(f, "-"),
+            Sign::Positive => write!(f, "+"),
+            Sign::Negative => write!(f, "-"),
         }
     }
 }
