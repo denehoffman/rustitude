@@ -12,7 +12,7 @@ build:
 develop:
   source .venv/bin/activate
   cargo update -q
-  maturin develop -r -m py-rustitude/Cargo.toml
+  maturin develop -r --uv -m py-rustitude/Cargo.toml
 
 release:
   release-plz release-pr -u --verbose
