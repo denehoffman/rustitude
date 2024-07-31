@@ -18,6 +18,7 @@ pyo3 = { workspace = true }
 rayon = { workspace = true }
 rustitude-core = { workspace = true }
 sphrs = { workspace = true }
+wigners = { workspace = true }
 
 [features]
 default = []
