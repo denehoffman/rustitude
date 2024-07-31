@@ -63,6 +63,70 @@ impl<F: Field> Node<F> for BreitWigner<F> {
     }
 }
 
+#[derive(Clone)]
+pub struct Flatte<F: Field> {
+    channel: usize,
+    m1s: [F; 2],
+    m2s: [F; 2],
+    decay: Decay,
+    low_channel: usize,
+    data: Vec<(F, [Complex<F>; 2])>,
+}
+impl<F: Field> Flatte<F> {
+    pub fn new(channel: usize, m1s: [F; 2], m2s: [F; 2], decay: Decay) -> Self {
+        let low_channel = if (m1s[0] + m1s[1]) < (m2s[0] + m2s[1]) {
+            0
+        } else {
+            1
+        };
+        Self {
+            channel,
+            m1s,
+            m2s,
+            decay,
+            low_channel,
+            data: Vec::default(),
+        }
+    }
+}
+
+impl<F: Field> Node<F> for Flatte<F> {
+    fn precalculate(&mut self, dataset: &Dataset<F>) -> Result<(), RustitudeError> {
+        self.data = dataset
+            .events
+            .par_iter()
+            .map(|event| {
+                let res_mass = self.decay.resonance_p4(event).m();
+                let br_mom_channel_1 =
+                    utils::breakup_momentum_c(F::fsqrt(res_mass), self.m1s[0], self.m1s[1]);
+                let br_mom_channel_2 =
+                    utils::breakup_momentum_c(F::fsqrt(res_mass), self.m2s[0], self.m2s[1]);
+                (res_mass, [br_mom_channel_1, br_mom_channel_2])
+            })
+            .collect();
+        Ok(())
+    }
+
+    fn parameters(&self) -> Vec<String> {
+        vec!["mass".to_string(), "g1".to_string(), "g2".to_string()]
+    }
+
+    fn calculate(&self, parameters: &[F], event: &Event<F>) -> Result<Complex<F>, RustitudeError> {
+        let (res_mass, br_momenta) = self.data[event.index];
+        let gammas = [
+            parameters[1].c() * br_momenta[0],
+            parameters[2].c() * br_momenta[1],
+        ];
+        let gamma_low = gammas[self.low_channel];
+        let gamma_j = gammas[self.channel];
+        let mass = parameters[0].c();
+        Ok(
+            (mass * Complex::sqrt(gamma_low * gamma_j)) / (mass.powi(2) - res_mass.fpowi(2).c())
+                - F::I * mass * (gammas[0] * gammas[1]),
+        )
+    }
+}
+
 #[derive(Clone, Copy)]
 pub struct AdlerZero<F: Field> {
     pub s_0: F,

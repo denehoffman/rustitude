@@ -18,6 +18,33 @@ fn BreitWigner_32(name: &str, l: usize, decay: Decay) -> Amplitude_32 {
     Amplitude_32::new(name, rust::BreitWigner::new(l, decay))
 }
 #[pyfunction]
+#[pyo3(signature = (name, channel, m1s, m2s, decay=Decay::default()))]
+fn Flatte(name: &str, channel: usize, m1s: [f64; 2], m2s: [f64; 2], decay: Decay) -> Amplitude_64 {
+    Amplitude_64::new(name, rust::Flatte::new(channel, m1s, m2s, decay))
+}
+#[pyfunction]
+#[pyo3(signature = (name, channel, m1s, m2s, decay=Decay::default()))]
+fn Flatte_64(
+    name: &str,
+    channel: usize,
+    m1s: [f64; 2],
+    m2s: [f64; 2],
+    decay: Decay,
+) -> Amplitude_64 {
+    Amplitude_64::new(name, rust::Flatte::new(channel, m1s, m2s, decay))
+}
+#[pyfunction]
+#[pyo3(signature = (name, channel, m1s, m2s, decay=Decay::default()))]
+fn Flatte_32(
+    name: &str,
+    channel: usize,
+    m1s: [f32; 2],
+    m2s: [f32; 2],
+    decay: Decay,
+) -> Amplitude_32 {
+    Amplitude_32::new(name, rust::Flatte::new(channel, m1s, m2s, decay))
+}
+#[pyfunction]
 #[pyo3(signature = (name, channel, decay=Decay::default()))]
 fn KMatrixA0(name: &str, channel: usize, decay: Decay) -> Amplitude_64 {
     Amplitude_64::new(name, rust::KMatrixA0::new(channel, decay))
@@ -112,6 +139,9 @@ pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(BreitWigner, m)?)?;
     m.add_function(wrap_pyfunction!(BreitWigner_64, m)?)?;
     m.add_function(wrap_pyfunction!(BreitWigner_32, m)?)?;
+    m.add_function(wrap_pyfunction!(Flatte, m)?)?;
+    m.add_function(wrap_pyfunction!(Flatte_64, m)?)?;
+    m.add_function(wrap_pyfunction!(Flatte_32, m)?)?;
     m.add_function(wrap_pyfunction!(KMatrixA0, m)?)?;
     m.add_function(wrap_pyfunction!(KMatrixA0_64, m)?)?;
     m.add_function(wrap_pyfunction!(KMatrixA0_32, m)?)?;
