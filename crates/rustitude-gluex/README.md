@@ -17,9 +17,9 @@
     <img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/denehoffman/rustitude/rust.yml?style=for-the-badge&logo=github"></a>
   <a href="LICENSE" alt="License">
     <img alt="GitHub License" src="https://img.shields.io/github/license/denehoffman/rustitude?style=for-the-badge"></a>
-  <a href="https://crates.io/crates/rustitude" alt="Rustitude on crates.io">
+  <a href="https://crates.io/crates/rustitude-gluex" alt="Rustitude-GlueX on crates.io">
     <img alt="Crates.io Version" src="https://img.shields.io/crates/v/rustitude?style=for-the-badge&logo=rust&logoColor=red&color=red"></a>
-  <a href="https://docs.rs/rustitude" alt="Rustitude documentation on docs.rs">
+  <a href="https://docs.rs/rustitude-gluex" alt="Rustitude documentation on docs.rs">
     <img alt="docs.rs" src="https://img.shields.io/docsrs/rustitude?style=for-the-badge&logo=rust&logoColor=red"></a>
   <a href="https://app.codecov.io/github/denehoffman/rustitude/tree/main/" alt="Codecov coverage report">
     <img alt="Codecov" src="https://img.shields.io/codecov/c/github/denehoffman/rustitude?style=for-the-badge&logo=codecov"></a>

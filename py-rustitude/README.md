@@ -79,9 +79,9 @@ f2 = gluex.resonances.KMatrixF2('f2', channel=2)
 a0p = gluex.resonances.KMatrixA0('a0+', channel=1)
 a0n = gluex.resonances.KMatrixA0('a0-', channel=1)
 a2 = gluex.resonances.KMatrixA2('a2', channel=1)
-s0p = gluex.harmonics.Zlm('Z00+', 0, 0, reflectivity='+')
-s0n = gluex.harmonics.Zlm('Z00-', 0, 0, reflectivity='-')
-d2p = gluex.harmonics.Zlm('Z22+', 2, 2, reflectivity='+')
+s0p = gluex.harmonics.Zlm('Z00+', 0, 0, reflectivity=gluex.Reflectivity.Positive)
+s0n = gluex.harmonics.Zlm('Z00-', 0, 0, reflectivity=gluex.Reflectivity.Negative)
+d2p = gluex.harmonics.Zlm('Z22+', 2, 2) # positive reflectivity is the default
 
 # Next, let's put them together into a model
 # The API supports addition and multiplication and has additional methods for the real part (`real`) and imaginary part (`imag`).
