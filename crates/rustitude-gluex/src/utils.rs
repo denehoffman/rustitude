@@ -15,6 +15,24 @@ pub fn breakup_momentum<F: Field>(m0: F, m1: F, m2: F) -> F {
     )) / (F::TWO * m0)
 }
 
+/// Computes the ([`Complex<F>`]) breakup momentum of a particle with mass `m0` decaying into two particles
+/// with masses `m1` and `m2`.
+pub fn breakup_momentum_c<F: Field>(m0: F, m1: F, m2: F) -> Complex<F> {
+    rho(m0.fpowi(2), m1, m2) * m0 / F::TWO
+}
+
+pub fn chi_plus<F: Field>(s: F, m1: F, m2: F) -> Complex<F> {
+    (F::ONE - ((m1 + m2) * (m1 + m2)) / s).c()
+}
+
+pub fn chi_minus<F: Field>(s: F, m1: F, m2: F) -> Complex<F> {
+    (F::ONE - ((m1 - m2) * (m1 - m2)) / s).c()
+}
+
+pub fn rho<F: Field>(s: F, m1: F, m2: F) -> Complex<F> {
+    Complex::sqrt(chi_plus(s, m1, m2) * chi_minus(s, m1, m2))
+}
+
 pub fn blatt_weisskopf<F: Field>(m0: F, m1: F, m2: F, l: usize) -> F {
     let q = breakup_momentum(m0, m1, m2);
     let z = q.fpowi(2) / F::f(0.1973).fpowi(2);
@@ -29,6 +47,31 @@ pub fn blatt_weisskopf<F: Field>(m0: F, m1: F, m2: F, l: usize) -> F {
         4 => F::fsqrt(
             (F::f(12746.0) * z.fpowi(4)) / (z.fpowi(2) - F::f(45.0) * z + F::f(105.0)).fpowi(2)
                 + F::f(25.0) * z * (F::TWO * z - F::f(21.0)).fpowi(2),
+        ),
+        l => panic!("L = {l} is not yet implemented"),
+    }
+}
+
+/// Computes the ([`Complex<F>`]) Blatt-Weisskopf barrier factor representing the energy required for a particle
+/// with mass `m0` to decay into two particles with masses `m1` and `m2` and angular momentum `l`.
+///
+/// In applications where `m0` is expected to be above the mass threshold to produce `m1` and
+/// `m2`, the absolute value of this function can be safely assumed to be equal to its value.
+pub fn blatt_weisskopf_c<F: Field>(m0: F, m1: F, m2: F, l: usize) -> Complex<F> {
+    let q = breakup_momentum_c(m0, m1, m2);
+    let z = q.powi(2) / F::f(0.1973).fpowi(2);
+    match l {
+        0 => F::ONE.c(),
+        1 => Complex::sqrt((F::TWO.c() * z) / (z + F::ONE)),
+        2 => Complex::sqrt((z.powi(2) * F::f(13.0)) / ((z - F::THREE).powi(2) + z * F::NINE)),
+        3 => Complex::sqrt(
+            (z.powi(3) * F::f(277.0))
+                / (z * (z - F::f(15.0)).powi(2) + (z * F::TWO - F::FIVE).powi(2))
+                * F::NINE,
+        ),
+        4 => Complex::sqrt(
+            (z.powi(4) * F::f(12746.0)) / (z.powi(2) - z * F::f(45.0) + F::f(105.0)).powi(2)
+                + z * F::f(25.0) * (z * F::TWO - F::f(21.0)).powi(2),
         ),
         l => panic!("L = {l} is not yet implemented"),
     }

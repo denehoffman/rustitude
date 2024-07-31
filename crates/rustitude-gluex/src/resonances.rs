@@ -1,5 +1,4 @@
-use crate::utils::blatt_weisskopf;
-use crate::utils::breakup_momentum;
+use crate::utils;
 use crate::utils::Decay;
 
 use nalgebra::{SMatrix, SVector};
@@ -36,19 +35,15 @@ impl<F: Field> Node<F> for BreitWigner<F> {
                 let m = (p1 + p2).m();
                 let m1 = p1.m();
                 let m2 = p2.m();
-                let q = breakup_momentum(m, m1, m2);
-                let f = blatt_weisskopf(m, m1, m2, self.l);
+                let q = utils::breakup_momentum(m, m1, m2);
+                let f = utils::blatt_weisskopf(m, m1, m2, self.l);
                 (m, (m1, (m2, (q, f))))
             })
             .unzip();
         Ok(())
     }
 
-    fn calculate(
-        &self,
-        parameters: &[F],
-        event: &Event<F>,
-    ) -> Result<Complex<F>, RustitudeError> {
+    fn calculate(&self, parameters: &[F], event: &Event<F>) -> Result<Complex<F>, RustitudeError> {
         let m = self.m[event.index];
         let m1 = self.m1[event.index];
         let m2 = self.m2[event.index];
@@ -56,10 +51,11 @@ impl<F: Field> Node<F> for BreitWigner<F> {
         let f = self.f[event.index];
         let m0 = parameters[0];
         let g0 = parameters[1];
-        let f0 = blatt_weisskopf(m0, m1, m2, self.l);
-        let q0 = breakup_momentum(m0, m1, m2);
+        let f0 = utils::blatt_weisskopf(m0, m1, m2, self.l);
+        let q0 = utils::breakup_momentum(m0, m1, m2);
         let g = g0 * (m0 / m) * (q / q0) * (f.fpowi(2) / f0.fpowi(2));
-        Ok(Complex::new(f * (m0 * g0 / F::PI()), F::ZERO) / Complex::new(m0.fpowi(2) - m.fpowi(2), -F::ONE * m0 * g))
+        Ok(Complex::new(f * (m0 * g0 / F::PI()), F::ZERO)
+            / Complex::new(m0.fpowi(2) - m.fpowi(2), -F::ONE * m0 * g))
     }
 
     fn parameters(&self) -> Vec<String> {
@@ -73,7 +69,7 @@ pub struct AdlerZero<F: Field> {
     pub s_norm: F,
 }
 #[derive(Clone)]
-struct KMatrixConstants<F: Field, const C: usize, const R: usize> {
+pub struct KMatrixConstants<F: Field, const C: usize, const R: usize> {
     g: SMatrix<F, C, R>,
     c: SMatrix<F, C, C>,
     m1s: [F; C],
@@ -84,32 +80,21 @@ struct KMatrixConstants<F: Field, const C: usize, const R: usize> {
 }
 
 impl<F: Field, const C: usize, const R: usize> KMatrixConstants<F, C, R> {
-    fn chi_plus(s: F, m1: F, m2: F) -> Complex<F> {
-        (F::ONE - ((m1 + m2) * (m1 + m2)) / s).into()
-    }
-
-    fn chi_minus(s: F, m1: F, m2: F) -> Complex<F> {
-        (F::ONE - ((m1 - m2) * (m1 - m2)) / s).into()
-    }
-
-    fn rho(s: F, m1: F, m2: F) -> Complex<F> {
-        (Self::chi_plus(s, m1, m2) * Self::chi_minus(s, m1, m2)).sqrt()
-    }
     fn c_matrix(&self, s: F) -> SMatrix<Complex<F>, C, C> {
         SMatrix::from_diagonal(&SVector::from_fn(|i, _| {
-            Self::rho(s, self.m1s[i], self.m2s[i]) / F::PI()
-                * ((Self::chi_plus(s, self.m1s[i], self.m2s[i])
-                    + Self::rho(s, self.m1s[i], self.m2s[i]))
-                    / (Self::chi_plus(s, self.m1s[i], self.m2s[i])
-                        - Self::rho(s, self.m1s[i], self.m2s[i])))
+            utils::rho(s, self.m1s[i], self.m2s[i]) / F::PI()
+                * ((utils::chi_plus(s, self.m1s[i], self.m2s[i])
+                    + utils::rho(s, self.m1s[i], self.m2s[i]))
+                    / (utils::chi_plus(s, self.m1s[i], self.m2s[i])
+                        - utils::rho(s, self.m1s[i], self.m2s[i])))
                 .ln()
-                - Self::chi_plus(s, self.m1s[i], self.m2s[i]) / F::PI()
+                - utils::chi_plus(s, self.m1s[i], self.m2s[i]) / F::PI()
                     * ((self.m2s[i] - self.m1s[i]) / (self.m1s[i] + self.m2s[i]))
                     * (self.m2s[i] / self.m1s[i]).fln()
         }))
     }
     fn barrier_factor(s: F, m1: F, m2: F, mr: F, l: usize) -> F {
-        blatt_weisskopf(s.fsqrt(), m1, m2, l) / blatt_weisskopf(mr, m1, m2, l)
+        utils::blatt_weisskopf(s.fsqrt(), m1, m2, l) / utils::blatt_weisskopf(mr, m1, m2, l)
     }
     fn barrier_matrix(&self, s: F) -> SMatrix<F, C, R> {
         SMatrix::from_fn(|i, a| {
@@ -122,15 +107,17 @@ impl<F: Field, const C: usize, const R: usize> KMatrixConstants<F, C, R> {
         SMatrix::from_fn(|i, j| {
             (0..R)
                 .map(|a| {
-                    Complex::from(
-                        bf[(i, a)]
-                            * bf[(j, a)]
-                            * (self.g[(i, a)] * self.g[(j, a)]
-                                + (self.c[(i, j)]) * (self.mrs[a].fpowi(2) - s)),
-                    ) * self.pole_product_remainder(s, a)
+                    (bf[(i, a)]
+                        * bf[(j, a)]
+                        * (self.g[(i, a)] * self.g[(j, a)]
+                            + (self.c[(i, j)]) * (self.mrs[a].fpowi(2) - s)))
+                        .c()
+                        * self.pole_product_remainder(s, a)
                 })
                 .sum::<Complex<F>>()
-                * self.adler_zero.map_or(F::ONE, |az| (s - az.s_0) / az.s_norm)
+                * self
+                    .adler_zero
+                    .map_or(F::ONE, |az| (s - az.s_0) / az.s_norm)
         })
     }
 
@@ -227,7 +214,7 @@ impl<F: Field> Node<F> for KMatrixF0<F> {
                 let s = self.decay.resonance_p4(event).m2();
                 let barrier_mat = self.constants.barrier_matrix(s);
                 let pvector_constants = SMatrix::<Complex<F>, 5, 5>::from_fn(|i, a| {
-                    Complex::from(barrier_mat[(i, a)])
+                    barrier_mat[(i, a)].c()
                         * self.constants.g[(i, a)]
                         * self.constants.pole_product_remainder(s, a)
                 });
@@ -236,11 +223,7 @@ impl<F: Field> Node<F> for KMatrixF0<F> {
             .collect();
         Ok(())
     }
-    fn calculate(
-        &self,
-        parameters: &[F],
-        event: &Event<F>,
-    ) -> Result<Complex<F>, RustitudeError> {
+    fn calculate(&self, parameters: &[F], event: &Event<F>) -> Result<Complex<F>, RustitudeError> {
         let betas = SVector::<Complex<F>, 5>::new(
             Complex::new(parameters[0], parameters[1]),
             Complex::new(parameters[2], parameters[3]),
@@ -317,7 +300,7 @@ impl<F: Field> Node<F> for KMatrixF2<F> {
                 let s = self.decay.resonance_p4(event).m2();
                 let barrier_mat = self.constants.barrier_matrix(s);
                 let pvector_constants = SMatrix::<Complex<F>, 4, 4>::from_fn(|i, a| {
-                    Complex::from(barrier_mat[(i, a)])
+                    barrier_mat[(i, a)].c()
                         * self.constants.g[(i, a)]
                         * self.constants.pole_product_remainder(s, a)
                 });
@@ -326,11 +309,7 @@ impl<F: Field> Node<F> for KMatrixF2<F> {
             .collect();
         Ok(())
     }
-    fn calculate(
-        &self,
-        parameters: &[F],
-        event: &Event<F>,
-    ) -> Result<Complex<F>, RustitudeError> {
+    fn calculate(&self, parameters: &[F], event: &Event<F>) -> Result<Complex<F>, RustitudeError> {
         let betas = SVector::<Complex<F>, 4>::new(
             Complex::new(parameters[0], parameters[1]),
             Complex::new(parameters[2], parameters[3]),
@@ -401,7 +380,7 @@ impl<F: Field> Node<F> for KMatrixA0<F> {
                 let s = self.decay.resonance_p4(event).m2();
                 let barrier_mat = self.constants.barrier_matrix(s);
                 let pvector_constants = SMatrix::<Complex<F>, 2, 2>::from_fn(|i, a| {
-                    Complex::from(barrier_mat[(i, a)])
+                    barrier_mat[(i, a)].c()
                         * self.constants.g[(i, a)]
                         * self.constants.pole_product_remainder(s, a)
                 });
@@ -410,11 +389,7 @@ impl<F: Field> Node<F> for KMatrixA0<F> {
             .collect();
         Ok(())
     }
-    fn calculate(
-        &self,
-        parameters: &[F],
-        event: &Event<F>,
-    ) -> Result<Complex<F>, RustitudeError> {
+    fn calculate(&self, parameters: &[F], event: &Event<F>) -> Result<Complex<F>, RustitudeError> {
         let betas = SVector::<Complex<F>, 2>::new(
             Complex::new(parameters[0], parameters[1]),
             Complex::new(parameters[2], parameters[3]),
@@ -480,7 +455,7 @@ impl<F: Field> Node<F> for KMatrixA2<F> {
                 let s = self.decay.resonance_p4(event).m2();
                 let barrier_mat = self.constants.barrier_matrix(s);
                 let pvector_constants = SMatrix::<Complex<F>, 3, 2>::from_fn(|i, a| {
-                    Complex::from(barrier_mat[(i, a)])
+                    barrier_mat[(i, a)].c()
                         * self.constants.g[(i, a)]
                         * self.constants.pole_product_remainder(s, a)
                 });
@@ -489,11 +464,7 @@ impl<F: Field> Node<F> for KMatrixA2<F> {
             .collect();
         Ok(())
     }
-    fn calculate(
-        &self,
-        parameters: &[F],
-        event: &Event<F>,
-    ) -> Result<Complex<F>, RustitudeError> {
+    fn calculate(&self, parameters: &[F], event: &Event<F>) -> Result<Complex<F>, RustitudeError> {
         let betas = SVector::<Complex<F>, 2>::new(
             Complex::new(parameters[0], parameters[1]),
             Complex::new(parameters[2], parameters[3]),
@@ -559,7 +530,7 @@ impl<F: Field> Node<F> for KMatrixRho<F> {
                 let s = self.decay.resonance_p4(event).m2();
                 let barrier_mat = self.constants.barrier_matrix(s);
                 let pvector_constants = SMatrix::<Complex<F>, 3, 2>::from_fn(|i, a| {
-                    Complex::from(barrier_mat[(i, a)])
+                    barrier_mat[(i, a)].c()
                         * self.constants.g[(i, a)]
                         * self.constants.pole_product_remainder(s, a)
                 });
@@ -568,11 +539,7 @@ impl<F: Field> Node<F> for KMatrixRho<F> {
             .collect();
         Ok(())
     }
-    fn calculate(
-        &self,
-        parameters: &[F],
-        event: &Event<F>,
-    ) -> Result<Complex<F>, RustitudeError> {
+    fn calculate(&self, parameters: &[F], event: &Event<F>) -> Result<Complex<F>, RustitudeError> {
         let betas = SVector::<Complex<F>, 2>::new(
             Complex::new(parameters[0], parameters[1]),
             Complex::new(parameters[2], parameters[3]),
@@ -636,7 +603,7 @@ impl<F: Field> Node<F> for KMatrixPi1<F> {
                 let s = self.decay.resonance_p4(event).m2();
                 let barrier_mat = self.constants.barrier_matrix(s);
                 let pvector_constants = SMatrix::<Complex<F>, 2, 1>::from_fn(|i, a| {
-                    Complex::from(barrier_mat[(i, a)])
+                    barrier_mat[(i, a)].c()
                         * self.constants.g[(i, a)]
                         * self.constants.pole_product_remainder(s, a)
                 });
@@ -645,13 +612,8 @@ impl<F: Field> Node<F> for KMatrixPi1<F> {
             .collect();
         Ok(())
     }
-    fn calculate(
-        &self,
-        parameters: &[F],
-        event: &Event<F>,
-    ) -> Result<Complex<F>, RustitudeError> {
-        let betas =
-            SVector::<Complex<F>, 1>::new(Complex::new(parameters[0], parameters[1]));
+    fn calculate(&self, parameters: &[F], event: &Event<F>) -> Result<Complex<F>, RustitudeError> {
+        let betas = SVector::<Complex<F>, 1>::new(Complex::new(parameters[0], parameters[1]));
         let (ikc_inv_vec, pvector_constants_mat) = self.data[event.index];
         Ok(KMatrixConstants::calculate_k_matrix(
             &betas,
