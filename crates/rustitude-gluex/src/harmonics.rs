@@ -66,14 +66,6 @@ impl<F: Field + num::Float> Node<F> for Zlm<F> {
             .events
             .par_iter()
             .map(|event| {
-                let resonance = self.decay.resonance_p4(event);
-                let beam_res_vec = event.beam_p4.boost_along(&resonance).momentum();
-                let recoil_res_vec = event.recoil_p4.boost_along(&resonance).momentum();
-                let daughter_res_vec = self
-                    .decay
-                    .primary_p4(event)
-                    .boost_along(&resonance)
-                    .momentum();
                 let (_, y, _, p) = self.decay.coordinates(self.frame, 0, event);
                 let ylm = ComplexSH::Spherical.eval(self.wave.l(), self.wave.m(), &p);
                 let big_phi = F::fatan2(
