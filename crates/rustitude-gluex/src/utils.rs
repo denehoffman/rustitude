@@ -220,33 +220,32 @@ impl FromStr for Frame {
     }
 }
 
+pub fn coordinates<F: Field>(
+    x: Vector3<F>,
+    y: Vector3<F>,
+    z: Vector3<F>,
+    p: Vector3<F>,
+) -> Coordinates<F> {
+    Coordinates::cartesian(p.dot(&x), p.dot(&y), p.dot(&z))
+}
+
 impl Frame {
     pub fn coordinates<F: Field>(
         &self,
-        beam_res_vec: &Vector3<F>,
-        recoil_res_vec: &Vector3<F>,
-        daughter_res_vec: &Vector3<F>,
+        decay: Decay,
+        other_p4: &FourMomentum<F>,
         event: &Event<F>,
     ) -> (Vector3<F>, Vector3<F>, Vector3<F>, Coordinates<F>) {
-        match self {
+        let resonance_p4 = decay.resonance_p4(event);
+        let beam_res_vec = event.beam_p4.boost_along(&resonance_p4).momentum();
+        let recoil_res_vec = event.recoil_p4.boost_along(&resonance_p4).momentum();
+        let other_res_vec = other_p4.boost_along(&resonance_p4).momentum();
+        let (x, y, z) = match self {
             Frame::Helicity => {
                 let z = -recoil_res_vec.normalize();
-                let y = event
-                    .beam_p4
-                    .momentum()
-                    .cross(&(-recoil_res_vec))
-                    .normalize();
+                let y = beam_res_vec.cross(&z).normalize();
                 let x = y.cross(&z);
-                (
-                    x,
-                    y,
-                    z,
-                    Coordinates::cartesian(
-                        daughter_res_vec.dot(&x),
-                        daughter_res_vec.dot(&y),
-                        daughter_res_vec.dot(&z),
-                    ),
-                )
+                (x, y, z)
             }
             Frame::GottfriedJackson => {
                 let z = beam_res_vec.normalize();
@@ -256,18 +255,10 @@ impl Frame {
                     .cross(&(-recoil_res_vec))
                     .normalize();
                 let x = y.cross(&z);
-                (
-                    x,
-                    y,
-                    z,
-                    Coordinates::cartesian(
-                        daughter_res_vec.dot(&x),
-                        daughter_res_vec.dot(&y),
-                        daughter_res_vec.dot(&z),
-                    ),
-                )
+                (x, y, z)
             }
-        }
+        };
+        (x, y, z, coordinates(x, y, z, other_res_vec))
     }
 }
 
@@ -330,6 +321,16 @@ impl Decay {
             Decay::ThreeBodyDecay(inds) => inds.iter().map(|&i| event.daughter_p4s[i]).sum(),
         }
     }
+    pub fn daughter_p4<'a, F: Field>(
+        &self,
+        index: usize,
+        event: &'a Event<F>,
+    ) -> &'a FourMomentum<F> {
+        match self {
+            Decay::TwoBodyDecay(inds) => &event.daughter_p4s[inds[index]],
+            Decay::ThreeBodyDecay(inds) => &event.daughter_p4s[inds[index]],
+        }
+    }
     pub fn primary_p4<'a, F: Field>(&self, event: &'a Event<F>) -> &'a FourMomentum<F> {
         match self {
             Decay::TwoBodyDecay(inds) => &event.daughter_p4s[inds[0]],
@@ -344,8 +345,16 @@ impl Decay {
     }
     pub fn tertiary_p4<'a, F: Field>(&self, event: &'a Event<F>) -> &'a FourMomentum<F> {
         match self {
-            Decay::TwoBodyDecay(_) => unimplemented!(),
+            Decay::TwoBodyDecay(_) => panic!(),
             Decay::ThreeBodyDecay(inds) => &event.daughter_p4s[inds[2]],
         }
+    }
+    pub fn coordinates<F: Field>(
+        &self,
+        frame: Frame,
+        index: usize,
+        event: &Event<F>,
+    ) -> (Vector3<F>, Vector3<F>, Vector3<F>, Coordinates<F>) {
+        frame.coordinates(*self, self.daughter_p4(index, event), event)
     }
 }

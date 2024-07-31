@@ -31,20 +31,7 @@ impl<F: Field> Node<F> for TwoPiSDME<F> {
             .events
             .par_iter()
             .map(|event| {
-                let resonance = self.decay.resonance_p4(event);
-                let beam_res_vec = event.beam_p4.boost_along(&resonance).momentum();
-                let recoil_res_vec = event.recoil_p4.boost_along(&resonance).momentum();
-                let daughter_res_vec = self
-                    .decay
-                    .primary_p4(event)
-                    .boost_along(&resonance)
-                    .momentum();
-                let (_, y, _, p) = self.frame.coordinates(
-                    &beam_res_vec,
-                    &recoil_res_vec,
-                    &daughter_res_vec,
-                    event,
-                );
+                let (_, y, _, p) = self.decay.coordinates(self.frame, 0, event);
                 let big_phi = y.dot(&event.eps).fatan2(
                     event
                         .beam_p4
@@ -141,20 +128,7 @@ impl<F: Field> Node<F> for ThreePiSDME<F> {
             .events
             .par_iter()
             .map(|event| {
-                let resonance = self.decay.resonance_p4(event);
-                let daughter_res_vec = self
-                    .decay
-                    .primary_p4(event)
-                    .boost_along(&resonance)
-                    .momentum();
-                let beam_res_vec = event.beam_p4.boost_along(&resonance).momentum();
-                let recoil_res_vec = event.recoil_p4.boost_along(&resonance).momentum();
-                let (_, y, _, p) = self.frame.coordinates(
-                    &beam_res_vec,
-                    &recoil_res_vec,
-                    &daughter_res_vec,
-                    event,
-                );
+                let (_, y, _, p) = self.decay.coordinates(self.frame, 0, event);
 
                 let big_phi = y.dot(&event.eps).fatan2(
                     event
