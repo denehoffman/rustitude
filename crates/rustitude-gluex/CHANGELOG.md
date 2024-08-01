@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0](https://github.com/denehoffman/rustitude/compare/rustitude-gluex-v0.5.0...rustitude-gluex-v0.6.0) - 2024-08-01
+
+### Added
+- add `VecRadiativeSDME` to mirror `VecRadiative_SDME.cc` in `halld_sim`
+- update coordinates methods, add method to use arbitrary 4-vector
+- add `ThreePiPolFrac` amplitude (mirroring `ThreePiAngles.cc` in `halld_sim`)
+- Add Flatte amplitude
+- move breakup-momentum related functions to `utils`, include `Complex` versions, and add some trait methods for dealing with complex numbers
+
+### Fixed
+- made some minor changes to SDMEs which were written incorrectly
+- removed some unused variables
+
+### Other
+- the TwoPiAngles_primakoff amplitude is just a special case of the Zlm amplitude
+- change `Frame` coordinates method and add `Decay` coordinates method
+- change `Reflectivity` enum to `Sign` for more generic use
+- update READMEs
+
 ## [0.5.0](https://github.com/denehoffman/rustitude/compare/rustitude-gluex-v0.4.9...rustitude-gluex-v0.5.0) - 2024-07-30
 
 ### Added
