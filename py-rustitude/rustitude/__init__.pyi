@@ -387,99 +387,6 @@ class Dataset_32:
 
 Dataset = Dataset_64
 
-@overload
-def open(
-    file_name: str | Path,
-    tree_name: str | None = None,
-    *,
-    pol_in_beam: bool = False,
-    eps: tuple[float, float, float] | None = None,
-    f32: Literal[False] = False,
-) -> Dataset_64: ...  # noqa: A001
-@overload
-def open(
-    file_name: str | Path,
-    tree_name: str | None = None,
-    *,
-    pol_in_beam: bool = False,
-    eps: tuple[float, float, float] | None = None,
-    f32: Literal[True],
-) -> Dataset_32: ...  # noqa: A001
-def open(
-    file_name: str | Path,
-    tree_name: str | None = None,
-    *,
-    pol_in_beam: bool = False,
-    eps: tuple[float, float, float] | None = None,
-    f32: bool = False,
-) -> Dataset_64 | Dataset_32: ...  # noqa: A001
-@overload
-def minimizer(
-    ell: ExtendedLogLikelihood_64 | ExtendedLogLikelihood_32,
-    method: Literal['Minuit'],
-    *args: Any,
-    indices_data: list[int] | None = None,
-    indices_mc: list[int] | None = None,
-    num_threads: int = 1,
-    minimizer_kwargs: dict[str, Any] | None = None,
-) -> Minuit: ...
-
-ScipyOptMethods = Literal[
-    'Nelder-Mead',
-    'Powell',
-    'CG',
-    'BFGS',
-    'Newton-CG',
-    'L-BFGS-B',
-    'TNC',
-    'COBYLA',
-    'COBYQA',
-    'SLSQP',
-    'trust-constr',
-    'dogleg',
-    'trust-ncg',
-    'trust-exact',
-    'trust-krylov',
-]
-
-class ScipyCallable(Protocol):
-    def __call__(self, x: ArrayLike, *args: Any) -> float: ...
-
-class ScipyMinCallable(Protocol):
-    def __call__(
-        self, fun: ScipyCallable, x0: ArrayLike, args: tuple[Any], **kwargs_and_options: Any
-    ) -> OptimizeResult: ...
-
-@overload
-def minimizer(
-    ell: ExtendedLogLikelihood_64 | ExtendedLogLikelihood_32,
-    method: ScipyOptMethods,
-    *args: Any,
-    indices_data: list[int] | None = None,
-    indices_mc: list[int] | None = None,
-    num_threads: int = 1,
-    minimizer_kwargs: dict[str, Any] | None = None,
-) -> Callable[[], OptimizeResult]: ...
-@overload
-def minimizer(
-    ell: ExtendedLogLikelihood_64 | ExtendedLogLikelihood_32,
-    method: ScipyMinCallable,
-    *args: Any,
-    indices_data: list[int] | None = None,
-    indices_mc: list[int] | None = None,
-    num_threads: int = 1,
-    minimizer_kwargs: dict[str, Any] | None = None,
-) -> Callable[[], OptimizeResult]: ...
-def minimizer(
-    ell: ExtendedLogLikelihood_64 | ExtendedLogLikelihood_32,
-    method: Literal['Minuit'] | ScipyOptMethods | ScipyMinCallable | None = None,
-    *args: Any,
-    indices_data: list[int] | None = None,
-    indices_mc: list[int] | None = None,
-    num_threads: int = 1,
-    minimizer_kwargs: dict[str, Any] | None = None,
-) -> Minuit | Callable[[], OptimizeResult]: ...
-
 class Manager_64:
     model: Model_64
     dataset: Dataset_64
@@ -693,3 +600,99 @@ class NelderMead_32:
     def best(self) -> tuple[list[float], float]: ...
 
 NelderMead = NelderMead_64
+
+@overload
+def open(
+    file_name: str | Path,
+    tree_name: str | None = None,
+    *,
+    pol_in_beam: bool = False,
+    eps: tuple[float, float, float] | None = None,
+    f32: Literal[False] = False,
+) -> Dataset_64: ...  # noqa: A001
+@overload
+def open(
+    file_name: str | Path,
+    tree_name: str | None = None,
+    *,
+    pol_in_beam: bool = False,
+    eps: tuple[float, float, float] | None = None,
+    f32: Literal[True],
+) -> Dataset_32: ...  # noqa: A001
+def open(
+    file_name: str | Path,
+    tree_name: str | None = None,
+    *,
+    pol_in_beam: bool = False,
+    eps: tuple[float, float, float] | None = None,
+    f32: bool = False,
+) -> Dataset_64 | Dataset_32: ...  # noqa: A001
+
+ScipyOptMethods = Literal[
+    'py-Nelder-Mead',
+    'py-Powell',
+    'py-CG',
+    'py-BFGS',
+    'py-Newton-CG',
+    'py-L-BFGS-B',
+    'py-TNC',
+    'py-COBYLA',
+    'py-COBYQA',
+    'py-SLSQP',
+    'py-trust-constr',
+    'py-dogleg',
+    'py-trust-ncg',
+    'py-trust-exact',
+    'py-trust-krylov',
+]
+
+class ScipyCallable(Protocol):
+    def __call__(self, x: ArrayLike, *args: Any) -> float: ...
+
+class ScipyMinCallable(Protocol):
+    def __call__(
+        self, fun: ScipyCallable, x0: ArrayLike, args: tuple[Any], **kwargs_and_options: Any
+    ) -> OptimizeResult: ...
+
+RustMethods = Literal['Nelder-Mead']
+RustMinimizer = NelderMead_64 | NelderMead_32
+
+@overload
+def minimizer(
+    ell: ExtendedLogLikelihood_64,
+    method: Literal['Minuit'],
+    *args: Any,
+    indices_data: list[int] | None = None,
+    indices_mc: list[int] | None = None,
+    num_threads: int = 1,
+    minimizer_kwargs: dict[str, Any] | None = None,
+) -> Minuit: ...
+@overload
+def minimizer(
+    ell: ExtendedLogLikelihood_64,
+    method: ScipyOptMethods | ScipyMinCallable | None,
+    *args: Any,
+    indices_data: list[int] | None = None,
+    indices_mc: list[int] | None = None,
+    num_threads: int = 1,
+    minimizer_kwargs: dict[str, Any] | None = None,
+) -> Callable[[], OptimizeResult]: ...
+@overload
+def minimizer(
+    ell: ExtendedLogLikelihood_64 | ExtendedLogLikelihood_32,
+    method: RustMethods,
+    *args: Any,
+    indices_data: list[int] | None = None,
+    indices_mc: list[int] | None = None,
+    num_threads: int = 1,
+    minimizer_kwargs: dict[str, Any] | None = None,
+) -> RustMinimizer: ...
+def minimizer(
+    ell: ExtendedLogLikelihood_64 | ExtendedLogLikelihood_32,
+    method: RustMethods | Literal['Minuit'] | ScipyOptMethods | ScipyMinCallable | None = None,
+    *args: Any,
+    indices_data: list[int] | None = None,
+    indices_mc: list[int] | None = None,
+    num_threads: int = 1,
+    minimizer_kwargs: dict[str, Any] | None = None,
+) -> Minuit | Callable[[], OptimizeResult] | RustMinimizer: ...

@@ -1,5 +1,5 @@
 from typing import Literal, Sequence
-from . import resonances, sdmes, harmonics, dalitz
+from . import resonances, sdmes, harmonics, dalitz, polarization
 
 class Wave:
     S: Wave
@@ -23,9 +23,9 @@ class Wave:
     F2: Wave
     F3: Wave
 
-class Reflectivity:
-    Positive: Reflectivity
-    Negative: Reflectivity
+class Sign:
+    Positive: Sign
+    Negative: Sign
 
 class Frame:
     Helicity: Frame

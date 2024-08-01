@@ -155,6 +155,31 @@ impl<F: Field> FourMomentum<F> {
         Vector3::new(self.px(), self.py(), self.pz())
     }
 
+    /// Returns the $`\cos(\theta)`$ of the momentum 3-vector.
+    pub fn costheta(&self) -> F {
+        let v = self.momentum();
+        let r = v.norm();
+        v.z / r
+    }
+
+    /// Returns the $`\cos(\theta)`$ of the momentum 3-vector.
+    ///
+    /// Alias for [`FourMomentum::costheta`].
+    pub fn theta_cos(&self) -> F {
+        self.costheta()
+    }
+
+    /// Returns the $`\theta`$ polar angle of the momentum 3-vector.
+    pub fn theta(&self) -> F {
+        F::facos(self.costheta())
+    }
+
+    /// Returns the $`\phi`$ azimuthal angle of the momentum 3-vector.
+    pub fn phi(&self) -> F {
+        let v = self.momentum();
+        F::fatan2(v.y, v.x)
+    }
+
     /// Construct the 3-vector $`\vec{\beta}`$ where
     ///
     /// $` \vec{\beta} = \frac{\vec{p}}{E} `$

@@ -2,7 +2,7 @@ use rayon::prelude::*;
 use rustitude_core::prelude::*;
 use sphrs::{ComplexSH, SHEval};
 
-use crate::utils::{Decay, Frame, Reflectivity, Wave};
+use crate::utils::{Decay, Frame, Sign, Wave};
 
 #[derive(Clone)]
 pub struct Ylm<F: Field> {
@@ -27,20 +27,9 @@ impl<F: Field> Node<F> for Ylm<F> {
             .events
             .par_iter()
             .map(|event| {
-                let resonance = self.decay.resonance_p4(event);
-                let beam_res_vec = event.beam_p4.boost_along(&resonance).momentum();
-                let recoil_res_vec = event.recoil_p4.boost_along(&resonance).momentum();
-                let daughter_res_vec = self
-                    .decay
-                    .primary_p4(event)
-                    .boost_along(&resonance)
-                    .momentum();
-                let (_, _, _, p) = self.frame.coordinates(
-                    &beam_res_vec,
-                    &recoil_res_vec,
-                    &daughter_res_vec,
-                    event,
-                );
+                let (_, _, _, p) =
+                    self.frame
+                        .coordinates(self.decay, self.decay.primary_p4(event), event);
                 ComplexSH::Spherical.eval(self.wave.l(), self.wave.m(), &p)
             })
             .collect();
@@ -55,13 +44,13 @@ impl<F: Field> Node<F> for Ylm<F> {
 #[derive(Clone)]
 pub struct Zlm<F: Field> {
     wave: Wave,
-    reflectivity: Reflectivity,
+    reflectivity: Sign,
     decay: Decay,
     frame: Frame,
     data: Vec<Complex<F>>,
 }
 impl<F: Field> Zlm<F> {
-    pub fn new(wave: Wave, reflectivity: Reflectivity, decay: Decay, frame: Frame) -> Self {
+    pub fn new(wave: Wave, reflectivity: Sign, decay: Decay, frame: Frame) -> Self {
         Self {
             wave,
             reflectivity,
@@ -77,20 +66,7 @@ impl<F: Field + num::Float> Node<F> for Zlm<F> {
             .events
             .par_iter()
             .map(|event| {
-                let resonance = self.decay.resonance_p4(event);
-                let beam_res_vec = event.beam_p4.boost_along(&resonance).momentum();
-                let recoil_res_vec = event.recoil_p4.boost_along(&resonance).momentum();
-                let daughter_res_vec = self
-                    .decay
-                    .primary_p4(event)
-                    .boost_along(&resonance)
-                    .momentum();
-                let (_, y, _, p) = self.frame.coordinates(
-                    &beam_res_vec,
-                    &recoil_res_vec,
-                    &daughter_res_vec,
-                    event,
-                );
+                let (_, y, _, p) = self.decay.coordinates(self.frame, 0, event);
                 let ylm = ComplexSH::Spherical.eval(self.wave.l(), self.wave.m(), &p);
                 let big_phi = F::fatan2(
                     y.dot(&event.eps),
@@ -104,11 +80,11 @@ impl<F: Field + num::Float> Node<F> for Zlm<F> {
                 let phase = Complex::cis(-big_phi);
                 let zlm = ylm * phase;
                 match self.reflectivity {
-                    Reflectivity::Positive => Complex::new(
+                    Sign::Positive => Complex::new(
                         F::fsqrt(F::ONE + pgamma) * zlm.re,
                         F::fsqrt(F::ONE - pgamma) * zlm.im,
                     ),
-                    Reflectivity::Negative => Complex::new(
+                    Sign::Negative => Complex::new(
                         F::fsqrt(F::ONE - pgamma) * zlm.re,
                         F::fsqrt(F::ONE + pgamma) * zlm.im,
                     ),
@@ -124,13 +100,13 @@ impl<F: Field + num::Float> Node<F> for Zlm<F> {
 
 #[derive(Clone)]
 pub struct OnePS<F: Field> {
-    reflectivity: Reflectivity,
+    reflectivity: Sign,
     decay: Decay,
     frame: Frame,
     data: Vec<Complex<F>>,
 }
 impl<F: Field> OnePS<F> {
-    pub fn new(reflectivity: Reflectivity, decay: Decay, frame: Frame) -> Self {
+    pub fn new(reflectivity: Sign, decay: Decay, frame: Frame) -> Self {
         Self {
             reflectivity,
             decay,
@@ -145,20 +121,7 @@ impl<F: Field> Node<F> for OnePS<F> {
             .events
             .par_iter()
             .map(|event| {
-                let resonance = self.decay.resonance_p4(event);
-                let beam_res_vec = event.beam_p4.boost_along(&resonance).momentum();
-                let recoil_res_vec = event.recoil_p4.boost_along(&resonance).momentum();
-                let daughter_res_vec = self
-                    .decay
-                    .primary_p4(event)
-                    .boost_along(&resonance)
-                    .momentum();
-                let (_, y, _, _) = self.frame.coordinates(
-                    &beam_res_vec,
-                    &recoil_res_vec,
-                    &daughter_res_vec,
-                    event,
-                );
+                let (_, y, _, _) = self.decay.coordinates(self.frame, 0, event);
                 let pol_angle = event.eps[0].facos();
                 let big_phi = y.dot(&event.eps).fatan2(
                     event
@@ -170,11 +133,11 @@ impl<F: Field> Node<F> for OnePS<F> {
                 let pgamma = event.eps.norm();
                 let phase = Complex::cis(-(pol_angle + big_phi));
                 match self.reflectivity {
-                    Reflectivity::Positive => Complex::new(
+                    Sign::Positive => Complex::new(
                         F::fsqrt(F::ONE + pgamma) * phase.re,
                         F::fsqrt(F::ONE - pgamma) * phase.im,
                     ),
-                    Reflectivity::Negative => Complex::new(
+                    Sign::Negative => Complex::new(
                         F::fsqrt(F::ONE - pgamma) * phase.re,
                         F::fsqrt(F::ONE + pgamma) * phase.im,
                     ),
@@ -192,13 +155,13 @@ impl<F: Field> Node<F> for OnePS<F> {
 #[derive(Clone)]
 pub struct TwoPS<F: Field> {
     wave: Wave,
-    reflectivity: Reflectivity,
+    reflectivity: Sign,
     decay: Decay,
     frame: Frame,
     data: Vec<Complex<F>>,
 }
 impl<F: Field> TwoPS<F> {
-    pub fn new(wave: Wave, reflectivity: Reflectivity, decay: Decay, frame: Frame) -> Self {
+    pub fn new(wave: Wave, reflectivity: Sign, decay: Decay, frame: Frame) -> Self {
         Self {
             wave,
             reflectivity,
@@ -214,20 +177,7 @@ impl<F: Field> Node<F> for TwoPS<F> {
             .events
             .par_iter()
             .map(|event| {
-                let resonance = self.decay.resonance_p4(event);
-                let beam_res_vec = event.beam_p4.boost_along(&resonance).momentum();
-                let recoil_res_vec = event.recoil_p4.boost_along(&resonance).momentum();
-                let daughter_res_vec = self
-                    .decay
-                    .primary_p4(event)
-                    .boost_along(&resonance)
-                    .momentum();
-                let (_, _, _, p) = self.frame.coordinates(
-                    &beam_res_vec,
-                    &recoil_res_vec,
-                    &daughter_res_vec,
-                    event,
-                );
+                let (_, _, _, p) = self.decay.coordinates(self.frame, 0, event);
                 let ylm_p = ComplexSH::Spherical
                     .eval(self.wave.l(), self.wave.m(), &p)
                     .conj();

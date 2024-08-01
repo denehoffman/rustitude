@@ -15,6 +15,24 @@ pub fn breakup_momentum<F: Field>(m0: F, m1: F, m2: F) -> F {
     )) / (F::TWO * m0)
 }
 
+/// Computes the ([`Complex<F>`]) breakup momentum of a particle with mass `m0` decaying into two particles
+/// with masses `m1` and `m2`.
+pub fn breakup_momentum_c<F: Field>(m0: F, m1: F, m2: F) -> Complex<F> {
+    rho(m0.fpowi(2), m1, m2) * m0 / F::TWO
+}
+
+pub fn chi_plus<F: Field>(s: F, m1: F, m2: F) -> Complex<F> {
+    (F::ONE - ((m1 + m2) * (m1 + m2)) / s).c()
+}
+
+pub fn chi_minus<F: Field>(s: F, m1: F, m2: F) -> Complex<F> {
+    (F::ONE - ((m1 - m2) * (m1 - m2)) / s).c()
+}
+
+pub fn rho<F: Field>(s: F, m1: F, m2: F) -> Complex<F> {
+    Complex::sqrt(chi_plus(s, m1, m2) * chi_minus(s, m1, m2))
+}
+
 pub fn blatt_weisskopf<F: Field>(m0: F, m1: F, m2: F, l: usize) -> F {
     let q = breakup_momentum(m0, m1, m2);
     let z = q.fpowi(2) / F::f(0.1973).fpowi(2);
@@ -29,6 +47,31 @@ pub fn blatt_weisskopf<F: Field>(m0: F, m1: F, m2: F, l: usize) -> F {
         4 => F::fsqrt(
             (F::f(12746.0) * z.fpowi(4)) / (z.fpowi(2) - F::f(45.0) * z + F::f(105.0)).fpowi(2)
                 + F::f(25.0) * z * (F::TWO * z - F::f(21.0)).fpowi(2),
+        ),
+        l => panic!("L = {l} is not yet implemented"),
+    }
+}
+
+/// Computes the ([`Complex<F>`]) Blatt-Weisskopf barrier factor representing the energy required for a particle
+/// with mass `m0` to decay into two particles with masses `m1` and `m2` and angular momentum `l`.
+///
+/// In applications where `m0` is expected to be above the mass threshold to produce `m1` and
+/// `m2`, the absolute value of this function can be safely assumed to be equal to its value.
+pub fn blatt_weisskopf_c<F: Field>(m0: F, m1: F, m2: F, l: usize) -> Complex<F> {
+    let q = breakup_momentum_c(m0, m1, m2);
+    let z = q.powi(2) / F::f(0.1973).fpowi(2);
+    match l {
+        0 => F::ONE.c(),
+        1 => Complex::sqrt((F::TWO.c() * z) / (z + F::ONE)),
+        2 => Complex::sqrt((z.powi(2) * F::f(13.0)) / ((z - F::THREE).powi(2) + z * F::NINE)),
+        3 => Complex::sqrt(
+            (z.powi(3) * F::f(277.0))
+                / (z * (z - F::f(15.0)).powi(2) + (z * F::TWO - F::FIVE).powi(2))
+                * F::NINE,
+        ),
+        4 => Complex::sqrt(
+            (z.powi(4) * F::f(12746.0)) / (z.powi(2) - z * F::f(45.0) + F::f(105.0)).powi(2)
+                + z * F::f(25.0) * (z * F::TWO - F::f(21.0)).powi(2),
         ),
         l => panic!("L = {l} is not yet implemented"),
     }
@@ -177,33 +220,32 @@ impl FromStr for Frame {
     }
 }
 
+pub fn coordinates<F: Field>(
+    x: &Vector3<F>,
+    y: &Vector3<F>,
+    z: &Vector3<F>,
+    p: &Vector3<F>,
+) -> Coordinates<F> {
+    Coordinates::cartesian(p.dot(x), p.dot(y), p.dot(z))
+}
+
 impl Frame {
     pub fn coordinates<F: Field>(
         &self,
-        beam_res_vec: &Vector3<F>,
-        recoil_res_vec: &Vector3<F>,
-        daughter_res_vec: &Vector3<F>,
+        decay: Decay,
+        other_p4: &FourMomentum<F>,
         event: &Event<F>,
     ) -> (Vector3<F>, Vector3<F>, Vector3<F>, Coordinates<F>) {
-        match self {
+        let resonance_p4 = decay.resonance_p4(event);
+        let beam_res_vec = event.beam_p4.boost_along(&resonance_p4).momentum();
+        let recoil_res_vec = event.recoil_p4.boost_along(&resonance_p4).momentum();
+        let other_res_vec = other_p4.boost_along(&resonance_p4).momentum();
+        let (x, y, z) = match self {
             Frame::Helicity => {
                 let z = -recoil_res_vec.normalize();
-                let y = event
-                    .beam_p4
-                    .momentum()
-                    .cross(&(-recoil_res_vec))
-                    .normalize();
+                let y = beam_res_vec.cross(&z).normalize();
                 let x = y.cross(&z);
-                (
-                    x,
-                    y,
-                    z,
-                    Coordinates::cartesian(
-                        daughter_res_vec.dot(&x),
-                        daughter_res_vec.dot(&y),
-                        daughter_res_vec.dot(&z),
-                    ),
-                )
+                (x, y, z)
             }
             Frame::GottfriedJackson => {
                 let z = beam_res_vec.normalize();
@@ -213,57 +255,78 @@ impl Frame {
                     .cross(&(-recoil_res_vec))
                     .normalize();
                 let x = y.cross(&z);
-                (
-                    x,
-                    y,
-                    z,
-                    Coordinates::cartesian(
-                        daughter_res_vec.dot(&x),
-                        daughter_res_vec.dot(&y),
-                        daughter_res_vec.dot(&z),
-                    ),
-                )
+                (x, y, z)
             }
-        }
+        };
+        (x, y, z, coordinates(&x, &y, &z, &other_res_vec))
+    }
+    pub fn coordinates_from_boosted_vec<F: Field>(
+        &self,
+        decay: Decay,
+        other_res_vec: &Vector3<F>,
+        event: &Event<F>,
+    ) -> (Vector3<F>, Vector3<F>, Vector3<F>, Coordinates<F>) {
+        let resonance_p4 = decay.resonance_p4(event);
+        let beam_res_vec = event.beam_p4.boost_along(&resonance_p4).momentum();
+        let recoil_res_vec = event.recoil_p4.boost_along(&resonance_p4).momentum();
+        let (x, y, z) = match self {
+            Frame::Helicity => {
+                let z = -recoil_res_vec.normalize();
+                let y = beam_res_vec.cross(&z).normalize();
+                let x = y.cross(&z);
+                (x, y, z)
+            }
+            Frame::GottfriedJackson => {
+                let z = beam_res_vec.normalize();
+                let y = event
+                    .beam_p4
+                    .momentum()
+                    .cross(&(-recoil_res_vec))
+                    .normalize();
+                let x = y.cross(&z);
+                (x, y, z)
+            }
+        };
+        (x, y, z, coordinates(&x, &y, &z, other_res_vec))
     }
 }
 
 #[pyclass(eq, eq_int)]
 #[derive(Copy, Clone, PartialEq)]
-pub enum Reflectivity {
+pub enum Sign {
     Positive = 1,
     Negative = -1,
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct ParseReflectivityError;
+pub struct ParseSignError;
 
-impl FromStr for Reflectivity {
-    type Err = ParseReflectivityError;
+impl FromStr for Sign {
+    type Err = ParseSignError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_ref() {
-            "positive" => Ok(Reflectivity::Positive),
-            "pos" => Ok(Reflectivity::Positive),
-            "p" => Ok(Reflectivity::Positive),
-            "+" => Ok(Reflectivity::Positive),
-            "plus" => Ok(Reflectivity::Positive),
-            "negative" => Ok(Reflectivity::Negative),
-            "neg" => Ok(Reflectivity::Negative),
-            "n" => Ok(Reflectivity::Negative),
-            "-" => Ok(Reflectivity::Negative),
-            "minus" => Ok(Reflectivity::Negative),
-            "m" => Ok(Reflectivity::Negative),
-            _ => Err(ParseReflectivityError),
+            "positive" => Ok(Sign::Positive),
+            "pos" => Ok(Sign::Positive),
+            "p" => Ok(Sign::Positive),
+            "+" => Ok(Sign::Positive),
+            "plus" => Ok(Sign::Positive),
+            "negative" => Ok(Sign::Negative),
+            "neg" => Ok(Sign::Negative),
+            "n" => Ok(Sign::Negative),
+            "-" => Ok(Sign::Negative),
+            "minus" => Ok(Sign::Negative),
+            "m" => Ok(Sign::Negative),
+            _ => Err(ParseSignError),
         }
     }
 }
 
-impl Display for Reflectivity {
+impl Display for Sign {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Reflectivity::Positive => write!(f, "+"),
-            Reflectivity::Negative => write!(f, "-"),
+            Sign::Positive => write!(f, "+"),
+            Sign::Negative => write!(f, "-"),
         }
     }
 }
@@ -287,6 +350,16 @@ impl Decay {
             Decay::ThreeBodyDecay(inds) => inds.iter().map(|&i| event.daughter_p4s[i]).sum(),
         }
     }
+    pub fn daughter_p4<'a, F: Field>(
+        &self,
+        index: usize,
+        event: &'a Event<F>,
+    ) -> &'a FourMomentum<F> {
+        match self {
+            Decay::TwoBodyDecay(inds) => &event.daughter_p4s[inds[index]],
+            Decay::ThreeBodyDecay(inds) => &event.daughter_p4s[inds[index]],
+        }
+    }
     pub fn primary_p4<'a, F: Field>(&self, event: &'a Event<F>) -> &'a FourMomentum<F> {
         match self {
             Decay::TwoBodyDecay(inds) => &event.daughter_p4s[inds[0]],
@@ -301,8 +374,16 @@ impl Decay {
     }
     pub fn tertiary_p4<'a, F: Field>(&self, event: &'a Event<F>) -> &'a FourMomentum<F> {
         match self {
-            Decay::TwoBodyDecay(_) => unimplemented!(),
+            Decay::TwoBodyDecay(_) => panic!(),
             Decay::ThreeBodyDecay(inds) => &event.daughter_p4s[inds[2]],
         }
+    }
+    pub fn coordinates<F: Field>(
+        &self,
+        frame: Frame,
+        index: usize,
+        event: &Event<F>,
+    ) -> (Vector3<F>, Vector3<F>, Vector3<F>, Coordinates<F>) {
+        frame.coordinates(*self, self.daughter_p4(index, event), event)
     }
 }

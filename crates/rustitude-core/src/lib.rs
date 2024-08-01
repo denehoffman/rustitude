@@ -425,6 +425,8 @@ pub trait Field:
     const NINE: Self;
     /// Alias for 10.0
     const TEN: Self;
+    ///Alias for the imaginary constant
+    const I: num::Complex<Self>;
     /// Shorthand to convert an `f64` into a [`Field`].
     /// See also: [`Field::convert_f64`].
     fn f(x: f64) -> Self {
@@ -458,6 +460,14 @@ pub trait Field:
     fn convert_isize(x: isize) -> Self;
     /// Converts a `u32` into a [`Field`].
     fn convert_u32(x: u32) -> Self;
+    /// Converts a [`Field`] into the real part of a [`Complex<Field>`].
+    fn c(self) -> num::Complex<Self> {
+        num::Complex::from(self)
+    }
+    /// Shorthand for [`num::Complex::i`].
+    fn i() -> num::Complex<Self> {
+        Field::I
+    }
     /// Shorthand for [`num::Float::abs`].
     fn fabs(self) -> Self {
         num::Float::abs(self)
@@ -621,6 +631,7 @@ impl Field for f64 {
     const EIGHT: Self = 8.0;
     const NINE: Self = 9.0;
     const TEN: Self = 10.0;
+    const I: num::Complex<Self> = num::Complex::<Self>::I;
 
     fn convert_f64(x: f64) -> Self {
         x
@@ -658,6 +669,7 @@ impl Field for f32 {
     const EIGHT: Self = 8.0;
     const NINE: Self = 9.0;
     const TEN: Self = 10.0;
+    const I: num::Complex<Self> = num::Complex::<Self>::I;
 
     fn convert_f64(x: f64) -> Self {
         x as Self

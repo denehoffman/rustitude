@@ -3,7 +3,7 @@ mod f64_tests {
     use rustitude_core::prelude::*;
     use rustitude_core::utils::*;
     use rustitude_gluex::utils::Decay;
-    use rustitude_gluex::utils::{Frame, Reflectivity, Wave};
+    use rustitude_gluex::utils::{Frame, Sign, Wave};
     use rustitude_gluex::{
         harmonics::{Ylm, Zlm},
         resonances::{KMatrixA0, KMatrixA2, KMatrixF0, KMatrixF2, KMatrixPi1, KMatrixRho},
@@ -37,62 +37,22 @@ mod f64_tests {
     #[test]
     fn test_zlm() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f64()]);
-        let z00p = Zlm::new(
-            Wave::S0,
-            Reflectivity::Positive,
-            Decay::default(),
-            Frame::Helicity,
-        )
-        .named("z00+");
-        let z11p = Zlm::new(
-            Wave::P1,
-            Reflectivity::Positive,
-            Decay::default(),
-            Frame::Helicity,
-        )
-        .named("z11+");
-        let z22p = Zlm::new(
-            Wave::D1,
-            Reflectivity::Positive,
-            Decay::default(),
-            Frame::Helicity,
-        )
-        .named("z22+");
-        let z33p = Zlm::new(
-            Wave::F1,
-            Reflectivity::Positive,
-            Decay::default(),
-            Frame::Helicity,
-        )
-        .named("z33+");
-        let z00n = Zlm::new(
-            Wave::S0,
-            Reflectivity::Negative,
-            Decay::default(),
-            Frame::Helicity,
-        )
-        .named("z00-");
-        let z11n = Zlm::new(
-            Wave::P1,
-            Reflectivity::Negative,
-            Decay::default(),
-            Frame::Helicity,
-        )
-        .named("z11-");
-        let z22n = Zlm::new(
-            Wave::D1,
-            Reflectivity::Negative,
-            Decay::default(),
-            Frame::Helicity,
-        )
-        .named("z22-");
-        let z33n = Zlm::new(
-            Wave::F1,
-            Reflectivity::Negative,
-            Decay::default(),
-            Frame::Helicity,
-        )
-        .named("z33-");
+        let z00p =
+            Zlm::new(Wave::S0, Sign::Positive, Decay::default(), Frame::Helicity).named("z00+");
+        let z11p =
+            Zlm::new(Wave::P1, Sign::Positive, Decay::default(), Frame::Helicity).named("z11+");
+        let z22p =
+            Zlm::new(Wave::D1, Sign::Positive, Decay::default(), Frame::Helicity).named("z22+");
+        let z33p =
+            Zlm::new(Wave::F1, Sign::Positive, Decay::default(), Frame::Helicity).named("z33+");
+        let z00n =
+            Zlm::new(Wave::S0, Sign::Negative, Decay::default(), Frame::Helicity).named("z00-");
+        let z11n =
+            Zlm::new(Wave::P1, Sign::Negative, Decay::default(), Frame::Helicity).named("z11-");
+        let z22n =
+            Zlm::new(Wave::D1, Sign::Negative, Decay::default(), Frame::Helicity).named("z22-");
+        let z33n =
+            Zlm::new(Wave::F1, Sign::Negative, Decay::default(), Frame::Helicity).named("z33-");
         let manager = Manager::new(&model!(z00p.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.014120844, f64);
         let manager = Manager::new(&model!(z00p.imag()), &dataset)?;
@@ -343,7 +303,7 @@ mod f32_tests {
     use rustitude_core::prelude::*;
     use rustitude_core::utils::*;
     use rustitude_gluex::utils::Decay;
-    use rustitude_gluex::utils::{Frame, Reflectivity, Wave};
+    use rustitude_gluex::utils::{Frame, Sign, Wave};
     use rustitude_gluex::{
         harmonics::{Ylm, Zlm},
         resonances::{KMatrixA0, KMatrixA2, KMatrixF0, KMatrixF2, KMatrixPi1, KMatrixRho},
@@ -378,62 +338,22 @@ mod f32_tests {
     #[test]
     fn test_zlm() -> Result<(), RustitudeError> {
         let dataset = Dataset::new(vec![generate_test_event_f32()]);
-        let z00p = Zlm::new(
-            Wave::S0,
-            Reflectivity::Positive,
-            Decay::default(),
-            Frame::Helicity,
-        )
-        .named("z00+");
-        let z11p = Zlm::new(
-            Wave::P1,
-            Reflectivity::Positive,
-            Decay::default(),
-            Frame::Helicity,
-        )
-        .named("z11+");
-        let z22p = Zlm::new(
-            Wave::D1,
-            Reflectivity::Positive,
-            Decay::default(),
-            Frame::Helicity,
-        )
-        .named("z22+");
-        let z33p = Zlm::new(
-            Wave::F1,
-            Reflectivity::Positive,
-            Decay::default(),
-            Frame::Helicity,
-        )
-        .named("z33+");
-        let z00n = Zlm::new(
-            Wave::S0,
-            Reflectivity::Negative,
-            Decay::default(),
-            Frame::Helicity,
-        )
-        .named("z00-");
-        let z11n = Zlm::new(
-            Wave::P1,
-            Reflectivity::Negative,
-            Decay::default(),
-            Frame::Helicity,
-        )
-        .named("z11-");
-        let z22n = Zlm::new(
-            Wave::D1,
-            Reflectivity::Negative,
-            Decay::default(),
-            Frame::Helicity,
-        )
-        .named("z22-");
-        let z33n = Zlm::new(
-            Wave::F1,
-            Reflectivity::Negative,
-            Decay::default(),
-            Frame::Helicity,
-        )
-        .named("z33-");
+        let z00p =
+            Zlm::new(Wave::S0, Sign::Positive, Decay::default(), Frame::Helicity).named("z00+");
+        let z11p =
+            Zlm::new(Wave::P1, Sign::Positive, Decay::default(), Frame::Helicity).named("z11+");
+        let z22p =
+            Zlm::new(Wave::D1, Sign::Positive, Decay::default(), Frame::Helicity).named("z22+");
+        let z33p =
+            Zlm::new(Wave::F1, Sign::Positive, Decay::default(), Frame::Helicity).named("z33+");
+        let z00n =
+            Zlm::new(Wave::S0, Sign::Negative, Decay::default(), Frame::Helicity).named("z00-");
+        let z11n =
+            Zlm::new(Wave::P1, Sign::Negative, Decay::default(), Frame::Helicity).named("z11-");
+        let z22n =
+            Zlm::new(Wave::D1, Sign::Negative, Decay::default(), Frame::Helicity).named("z22-");
+        let z33n =
+            Zlm::new(Wave::F1, Sign::Negative, Decay::default(), Frame::Helicity).named("z33-");
         let manager = Manager::new(&model!(z00p.real()), &dataset)?;
         assert_is_close!(manager.evaluate(&[])?[0], 0.014120844, f32);
         let manager = Manager::new(&model!(z00p.imag()), &dataset)?;

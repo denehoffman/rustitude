@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from typing import Callable, Literal, Any, Protocol
+from typing import Callable, Literal, Any, Protocol, runtime_checkable
 import numpy as np
 from numpy.typing import ArrayLike
 import uproot
@@ -229,29 +229,34 @@ class PyNode_32(metaclass=ABCMeta):
         pass
 
 
-ScipyOptMethods = Literal[
-    'Nelder-Mead',
-    'Powell',
-    'CG',
-    'BFGS',
-    'Newton-CG',
-    'L-BFGS-B',
-    'TNC',
-    'COBYLA',
-    'COBYQA',
-    'SLSQP',
-    'trust-constr',
-    'dogleg',
-    'trust-ncg',
-    'trust-exact',
-    'trust-krylov',
+type ScipyOptMethods = Literal[
+    'py-Nelder-Mead',
+    'py-Powell',
+    'py-CG',
+    'py-BFGS',
+    'py-Newton-CG',
+    'py-L-BFGS-B',
+    'py-TNC',
+    'py-COBYLA',
+    'py-COBYQA',
+    'py-SLSQP',
+    'py-trust-constr',
+    'py-dogleg',
+    'py-trust-ncg',
+    'py-trust-exact',
+    'py-trust-krylov',
 ]
+
+type RustMethods = Literal['Nelder-Mead']
+
+type RustMinimizer = NelderMead_64 | NelderMead_32
 
 
 class ScipyCallable(Protocol):
     def __call__(self, x: ArrayLike, *args: Any) -> float: ...
 
 
+@runtime_checkable
 class ScipyMinCallable(Protocol):
     def __call__(
         self, fun: ScipyCallable, x0: ArrayLike, args: tuple[Any], **kwargs_and_options: Any
@@ -260,13 +265,15 @@ class ScipyMinCallable(Protocol):
 
 def minimizer(
     ell: ExtendedLogLikelihood_64 | ExtendedLogLikelihood_32,
-    method: Literal['Minuit'] | ScipyOptMethods | ScipyMinCallable | None = None,
+    method: Literal[Literal['Minuit'], RustMethods, ScipyOptMethods]
+    | ScipyMinCallable
+    | None = None,
     *args: Any,
     indices_data: list[int] | None = None,
     indices_mc: list[int] | None = None,
     parallel: bool = True,
     minimizer_kwargs: dict[str, Any] | None = None,
-) -> Minuit | Callable[[], OptimizeResult]:
+) -> Minuit | Callable[[], OptimizeResult] | RustMinimizer:
     bounds = []
     unbounded = True
     for bound in ell.bounds:
@@ -275,35 +282,63 @@ def minimizer(
         if lb or ub:
             unbounded = False
         bounds.append((lb, ub))
-    if callable(method) or method != 'Minuit' or method is None:
-        if minimizer_kwargs is None:
-            minimizer_kwargs = {}
-        if unbounded:
-            bounds = None
-
-        def fcn_scipy(x: ArrayLike, *_args: Any):
-            return ell(x, indices_data=indices_data, indices_mc=indices_mc, parallel=parallel)
-
-        def fit() -> OptimizeResult:
-            return opt.minimize(
-                fcn_scipy, ell.initial, args, method, bounds=bounds, **minimizer_kwargs
-            )
-
-        return fit
-
+    if method in RustMethods:
+        if method == 'Nelder-Mead':
+            if isinstance(ell, ExtendedLogLikelihood_64):
+                return NelderMead_64(ell, **minimizer_kwargs)
+            else:
+                return NelderMead_32(ell, **minimizer_kwargs)
+        else:
+            raise Exception(f'Unknown fit method: {method}')
     else:
-
-        def fcn_minuit(*args: float):
-            # error def is correct because of implicit multiplication by 2 in ELL
-            return ell(
-                list(args),
-                indices_data=indices_data,
-                indices_mc=indices_mc,
-                parallel=parallel,
+        if isinstance(ell, ExtendedLogLikelihood_32):
+            raise Exception(
+                'The 32-bit ExtendedLogLikelihood is incompatible with Python-based fitting methods and Minuit'
             )
+        if isinstance(method, ScipyMinCallable) or method is None or method in ScipyOptMethods:
+            if minimizer_kwargs is None:
+                minimizer_kwargs = {}
+            if unbounded:
+                bounds = None
+            scipy_method = None
+            if method in ScipyOptMethods and not (
+                isinstance(method, ScipyMinCallable) or method is None
+            ):
+                scipy_method = method.replace('py-', '')
 
-        minuit_par_names = [f'{p.amplitude} - {p.name}' for p in ell.parameters if p.free]
-        m = Minuit(fcn_minuit, *ell.initial, name=minuit_par_names)
-        for par_name, bound in zip(minuit_par_names, bounds):
-            m.limits[par_name] = bound
-        return m
+            def fcn_scipy(x: ArrayLike, *_args: Any):
+                return ell(x, indices_data=indices_data, indices_mc=indices_mc, parallel=parallel)
+
+            def fit() -> OptimizeResult:
+                if scipy_method is None:
+                    return opt.minimize(
+                        fcn_scipy, ell.initial, args, method, bounds=bounds, **minimizer_kwargs
+                    )
+                else:
+                    return opt.minimize(
+                        fcn_scipy,
+                        ell.initial,
+                        args,
+                        scipy_method,
+                        bounds=bounds,
+                        **minimizer_kwargs,
+                    )
+
+            return fit
+
+        else:
+
+            def fcn_minuit(*args: float):
+                # error def is correct because of implicit multiplication by 2 in ELL
+                return ell(
+                    list(args),
+                    indices_data=indices_data,
+                    indices_mc=indices_mc,
+                    parallel=parallel,
+                )
+
+            minuit_par_names = [f'{p.amplitude} - {p.name}' for p in ell.parameters if p.free]
+            m = Minuit(fcn_minuit, *ell.initial, name=minuit_par_names)
+            for par_name, bound in zip(minuit_par_names, bounds):
+                m.limits[par_name] = bound
+            return m

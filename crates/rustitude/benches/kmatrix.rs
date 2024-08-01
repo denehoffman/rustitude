@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use rustitude::gluex::harmonics::Zlm;
 use rustitude::gluex::resonances::{KMatrixA0, KMatrixA2, KMatrixF0, KMatrixF2};
-use rustitude::gluex::utils::{Frame, Reflectivity, Wave};
+use rustitude::gluex::utils::{Frame, Sign, Wave};
 use rustitude::prelude::*;
 use rustitude_gluex::utils::Decay;
 
@@ -15,30 +15,15 @@ pub fn criterion_kmatrix_f64(c: &mut Criterion) {
     let a2 = Amplitude::new("a2", KMatrixA2::new(1, Decay::default()));
     let s0p = Amplitude::new(
         "s0+",
-        Zlm::new(
-            Wave::S0,
-            Reflectivity::Positive,
-            Decay::default(),
-            Frame::Helicity,
-        ),
+        Zlm::new(Wave::S0, Sign::Positive, Decay::default(), Frame::Helicity),
     );
     let s0n = Amplitude::new(
         "s0-",
-        Zlm::new(
-            Wave::S0,
-            Reflectivity::Negative,
-            Decay::default(),
-            Frame::Helicity,
-        ),
+        Zlm::new(Wave::S0, Sign::Negative, Decay::default(), Frame::Helicity),
     );
     let d2 = Amplitude::new(
         "d2",
-        Zlm::new(
-            Wave::D2,
-            Reflectivity::Positive,
-            Decay::default(),
-            Frame::Helicity,
-        ),
+        Zlm::new(Wave::D2, Sign::Positive, Decay::default(), Frame::Helicity),
     );
     let pos_real = (&f0p + &a0p) * s0p.real() + (&f2 + &a2) * d2.real();
     let pos_imag = (&f0p + &a0p) * s0p.imag() + (&f2 + &a2) * d2.imag();
@@ -93,30 +78,15 @@ pub fn criterion_kmatrix_f32(c: &mut Criterion) {
     let a2 = Amplitude::new("a2", KMatrixA2::new(1, Decay::default()));
     let s0p = Amplitude::new(
         "s0+",
-        Zlm::new(
-            Wave::S0,
-            Reflectivity::Positive,
-            Decay::default(),
-            Frame::Helicity,
-        ),
+        Zlm::new(Wave::S0, Sign::Positive, Decay::default(), Frame::Helicity),
     );
     let s0n = Amplitude::new(
         "s0-",
-        Zlm::new(
-            Wave::S0,
-            Reflectivity::Negative,
-            Decay::default(),
-            Frame::Helicity,
-        ),
+        Zlm::new(Wave::S0, Sign::Negative, Decay::default(), Frame::Helicity),
     );
     let d2 = Amplitude::new(
         "d2",
-        Zlm::new(
-            Wave::D2,
-            Reflectivity::Positive,
-            Decay::default(),
-            Frame::Helicity,
-        ),
+        Zlm::new(Wave::D2, Sign::Positive, Decay::default(), Frame::Helicity),
     );
     let pos_real = (&f0p + &a0p) * s0p.real() + (&f2 + &a2) * d2.real();
     let pos_imag = (&f0p + &a0p) * s0p.imag() + (&f2 + &a2) * d2.imag();

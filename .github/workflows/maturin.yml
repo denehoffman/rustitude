@@ -114,7 +114,6 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           command: sdist
-          maturin-version: v1.6.0
           args: --out dist -m py-rustitude/Cargo.toml
       - name: Upload sdist
         uses: actions/upload-artifact@v4
