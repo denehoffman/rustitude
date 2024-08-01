@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.1.0](https://github.com/denehoffman/rustitude/compare/rustitude-core-v7.0.0...rustitude-core-v7.1.0) - 2024-08-01
+
+### Added
+- add some convenience methods for calculating the spherical angles of 3-momenta
+- move breakup-momentum related functions to `utils`, include `Complex` versions, and add some trait methods for dealing with complex numbers
+
 ## [7.0.0](https://github.com/denehoffman/rustitude/compare/rustitude-core-v6.0.0...rustitude-core-v7.0.0) - 2024-07-30
 
 ### Fixed
