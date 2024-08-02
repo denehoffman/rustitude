@@ -43,7 +43,7 @@ impl<F: Field> Manager<F> {
     /// This method will return a [`RustitudeError`] if the precaluclation phase of the [`Model`]
     /// fails for any events in the [`Dataset`]. See [`Model::load`] for more information.
     pub fn new(model: &Model<F>, dataset: &Dataset<F>) -> Result<Self, RustitudeError> {
-        let mut model = model.clone();
+        let mut model = model.deep_clone();
         model.load(dataset)?;
         Ok(Self {
             model: model.clone(),

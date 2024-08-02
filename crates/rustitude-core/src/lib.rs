@@ -782,6 +782,122 @@ pub mod utils {
         }
     }
 
+    /// Generate a test dataset for the reaction $`\gamma p \to K_S K_S p`$ with 64-bit precision.
+    pub fn generate_test_dataset_f64() -> Dataset<f64> {
+        Dataset::new(vec![
+            Event {
+                index: 0,
+                weight: -0.138_917,
+                beam_p4: FourMomentum::new(8.383_563, 0.0, 0.0, 8.383_563),
+                recoil_p4: FourMomentum::new(1.311_736, 0.664_397, 0.327_881, 0.539_785),
+                daughter_p4s: vec![
+                    FourMomentum::new(3.140_736, -0.074_363, 0.335_501, 3.081_966),
+                    FourMomentum::new(4.869_362, -0.590_033, -0.663_383, 4.761_812),
+                ],
+                eps: Vector3::from([-0.016_172, 0.319_243, 0.0]),
+            },
+            Event {
+                index: 1,
+                weight: 0.967_937,
+                beam_p4: FourMomentum::new(8.373_471, 0.0, 0.0, 8.373_471),
+                recoil_p4: FourMomentum::new(1.099_134, -0.318_113, -0.241_351, 0.410_238),
+                daughter_p4s: vec![
+                    FourMomentum::new(6.803_817, 0.662_458, -0.146_496, 6.751_592),
+                    FourMomentum::new(1.408_791, -0.344_344, 0.387_849, 1.211_640),
+                ],
+                eps: Vector3::from([-0.016_172, 0.319_243, 0.0]),
+            },
+            Event {
+                index: 2,
+                weight: 0.016_893,
+                beam_p4: FourMomentum::new(8.686_482, 0.0, 0.0, 8.686_482),
+                recoil_p4: FourMomentum::new(1.041_158, 0.141_536, 0.374_024, 0.209_115),
+                daughter_p4s: vec![
+                    FourMomentum::new(3.348_294, -0.007_810, 0.232_603, 3.302_921),
+                    FourMomentum::new(5.235_301, -0.133_726, -0.606_628, 5.174_445),
+                ],
+                eps: Vector3::from([-0.018_940, 0.373_890, 0.0]),
+            },
+            Event {
+                index: 3,
+                weight: -0.022_154,
+                beam_p4: FourMomentum::new(8.799_066, 0.0, 0.0, 8.799_066),
+                recoil_p4: FourMomentum::new(1.078_011, -0.411_542, 0.243_270, 0.230_664),
+                daughter_p4s: vec![
+                    FourMomentum::new(5.382_554, 0.240_169, 0.105_882, 5.353_071),
+                    FourMomentum::new(3.276_772, 0.171_372, -0.349_153, 3.215_329),
+                ],
+                eps: Vector3::from([-0.018_940, 0.373_890, 0.0]),
+            },
+            Event {
+                index: 4,
+                weight: 0.012_900,
+                beam_p4: FourMomentum::new(8.561_700, 0.0, 0.0, 8.561_700),
+                recoil_p4: FourMomentum::new(1.078_375, -0.409_737, 0.245_940, 0.232_739),
+                daughter_p4s: vec![
+                    FourMomentum::new(5.221_115, 0.242_604, 0.099_132, 5.190_736),
+                    FourMomentum::new(3.200_482, 0.167_133, -0.345_072, 3.138_225),
+                ],
+                eps: Vector3::from([-0.016_448, 0.324_690, 0.0]),
+            },
+            Event {
+                index: 5,
+                weight: -0.138_917,
+                beam_p4: FourMomentum::new(8.714_853, 0.0, 0.0, 8.714_853),
+                recoil_p4: FourMomentum::new(1.458_814, -0.309_093, -0.853_077, 0.651_541),
+                daughter_p4s: vec![
+                    FourMomentum::new(3.879_303, -0.067_345, 0.225_269, 3.840_064),
+                    FourMomentum::new(4.315_006, 0.376_439, 0.627_807, 4.223_246),
+                ],
+                eps: Vector3::from([-0.018_940, 0.373_890, 0.0]),
+            },
+            Event {
+                index: 6,
+                weight: 1.111_018,
+                beam_p4: FourMomentum::new(8.271_341, 0.0, 0.0, 8.271_341),
+                recoil_p4: FourMomentum::new(1.296_389, -0.275_474, 0.706_565, 0.474_499),
+                daughter_p4s: vec![
+                    FourMomentum::new(5.433_060, 0.203_167, -0.343_429, 5.395_489),
+                    FourMomentum::new(2.480_163, 0.072_306, -0.363_136, 2.401_352),
+                ],
+                eps: Vector3::from([-0.016_172, 0.319_243, 0.0]),
+            },
+            Event {
+                index: 7,
+                weight: 1.111_339,
+                beam_p4: FourMomentum::new(8.743_071, 0.0, 0.0, 8.743_071),
+                recoil_p4: FourMomentum::new(1.126_252, -0.317_043, 0.461_564, 0.273_006),
+                daughter_p4s: vec![
+                    FourMomentum::new(5.651_356, 0.200_123, -0.228_232, 5.621_215),
+                    FourMomentum::new(2.903_734, 0.116_919, -0.233_331, 2.848_849),
+                ],
+                eps: Vector3::from([-0.018_940, 0.373_890, 0.0]),
+            },
+            Event {
+                index: 8,
+                weight: -0.138_917,
+                beam_p4: FourMomentum::new(8.657_957, 0.0, 0.0, 8.657_957),
+                recoil_p4: FourMomentum::new(1.125_095, -0.315_415, 0.460_129, 0.272_539),
+                daughter_p4s: vec![
+                    FourMomentum::new(5.604_545, 0.200_701, -0.230_638, 5.574_032),
+                    FourMomentum::new(2.866_588, 0.114_713, -0.229_491, 2.811_384),
+                ],
+                eps: Vector3::from([-0.018_940, 0.373_890, 0.0]),
+            },
+            Event {
+                index: 9,
+                weight: -0.138_917,
+                beam_p4: FourMomentum::new(8.403_684, 0.0, 0.0, 8.403_684),
+                recoil_p4: FourMomentum::new(1.109_429, 0.481_598, -0.076_590, 0.335_673),
+                daughter_p4s: vec![
+                    FourMomentum::new(1.882_555, -0.201_094, -0.392_549, 1.761_210),
+                    FourMomentum::new(6.349_971, -0.280_504, 0.469_139, 6.306_800),
+                ],
+                eps: Vector3::from([-0.016_448, 0.324_690, 0.0]),
+            },
+        ])
+    }
+
     /// Generate a test event for the reaction $`\gamma p \to K_S K_S p`$ with 32-bit precision.
     pub fn generate_test_event_f32() -> Event<f32> {
         Event {
@@ -795,6 +911,122 @@ pub mod utils {
             ],
             eps: Vector3::from([0.385_109_57, 0.022_205_278, 0.0]),
         }
+    }
+
+    /// Generate a test dataset for the reaction $`\gamma p \to K_S K_S p`$ with 32-bit precision.
+    pub fn generate_test_dataset_f32() -> Dataset<f32> {
+        Dataset::new(vec![
+            Event {
+                index: 0,
+                weight: -0.138_917,
+                beam_p4: FourMomentum::new(8.383_563, 0.0, 0.0, 8.383_563),
+                recoil_p4: FourMomentum::new(1.311_736, 0.664_397, 0.327_881, 0.539_785),
+                daughter_p4s: vec![
+                    FourMomentum::new(3.140_736, -0.074_363, 0.335_501, 3.081_966),
+                    FourMomentum::new(4.869_362, -0.590_033, -0.663_383, 4.761_812),
+                ],
+                eps: Vector3::from([-0.016_172, 0.319_243, 0.0]),
+            },
+            Event {
+                index: 1,
+                weight: 0.967_937,
+                beam_p4: FourMomentum::new(8.373_471, 0.0, 0.0, 8.373_471),
+                recoil_p4: FourMomentum::new(1.099_134, -0.318_113, -0.241_351, 0.410_238),
+                daughter_p4s: vec![
+                    FourMomentum::new(6.803_817, 0.662_458, -0.146_496, 6.751_592),
+                    FourMomentum::new(1.408_791, -0.344_344, 0.387_849, 1.211_640),
+                ],
+                eps: Vector3::from([-0.016_172, 0.319_243, 0.0]),
+            },
+            Event {
+                index: 2,
+                weight: 0.016_893,
+                beam_p4: FourMomentum::new(8.686_482, 0.0, 0.0, 8.686_482),
+                recoil_p4: FourMomentum::new(1.041_158, 0.141_536, 0.374_024, 0.209_115),
+                daughter_p4s: vec![
+                    FourMomentum::new(3.348_294, -0.007_810, 0.232_603, 3.302_921),
+                    FourMomentum::new(5.235_301, -0.133_726, -0.606_628, 5.174_445),
+                ],
+                eps: Vector3::from([-0.018_940, 0.373_890, 0.0]),
+            },
+            Event {
+                index: 3,
+                weight: -0.022_154,
+                beam_p4: FourMomentum::new(8.799_066, 0.0, 0.0, 8.799_066),
+                recoil_p4: FourMomentum::new(1.078_011, -0.411_542, 0.243_270, 0.230_664),
+                daughter_p4s: vec![
+                    FourMomentum::new(5.382_554, 0.240_169, 0.105_882, 5.353_071),
+                    FourMomentum::new(3.276_772, 0.171_372, -0.349_153, 3.215_329),
+                ],
+                eps: Vector3::from([-0.018_940, 0.373_890, 0.0]),
+            },
+            Event {
+                index: 4,
+                weight: 0.012_900,
+                beam_p4: FourMomentum::new(8.561_700, 0.0, 0.0, 8.561_700),
+                recoil_p4: FourMomentum::new(1.078_375, -0.409_737, 0.245_940, 0.232_739),
+                daughter_p4s: vec![
+                    FourMomentum::new(5.221_115, 0.242_604, 0.099_132, 5.190_736),
+                    FourMomentum::new(3.200_482, 0.167_133, -0.345_072, 3.138_225),
+                ],
+                eps: Vector3::from([-0.016_448, 0.324_690, 0.0]),
+            },
+            Event {
+                index: 5,
+                weight: -0.138_917,
+                beam_p4: FourMomentum::new(8.714_853, 0.0, 0.0, 8.714_853),
+                recoil_p4: FourMomentum::new(1.458_814, -0.309_093, -0.853_077, 0.651_541),
+                daughter_p4s: vec![
+                    FourMomentum::new(3.879_303, -0.067_345, 0.225_269, 3.840_064),
+                    FourMomentum::new(4.315_006, 0.376_439, 0.627_807, 4.223_246),
+                ],
+                eps: Vector3::from([-0.018_940, 0.373_890, 0.0]),
+            },
+            Event {
+                index: 6,
+                weight: 1.111_018,
+                beam_p4: FourMomentum::new(8.271_341, 0.0, 0.0, 8.271_341),
+                recoil_p4: FourMomentum::new(1.296_389, -0.275_474, 0.706_565, 0.474_499),
+                daughter_p4s: vec![
+                    FourMomentum::new(5.433_060, 0.203_167, -0.343_429, 5.395_489),
+                    FourMomentum::new(2.480_163, 0.072_306, -0.363_136, 2.401_352),
+                ],
+                eps: Vector3::from([-0.016_172, 0.319_243, 0.0]),
+            },
+            Event {
+                index: 7,
+                weight: 1.111_339,
+                beam_p4: FourMomentum::new(8.743_071, 0.0, 0.0, 8.743_071),
+                recoil_p4: FourMomentum::new(1.126_252, -0.317_043, 0.461_564, 0.273_006),
+                daughter_p4s: vec![
+                    FourMomentum::new(5.651_356, 0.200_123, -0.228_232, 5.621_215),
+                    FourMomentum::new(2.903_734, 0.116_919, -0.233_331, 2.848_849),
+                ],
+                eps: Vector3::from([-0.018_940, 0.373_890, 0.0]),
+            },
+            Event {
+                index: 8,
+                weight: -0.138_917,
+                beam_p4: FourMomentum::new(8.657_957, 0.0, 0.0, 8.657_957),
+                recoil_p4: FourMomentum::new(1.125_095, -0.315_415, 0.460_129, 0.272_539),
+                daughter_p4s: vec![
+                    FourMomentum::new(5.604_545, 0.200_701, -0.230_638, 5.574_032),
+                    FourMomentum::new(2.866_588, 0.114_713, -0.229_491, 2.811_384),
+                ],
+                eps: Vector3::from([-0.018_940, 0.373_890, 0.0]),
+            },
+            Event {
+                index: 9,
+                weight: -0.138_917,
+                beam_p4: FourMomentum::new(8.403_684, 0.0, 0.0, 8.403_684),
+                recoil_p4: FourMomentum::new(1.109_429, 0.481_598, -0.076_590, 0.335_673),
+                daughter_p4s: vec![
+                    FourMomentum::new(1.882_555, -0.201_094, -0.392_549, 1.761_210),
+                    FourMomentum::new(6.349_971, -0.280_504, 0.469_139, 6.306_800),
+                ],
+                eps: Vector3::from([-0.016_448, 0.324_690, 0.0]),
+            },
+        ])
     }
 
     /// Checks if two floating point numbers are essentially equal.
