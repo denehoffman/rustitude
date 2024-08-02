@@ -1162,7 +1162,7 @@ dependencies = [
 
 [[package]]
 name = "py-rustitude"
-version = "0.10.1"
+version = "0.10.2"
 dependencies = [
  "ganesh",
  "nalgebra",
@@ -1351,7 +1351,7 @@ dependencies = [
 
 [[package]]
 name = "rustitude"
-version = "0.10.1"
+version = "0.10.2"
 dependencies = [
  "criterion",
  "num_cpus",
@@ -1362,7 +1362,7 @@ dependencies = [
 
 [[package]]
 name = "rustitude-core"
-version = "7.1.0"
+version = "8.0.0"
 dependencies = [
  "approx",
  "dyn-clone",
@@ -1385,7 +1385,7 @@ dependencies = [
 
 [[package]]
 name = "rustitude-gluex"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "factorial",
  "nalgebra",

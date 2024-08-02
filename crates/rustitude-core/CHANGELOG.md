@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [8.0.0](https://github.com/denehoffman/rustitude/compare/rustitude-core-v7.1.0...rustitude-core-v8.0.0) - 2024-08-02
+
+### Fixed
+- resolves a huge bug I introduced when I put the `Model` `amplitudes` field under an `Arc`
+
+### Other
+- revert back to using strings instead of enums in python API
+- unused precision
+
 ## [7.1.0](https://github.com/denehoffman/rustitude/compare/rustitude-core-v7.0.0...rustitude-core-v7.1.0) - 2024-08-01
 
 ### Added
