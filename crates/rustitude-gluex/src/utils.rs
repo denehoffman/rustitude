@@ -1,9 +1,9 @@
-use std::{fmt::Display, str::FromStr};
+use std::{fmt::Display, num::ParseIntError, str::FromStr};
 
 use factorial::Factorial;
-use pyo3::prelude::*;
 use rustitude_core::prelude::*;
 use sphrs::Coordinates;
+use thiserror::Error;
 
 pub fn breakup_momentum<F: Field>(m0: F, m1: F, m2: F) -> F {
     F::fsqrt(F::fabs(
@@ -117,7 +117,6 @@ pub fn wigner_d_matrix<F: Field>(
         * Complex::cis(-(F::convert_isize(n)) * gamma)
 }
 
-#[pyclass(eq, eq_int)]
 #[derive(Clone, Copy, Default, PartialEq)]
 #[rustfmt::skip]
 pub enum Wave {
@@ -196,26 +195,30 @@ impl Display for Wave {
     }
 }
 
-#[pyclass(eq, eq_int)]
 #[derive(Copy, Clone, PartialEq)]
 pub enum Frame {
     Helicity,
     GottfriedJackson,
 }
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct ParseFrameError;
+#[derive(Debug, PartialEq, Eq, Error)]
+#[error("Unknown frame: {0}")]
+pub struct ParseFrameError(String);
+
+impl From<ParseFrameError> for RustitudeError {
+    fn from(value: ParseFrameError) -> Self {
+        RustitudeError::ParseError(value.to_string())
+    }
+}
 
 impl FromStr for Frame {
     type Err = ParseFrameError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_ref() {
-            "helicity" => Ok(Frame::Helicity),
-            "hx" => Ok(Frame::Helicity),
-            "gottfried-jackson" => Ok(Frame::GottfriedJackson),
-            "gj" => Ok(Frame::GottfriedJackson),
-            _ => Err(ParseFrameError),
+            "helicity" | "hx" => Ok(Frame::Helicity),
+            "gottfried-jackson" | "gj" => Ok(Frame::GottfriedJackson),
+            _ => Err(ParseFrameError(s.to_string())),
         }
     }
 }
@@ -291,33 +294,30 @@ impl Frame {
     }
 }
 
-#[pyclass(eq, eq_int)]
 #[derive(Copy, Clone, PartialEq)]
 pub enum Sign {
     Positive = 1,
     Negative = -1,
 }
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct ParseSignError;
+#[derive(Debug, PartialEq, Eq, Error)]
+#[error("Unknown sign: {0}")]
+pub struct ParseSignError(String);
+
+impl From<ParseSignError> for RustitudeError {
+    fn from(value: ParseSignError) -> Self {
+        RustitudeError::ParseError(value.to_string())
+    }
+}
 
 impl FromStr for Sign {
     type Err = ParseSignError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_ref() {
-            "positive" => Ok(Sign::Positive),
-            "pos" => Ok(Sign::Positive),
-            "p" => Ok(Sign::Positive),
-            "+" => Ok(Sign::Positive),
-            "plus" => Ok(Sign::Positive),
-            "negative" => Ok(Sign::Negative),
-            "neg" => Ok(Sign::Negative),
-            "n" => Ok(Sign::Negative),
-            "-" => Ok(Sign::Negative),
-            "minus" => Ok(Sign::Negative),
-            "m" => Ok(Sign::Negative),
-            _ => Err(ParseSignError),
+            "positive" | "pos" | "p" | "+" | "plus" | "+1" => Ok(Sign::Positive),
+            "negative" | "neg" | "n" | "-" | "minus" | "m" | "-1" => Ok(Sign::Negative),
+            _ => Err(ParseSignError(s.to_string())),
         }
     }
 }
@@ -331,12 +331,54 @@ impl Display for Sign {
     }
 }
 
-#[pyclass]
 #[derive(Clone, Copy)]
 pub enum Decay {
     TwoBodyDecay([usize; 2]),
     ThreeBodyDecay([usize; 3]),
 }
+#[derive(Debug, PartialEq, Eq, Error)]
+pub enum ParseDecayError {
+    #[error("Invalid format: {0}")]
+    InvalidFormat(String),
+    #[error("Invalid number: {0}")]
+    InvalidNumber(#[from] ParseIntError),
+    #[error("Invalid number of final states: {0}")]
+    InvalidLength(usize),
+}
+
+impl From<ParseDecayError> for RustitudeError {
+    fn from(value: ParseDecayError) -> Self {
+        RustitudeError::ParseError(value.to_string())
+    }
+}
+
+impl FromStr for Decay {
+    type Err = ParseDecayError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let cleaned = s.replace(|c: char| c.is_whitespace() || c == '[' || c == ']', "");
+        let parts: Vec<&str> = cleaned.split(',').collect();
+        match parts.len() {
+            2 => {
+                let values = [
+                    parts[0].parse().map_err(ParseDecayError::InvalidNumber)?,
+                    parts[1].parse().map_err(ParseDecayError::InvalidNumber)?,
+                ];
+                Ok(Decay::TwoBodyDecay(values))
+            }
+            3 => {
+                let values = [
+                    parts[0].parse().map_err(ParseDecayError::InvalidNumber)?,
+                    parts[1].parse().map_err(ParseDecayError::InvalidNumber)?,
+                    parts[2].parse().map_err(ParseDecayError::InvalidNumber)?,
+                ];
+                Ok(Decay::ThreeBodyDecay(values))
+            }
+            _ => Err(ParseDecayError::InvalidLength(parts.len())),
+        }
+    }
+}
+
 impl Default for Decay {
     fn default() -> Self {
         Self::TwoBodyDecay([0, 1])

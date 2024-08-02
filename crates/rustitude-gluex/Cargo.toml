@@ -19,6 +19,7 @@ rayon = { workspace = true }
 rustitude-core = { workspace = true }
 sphrs = { workspace = true }
 wigners = { workspace = true }
+thiserror = { workspace = true }
 
 [features]
 default = []

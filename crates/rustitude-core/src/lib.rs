@@ -750,6 +750,10 @@ pub mod errors {
         #[allow(missing_docs)]
         #[error("Python error: {0}")]
         PythonError(String),
+
+        #[allow(missing_docs)]
+        #[error("Parsing error: {0}")]
+        ParseError(String),
     }
     impl From<RustitudeError> for PyErr {
         fn from(err: RustitudeError) -> Self {
