@@ -229,7 +229,7 @@ class PyNode_32(metaclass=ABCMeta):
         pass
 
 
-type ScipyOptMethods = Literal[
+ScipyOptMethods = Literal[
     'py-Nelder-Mead',
     'py-Powell',
     'py-CG',
@@ -247,7 +247,7 @@ type ScipyOptMethods = Literal[
     'py-trust-krylov',
 ]
 
-type RustMethods = Literal['Nelder-Mead']
+RustMethods = Literal['Nelder-Mead', 'Adaptive Nelder-Mead']
 
 type RustMinimizer = NelderMead_64 | NelderMead_32
 
@@ -282,12 +282,17 @@ def minimizer(
         if lb or ub:
             unbounded = False
         bounds.append((lb, ub))
-    if method in RustMethods:
+    if isinstance(method, str) and method != 'Minuit' and not method.startswith('py-'):
         if method == 'Nelder-Mead':
             if isinstance(ell, ExtendedLogLikelihood_64):
                 return NelderMead_64(ell, **minimizer_kwargs)
             else:
                 return NelderMead_32(ell, **minimizer_kwargs)
+        elif method == 'Adaptive Nelder-Mead':
+            if isinstance(ell, ExtendedLogLikelihood_64):
+                return NelderMead_64.adaptive(ell, **minimizer_kwargs)
+            else:
+                return NelderMead_32.adaptive(ell, **minimizer_kwargs)
         else:
             raise Exception(f'Unknown fit method: {method}')
     else:
@@ -295,15 +300,17 @@ def minimizer(
             raise Exception(
                 'The 32-bit ExtendedLogLikelihood is incompatible with Python-based fitting methods and Minuit'
             )
-        if isinstance(method, ScipyMinCallable) or method is None or method in ScipyOptMethods:
+        if (
+            isinstance(method, ScipyMinCallable)
+            or method is None
+            or (isinstance(method, str) and method.startswith('py-'))
+        ):
             if minimizer_kwargs is None:
                 minimizer_kwargs = {}
             if unbounded:
                 bounds = None
             scipy_method = None
-            if method in ScipyOptMethods and not (
-                isinstance(method, ScipyMinCallable) or method is None
-            ):
+            if isinstance(method, str) and method.startswith('py-'):
                 scipy_method = method.replace('py-', '')
 
             def fcn_scipy(x: ArrayLike, *_args: Any):

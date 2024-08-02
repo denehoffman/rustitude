@@ -1,21 +1,29 @@
 from rustitude import Amplitude, Amplitude_64, Amplitude_32
-from rustitude.gluex import Decay, Frame
 
 def TwoPiSDME(  # noqa: N802
-    name: str, decay: Decay = Decay.TwoBodyDecay([0, 1]), frame: Frame = Frame.Helicity
+    name: str, decay: str = '[0, 1]', frame: str = 'helicity'
 ) -> Amplitude: ...
 def TwoPiSDME_64(  # noqa: N802
-    name: str, decay: Decay = Decay.TwoBodyDecay([0, 1]), frame: Frame = Frame.Helicity
+    name: str, decay: str = '[0, 1]', frame: str = 'helicity'
 ) -> Amplitude_64: ...
 def TwoPiSDME_32(  # noqa: N802
-    name: str, decay: Decay = Decay.TwoBodyDecay([0, 1]), frame: Frame = Frame.Helicity
+    name: str, decay: str = '[0, 1]', frame: str = 'helicity'
 ) -> Amplitude_32: ...
 def ThreePiSDME(  # noqa: N802
-    name: str, decay: Decay = Decay.TwoBodyDecay([0, 1, 2]), frame: Frame = Frame.Helicity
+    name: str, decay: str = '[0, 1, 2]', frame: str = 'helicity'
 ) -> Amplitude: ...
 def ThreePiSDME_64(  # noqa: N802
-    name: str, decay: Decay = Decay.TwoBodyDecay([0, 1, 2]), frame: Frame = Frame.Helicity
+    name: str, decay: str = '[0, 1, 2]', frame: str = 'helicity'
 ) -> Amplitude_64: ...
 def ThreePiSDME_32(  # noqa: N802
-    name: str, decay: Decay = Decay.TwoBodyDecay([0, 1, 2]), frame: Frame = Frame.Helicity
+    name: str, decay: str = '[0, 1, 2]', frame: str = 'helicity'
+) -> Amplitude_32: ...
+def VecRadiativeSDME(  # noqa: N802
+    name: str, decay: str = '[0, 1, 2]', frame: str = 'helicity'
+) -> Amplitude: ...
+def VecRadiativeSDME_64(  # noqa: N802
+    name: str, decay: str = '[0, 1]', frame: str = 'helicity'
+) -> Amplitude_64: ...
+def VecRadiativeSDME_32(  # noqa: N802
+    name: str, decay: str = '[0, 1]', frame: str = 'helicity'
 ) -> Amplitude_32: ...

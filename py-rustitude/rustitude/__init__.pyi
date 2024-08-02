@@ -654,7 +654,7 @@ class ScipyMinCallable(Protocol):
         self, fun: ScipyCallable, x0: ArrayLike, args: tuple[Any], **kwargs_and_options: Any
     ) -> OptimizeResult: ...
 
-RustMethods = Literal['Nelder-Mead']
+RustMethods = Literal['Nelder-Mead', 'Adaptive Nelder-Mead']
 RustMinimizer = NelderMead_64 | NelderMead_32
 
 @overload

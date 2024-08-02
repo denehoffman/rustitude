@@ -294,6 +294,20 @@ pub struct Dataset<F: Field> {
 }
 
 impl<F: Field> Dataset<F> {
+    /// Resets the indices of events in a dataset so they start at `0`.
+    pub fn reindex(&mut self) {
+        self.events = Arc::new(
+            (*self.events)
+                .clone()
+                .iter_mut()
+                .enumerate()
+                .map(|(i, event)| {
+                    event.index = i;
+                    event.clone()
+                })
+                .collect(),
+        )
+    }
     // TODO: can we make an events(&self) -> &Vec<Field> method that actually works without cloning?
 
     /// Retrieves the weights from the events in the dataset

@@ -1,138 +1,345 @@
+use std::str::FromStr;
+
 use crate::amplitude::{Amplitude_32, Amplitude_64};
 use pyo3::prelude::*;
+use rustitude::prelude::RustitudeError;
 use rustitude_gluex::{resonances as rust, utils::Decay};
 
 #[pyfunction]
-#[pyo3(signature = (name, l, decay=Decay::default()))]
-fn BreitWigner(name: &str, l: usize, decay: Decay) -> Amplitude_64 {
-    Amplitude_64::new(name, rust::BreitWigner::new(l, decay))
+#[pyo3(signature = (name, l, decay="[0, 1]"))]
+fn BreitWigner(name: &str, l: usize, decay: &str) -> PyResult<Amplitude_64> {
+    Ok(Amplitude_64::new(
+        name,
+        rust::BreitWigner::new(
+            l,
+            Decay::from_str(decay)
+                .map_err(RustitudeError::from)
+                .map_err(PyErr::from)?,
+        ),
+    ))
 }
 #[pyfunction]
-#[pyo3(signature = (name, l, decay=Decay::default()))]
-fn BreitWigner_64(name: &str, l: usize, decay: Decay) -> Amplitude_64 {
-    Amplitude_64::new(name, rust::BreitWigner::new(l, decay))
+#[pyo3(signature = (name, l, decay="[0, 1]"))]
+fn BreitWigner_64(name: &str, l: usize, decay: &str) -> PyResult<Amplitude_64> {
+    Ok(Amplitude_64::new(
+        name,
+        rust::BreitWigner::new(
+            l,
+            Decay::from_str(decay)
+                .map_err(RustitudeError::from)
+                .map_err(PyErr::from)?,
+        ),
+    ))
 }
 #[pyfunction]
-#[pyo3(signature = (name, l, decay=Decay::default()))]
-fn BreitWigner_32(name: &str, l: usize, decay: Decay) -> Amplitude_32 {
-    Amplitude_32::new(name, rust::BreitWigner::new(l, decay))
+#[pyo3(signature = (name, l, decay="[0, 1]"))]
+fn BreitWigner_32(name: &str, l: usize, decay: &str) -> PyResult<Amplitude_32> {
+    Ok(Amplitude_32::new(
+        name,
+        rust::BreitWigner::new(
+            l,
+            Decay::from_str(decay)
+                .map_err(RustitudeError::from)
+                .map_err(PyErr::from)?,
+        ),
+    ))
 }
 #[pyfunction]
-#[pyo3(signature = (name, channel, m1s, m2s, decay=Decay::default()))]
-fn Flatte(name: &str, channel: usize, m1s: [f64; 2], m2s: [f64; 2], decay: Decay) -> Amplitude_64 {
-    Amplitude_64::new(name, rust::Flatte::new(channel, m1s, m2s, decay))
+#[pyo3(signature = (name, channel, m1s, m2s, decay="[0, 1]"))]
+fn Flatte(
+    name: &str,
+    channel: usize,
+    m1s: [f64; 2],
+    m2s: [f64; 2],
+    decay: &str,
+) -> PyResult<Amplitude_64> {
+    Ok(Amplitude_64::new(
+        name,
+        rust::Flatte::new(
+            channel,
+            m1s,
+            m2s,
+            Decay::from_str(decay)
+                .map_err(RustitudeError::from)
+                .map_err(PyErr::from)?,
+        ),
+    ))
 }
 #[pyfunction]
-#[pyo3(signature = (name, channel, m1s, m2s, decay=Decay::default()))]
+#[pyo3(signature = (name, channel, m1s, m2s, decay="[0, 1]"))]
 fn Flatte_64(
     name: &str,
     channel: usize,
     m1s: [f64; 2],
     m2s: [f64; 2],
-    decay: Decay,
-) -> Amplitude_64 {
-    Amplitude_64::new(name, rust::Flatte::new(channel, m1s, m2s, decay))
+    decay: &str,
+) -> PyResult<Amplitude_64> {
+    Ok(Amplitude_64::new(
+        name,
+        rust::Flatte::new(
+            channel,
+            m1s,
+            m2s,
+            Decay::from_str(decay)
+                .map_err(RustitudeError::from)
+                .map_err(PyErr::from)?,
+        ),
+    ))
 }
 #[pyfunction]
-#[pyo3(signature = (name, channel, m1s, m2s, decay=Decay::default()))]
+#[pyo3(signature = (name, channel, m1s, m2s, decay="[0, 1]"))]
 fn Flatte_32(
     name: &str,
     channel: usize,
     m1s: [f32; 2],
     m2s: [f32; 2],
-    decay: Decay,
-) -> Amplitude_32 {
-    Amplitude_32::new(name, rust::Flatte::new(channel, m1s, m2s, decay))
+    decay: &str,
+) -> PyResult<Amplitude_32> {
+    Ok(Amplitude_32::new(
+        name,
+        rust::Flatte::new(
+            channel,
+            m1s,
+            m2s,
+            Decay::from_str(decay)
+                .map_err(RustitudeError::from)
+                .map_err(PyErr::from)?,
+        ),
+    ))
 }
 #[pyfunction]
-#[pyo3(signature = (name, channel, decay=Decay::default()))]
-fn KMatrixA0(name: &str, channel: usize, decay: Decay) -> Amplitude_64 {
-    Amplitude_64::new(name, rust::KMatrixA0::new(channel, decay))
+#[pyo3(signature = (name, channel, decay="[0, 1]"))]
+fn KMatrixA0(name: &str, channel: usize, decay: &str) -> PyResult<Amplitude_64> {
+    Ok(Amplitude_64::new(
+        name,
+        rust::KMatrixA0::new(
+            channel,
+            Decay::from_str(decay)
+                .map_err(RustitudeError::from)
+                .map_err(PyErr::from)?,
+        ),
+    ))
 }
 #[pyfunction]
-#[pyo3(signature = (name, channel, decay=Decay::default()))]
-fn KMatrixA0_64(name: &str, channel: usize, decay: Decay) -> Amplitude_64 {
-    Amplitude_64::new(name, rust::KMatrixA0::new(channel, decay))
+#[pyo3(signature = (name, channel, decay="[0, 1]"))]
+fn KMatrixA0_64(name: &str, channel: usize, decay: &str) -> PyResult<Amplitude_64> {
+    Ok(Amplitude_64::new(
+        name,
+        rust::KMatrixA0::new(
+            channel,
+            Decay::from_str(decay)
+                .map_err(RustitudeError::from)
+                .map_err(PyErr::from)?,
+        ),
+    ))
 }
 #[pyfunction]
-#[pyo3(signature = (name, channel, decay=Decay::default()))]
-fn KMatrixA0_32(name: &str, channel: usize, decay: Decay) -> Amplitude_32 {
-    Amplitude_32::new(name, rust::KMatrixA0::new(channel, decay))
+#[pyo3(signature = (name, channel, decay="[0, 1]"))]
+fn KMatrixA0_32(name: &str, channel: usize, decay: &str) -> PyResult<Amplitude_32> {
+    Ok(Amplitude_32::new(
+        name,
+        rust::KMatrixA0::new(
+            channel,
+            Decay::from_str(decay)
+                .map_err(RustitudeError::from)
+                .map_err(PyErr::from)?,
+        ),
+    ))
 }
 #[pyfunction]
-#[pyo3(signature = (name, channel, decay=Decay::default()))]
-fn KMatrixA2(name: &str, channel: usize, decay: Decay) -> Amplitude_64 {
-    Amplitude_64::new(name, rust::KMatrixA2::new(channel, decay))
+#[pyo3(signature = (name, channel, decay="[0, 1]"))]
+fn KMatrixA2(name: &str, channel: usize, decay: &str) -> PyResult<Amplitude_64> {
+    Ok(Amplitude_64::new(
+        name,
+        rust::KMatrixA2::new(
+            channel,
+            Decay::from_str(decay)
+                .map_err(RustitudeError::from)
+                .map_err(PyErr::from)?,
+        ),
+    ))
 }
 #[pyfunction]
-#[pyo3(signature = (name, channel, decay=Decay::default()))]
-fn KMatrixA2_64(name: &str, channel: usize, decay: Decay) -> Amplitude_64 {
-    Amplitude_64::new(name, rust::KMatrixA2::new(channel, decay))
+#[pyo3(signature = (name, channel, decay="[0, 1]"))]
+fn KMatrixA2_64(name: &str, channel: usize, decay: &str) -> PyResult<Amplitude_64> {
+    Ok(Amplitude_64::new(
+        name,
+        rust::KMatrixA2::new(
+            channel,
+            Decay::from_str(decay)
+                .map_err(RustitudeError::from)
+                .map_err(PyErr::from)?,
+        ),
+    ))
 }
 #[pyfunction]
-#[pyo3(signature = (name, channel, decay=Decay::default()))]
-fn KMatrixA2_32(name: &str, channel: usize, decay: Decay) -> Amplitude_32 {
-    Amplitude_32::new(name, rust::KMatrixA2::new(channel, decay))
+#[pyo3(signature = (name, channel, decay="[0, 1]"))]
+fn KMatrixA2_32(name: &str, channel: usize, decay: &str) -> PyResult<Amplitude_32> {
+    Ok(Amplitude_32::new(
+        name,
+        rust::KMatrixA2::new(
+            channel,
+            Decay::from_str(decay)
+                .map_err(RustitudeError::from)
+                .map_err(PyErr::from)?,
+        ),
+    ))
 }
 #[pyfunction]
-#[pyo3(signature = (name, channel, decay=Decay::default()))]
-fn KMatrixF0(name: &str, channel: usize, decay: Decay) -> Amplitude_64 {
-    Amplitude_64::new(name, rust::KMatrixF0::new(channel, decay))
+#[pyo3(signature = (name, channel, decay="[0, 1]"))]
+fn KMatrixF0(name: &str, channel: usize, decay: &str) -> PyResult<Amplitude_64> {
+    Ok(Amplitude_64::new(
+        name,
+        rust::KMatrixF0::new(
+            channel,
+            Decay::from_str(decay)
+                .map_err(RustitudeError::from)
+                .map_err(PyErr::from)?,
+        ),
+    ))
 }
 #[pyfunction]
-#[pyo3(signature = (name, channel, decay=Decay::default()))]
-fn KMatrixF0_64(name: &str, channel: usize, decay: Decay) -> Amplitude_64 {
-    Amplitude_64::new(name, rust::KMatrixF0::new(channel, decay))
+#[pyo3(signature = (name, channel, decay="[0, 1]"))]
+fn KMatrixF0_64(name: &str, channel: usize, decay: &str) -> PyResult<Amplitude_64> {
+    Ok(Amplitude_64::new(
+        name,
+        rust::KMatrixF0::new(
+            channel,
+            Decay::from_str(decay)
+                .map_err(RustitudeError::from)
+                .map_err(PyErr::from)?,
+        ),
+    ))
 }
 #[pyfunction]
-#[pyo3(signature = (name, channel, decay=Decay::default()))]
-fn KMatrixF0_32(name: &str, channel: usize, decay: Decay) -> Amplitude_32 {
-    Amplitude_32::new(name, rust::KMatrixF0::new(channel, decay))
+#[pyo3(signature = (name, channel, decay="[0, 1]"))]
+fn KMatrixF0_32(name: &str, channel: usize, decay: &str) -> PyResult<Amplitude_32> {
+    Ok(Amplitude_32::new(
+        name,
+        rust::KMatrixF0::new(
+            channel,
+            Decay::from_str(decay)
+                .map_err(RustitudeError::from)
+                .map_err(PyErr::from)?,
+        ),
+    ))
 }
 #[pyfunction]
-#[pyo3(signature = (name, channel, decay=Decay::default()))]
-fn KMatrixF2(name: &str, channel: usize, decay: Decay) -> Amplitude_64 {
-    Amplitude_64::new(name, rust::KMatrixF2::new(channel, decay))
+#[pyo3(signature = (name, channel, decay="[0, 1]"))]
+fn KMatrixF2(name: &str, channel: usize, decay: &str) -> PyResult<Amplitude_64> {
+    Ok(Amplitude_64::new(
+        name,
+        rust::KMatrixF2::new(
+            channel,
+            Decay::from_str(decay)
+                .map_err(RustitudeError::from)
+                .map_err(PyErr::from)?,
+        ),
+    ))
 }
 #[pyfunction]
-#[pyo3(signature = (name, channel, decay=Decay::default()))]
-fn KMatrixF2_64(name: &str, channel: usize, decay: Decay) -> Amplitude_64 {
-    Amplitude_64::new(name, rust::KMatrixF2::new(channel, decay))
+#[pyo3(signature = (name, channel, decay="[0, 1]"))]
+fn KMatrixF2_64(name: &str, channel: usize, decay: &str) -> PyResult<Amplitude_64> {
+    Ok(Amplitude_64::new(
+        name,
+        rust::KMatrixF2::new(
+            channel,
+            Decay::from_str(decay)
+                .map_err(RustitudeError::from)
+                .map_err(PyErr::from)?,
+        ),
+    ))
 }
 #[pyfunction]
-#[pyo3(signature = (name, channel, decay=Decay::default()))]
-fn KMatrixF2_32(name: &str, channel: usize, decay: Decay) -> Amplitude_32 {
-    Amplitude_32::new(name, rust::KMatrixF2::new(channel, decay))
+#[pyo3(signature = (name, channel, decay="[0, 1]"))]
+fn KMatrixF2_32(name: &str, channel: usize, decay: &str) -> PyResult<Amplitude_32> {
+    Ok(Amplitude_32::new(
+        name,
+        rust::KMatrixF2::new(
+            channel,
+            Decay::from_str(decay)
+                .map_err(RustitudeError::from)
+                .map_err(PyErr::from)?,
+        ),
+    ))
 }
 #[pyfunction]
-#[pyo3(signature = (name, channel, decay=Decay::default()))]
-fn KMatrixPi1(name: &str, channel: usize, decay: Decay) -> Amplitude_64 {
-    Amplitude_64::new(name, rust::KMatrixPi1::new(channel, decay))
+#[pyo3(signature = (name, channel, decay="[0, 1]"))]
+fn KMatrixPi1(name: &str, channel: usize, decay: &str) -> PyResult<Amplitude_64> {
+    Ok(Amplitude_64::new(
+        name,
+        rust::KMatrixPi1::new(
+            channel,
+            Decay::from_str(decay)
+                .map_err(RustitudeError::from)
+                .map_err(PyErr::from)?,
+        ),
+    ))
 }
 #[pyfunction]
-#[pyo3(signature = (name, channel, decay=Decay::default()))]
-fn KMatrixPi1_64(name: &str, channel: usize, decay: Decay) -> Amplitude_64 {
-    Amplitude_64::new(name, rust::KMatrixPi1::new(channel, decay))
+#[pyo3(signature = (name, channel, decay="[0, 1]"))]
+fn KMatrixPi1_64(name: &str, channel: usize, decay: &str) -> PyResult<Amplitude_64> {
+    Ok(Amplitude_64::new(
+        name,
+        rust::KMatrixPi1::new(
+            channel,
+            Decay::from_str(decay)
+                .map_err(RustitudeError::from)
+                .map_err(PyErr::from)?,
+        ),
+    ))
 }
 #[pyfunction]
-#[pyo3(signature = (name, channel, decay=Decay::default()))]
-fn KMatrixPi1_32(name: &str, channel: usize, decay: Decay) -> Amplitude_32 {
-    Amplitude_32::new(name, rust::KMatrixPi1::new(channel, decay))
+#[pyo3(signature = (name, channel, decay="[0, 1]"))]
+fn KMatrixPi1_32(name: &str, channel: usize, decay: &str) -> PyResult<Amplitude_32> {
+    Ok(Amplitude_32::new(
+        name,
+        rust::KMatrixPi1::new(
+            channel,
+            Decay::from_str(decay)
+                .map_err(RustitudeError::from)
+                .map_err(PyErr::from)?,
+        ),
+    ))
 }
 #[pyfunction]
-#[pyo3(signature = (name, channel, decay=Decay::default()))]
-fn KMatrixRho(name: &str, channel: usize, decay: Decay) -> Amplitude_64 {
-    Amplitude_64::new(name, rust::KMatrixRho::new(channel, decay))
+#[pyo3(signature = (name, channel, decay="[0, 1]"))]
+fn KMatrixRho(name: &str, channel: usize, decay: &str) -> PyResult<Amplitude_64> {
+    Ok(Amplitude_64::new(
+        name,
+        rust::KMatrixRho::new(
+            channel,
+            Decay::from_str(decay)
+                .map_err(RustitudeError::from)
+                .map_err(PyErr::from)?,
+        ),
+    ))
 }
 #[pyfunction]
-#[pyo3(signature = (name, channel, decay=Decay::default()))]
-fn KMatrixRho_64(name: &str, channel: usize, decay: Decay) -> Amplitude_64 {
-    Amplitude_64::new(name, rust::KMatrixRho::new(channel, decay))
+#[pyo3(signature = (name, channel, decay="[0, 1]"))]
+fn KMatrixRho_64(name: &str, channel: usize, decay: &str) -> PyResult<Amplitude_64> {
+    Ok(Amplitude_64::new(
+        name,
+        rust::KMatrixRho::new(
+            channel,
+            Decay::from_str(decay)
+                .map_err(RustitudeError::from)
+                .map_err(PyErr::from)?,
+        ),
+    ))
 }
 #[pyfunction]
-#[pyo3(signature = (name, channel, decay=Decay::default()))]
-fn KMatrixRho_32(name: &str, channel: usize, decay: Decay) -> Amplitude_32 {
-    Amplitude_32::new(name, rust::KMatrixRho::new(channel, decay))
+#[pyo3(signature = (name, channel, decay="[0, 1]"))]
+fn KMatrixRho_32(name: &str, channel: usize, decay: &str) -> PyResult<Amplitude_32> {
+    Ok(Amplitude_32::new(
+        name,
+        rust::KMatrixRho::new(
+            channel,
+            Decay::from_str(decay)
+                .map_err(RustitudeError::from)
+                .map_err(PyErr::from)?,
+        ),
+    ))
 }
 
 pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {

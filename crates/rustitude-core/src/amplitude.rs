@@ -872,6 +872,16 @@ impl<F: Field> Model<F> {
             contains_python_amplitudes,
         }
     }
+    /// Creates a true clone (deep copy) of the [`Model`] where the `amplitudes` field is
+    /// duplicated rather than having its reference count increased.
+    pub fn deep_clone(&self) -> Self {
+        Self {
+            cohsums: self.cohsums.clone(),
+            amplitudes: Arc::new(RwLock::new(self.amplitudes.read().clone())),
+            parameters: self.parameters.clone(),
+            contains_python_amplitudes: self.contains_python_amplitudes,
+        }
+    }
     /// Computes the result of evaluating the terms in the model with the given [`Parameter`]s for
     /// the given [`Event`] by summing the result of [`NormSqr::compute`] for each [`NormSqr`]
     /// contained in the [`Model`] (see the `cohsum` field of [`Model`]).
