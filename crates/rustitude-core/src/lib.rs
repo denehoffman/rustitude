@@ -934,7 +934,7 @@ pub mod utils {
                 recoil_p4: FourMomentum::new(1.099_134, -0.318_113, -0.241_351, 0.410_238),
                 daughter_p4s: vec![
                     FourMomentum::new(6.803_817, 0.662_458, -0.146_496, 6.751_592),
-                    FourMomentum::new(1.408_791, -0.344_344, 0.387_849, 1.211_640),
+                    FourMomentum::new(1.408_791, -0.344_344, 0.387_849, 1.211_64),
                 ],
                 eps: Vector3::from([-0.016_172, 0.319_243, 0.0]),
             },
@@ -963,7 +963,7 @@ pub mod utils {
             Event {
                 index: 4,
                 weight: 0.012_900,
-                beam_p4: FourMomentum::new(8.561_700, 0.0, 0.0, 8.561_700),
+                beam_p4: FourMomentum::new(8.561_70, 0.0, 0.0, 8.561_7),
                 recoil_p4: FourMomentum::new(1.078_375, -0.409_737, 0.245_940, 0.232_739),
                 daughter_p4s: vec![
                     FourMomentum::new(5.221_115, 0.242_604, 0.099_132, 5.190_736),
@@ -988,7 +988,7 @@ pub mod utils {
                 beam_p4: FourMomentum::new(8.271_341, 0.0, 0.0, 8.271_341),
                 recoil_p4: FourMomentum::new(1.296_389, -0.275_474, 0.706_565, 0.474_499),
                 daughter_p4s: vec![
-                    FourMomentum::new(5.433_060, 0.203_167, -0.343_429, 5.395_489),
+                    FourMomentum::new(5.433_06, 0.203_167, -0.343_429, 5.395_489),
                     FourMomentum::new(2.480_163, 0.072_306, -0.363_136, 2.401_352),
                 ],
                 eps: Vector3::from([-0.016_172, 0.319_243, 0.0]),
@@ -1021,8 +1021,8 @@ pub mod utils {
                 beam_p4: FourMomentum::new(8.403_684, 0.0, 0.0, 8.403_684),
                 recoil_p4: FourMomentum::new(1.109_429, 0.481_598, -0.076_590, 0.335_673),
                 daughter_p4s: vec![
-                    FourMomentum::new(1.882_555, -0.201_094, -0.392_549, 1.761_210),
-                    FourMomentum::new(6.349_971, -0.280_504, 0.469_139, 6.306_800),
+                    FourMomentum::new(1.882_555, -0.201_094, -0.392_549, 1.761_21),
+                    FourMomentum::new(6.349_971, -0.280_504, 0.469_139, 6.306_80),
                 ],
                 eps: Vector3::from([-0.016_448, 0.324_690, 0.0]),
             },
