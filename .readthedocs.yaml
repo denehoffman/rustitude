@@ -9,6 +9,16 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.12"
+    rust: "1.82"
+
+python:
+  install:
+    - method: pip
+      path: py-rustitude/.
+
+formats:
+  - pdf
+  - epub
 
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:
