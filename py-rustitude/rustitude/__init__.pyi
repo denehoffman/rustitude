@@ -664,7 +664,6 @@ def minimizer(
     *args: Any,
     indices_data: list[int] | None = None,
     indices_mc: list[int] | None = None,
-    num_threads: int = 1,
     minimizer_kwargs: dict[str, Any] | None = None,
 ) -> Minuit: ...
 @overload
@@ -674,7 +673,6 @@ def minimizer(
     *args: Any,
     indices_data: list[int] | None = None,
     indices_mc: list[int] | None = None,
-    num_threads: int = 1,
     minimizer_kwargs: dict[str, Any] | None = None,
 ) -> Callable[[], OptimizeResult]: ...
 @overload
@@ -684,7 +682,6 @@ def minimizer(
     *args: Any,
     indices_data: list[int] | None = None,
     indices_mc: list[int] | None = None,
-    num_threads: int = 1,
     minimizer_kwargs: dict[str, Any] | None = None,
 ) -> RustMinimizer: ...
 def minimizer(
@@ -693,6 +690,5 @@ def minimizer(
     *args: Any,
     indices_data: list[int] | None = None,
     indices_mc: list[int] | None = None,
-    num_threads: int = 1,
     minimizer_kwargs: dict[str, Any] | None = None,
 ) -> Minuit | Callable[[], OptimizeResult] | RustMinimizer: ...
