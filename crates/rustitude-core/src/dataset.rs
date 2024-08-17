@@ -84,12 +84,13 @@ use parquet::{
 use rayon::prelude::*;
 use tracing::info;
 
+use crate::convert;
 use crate::{errors::RustitudeError, prelude::FourMomentum, Field};
 
 /// The [`Event`] struct contains all the information concerning a single interaction between
 /// particles in the experiment. See the individual fields for additional information.
 #[derive(Debug, Default, Clone)]
-pub struct Event<F: Field> {
+pub struct Event<F: Field + 'static> {
     /// The index of the event with the parent [`Dataset`].
     pub index: usize,
     /// The weight of the event with the parent [`Dataset`].
@@ -104,7 +105,7 @@ pub struct Event<F: Field> {
     pub eps: Vector3<F>,
 }
 
-impl<F: Field> Display for Event<F> {
+impl<F: Field + 'static> Display for Event<F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Index: {}", self.index)?;
         writeln!(f, "Weight: {}", self.weight)?;
@@ -136,10 +137,14 @@ pub enum ReadMethod<F: Field> {
 impl<F: Field> ReadMethod<F> {
     /// Creates the EPS vector from a polarization magnitude and angle (in radians).
     pub fn from_linear_polarization(p_gamma: F, phi: F) -> Self {
-        Self::EPS(p_gamma * F::fcos(phi), p_gamma * F::fsin(phi), F::ZERO)
+        Self::EPS(p_gamma * F::cos(phi), p_gamma * F::sin(phi), F::zero())
     }
 }
 impl<F: Field> Event<F> {
+    /// Returns the magnitude of the EPS vector
+    pub fn eps_mag(&self) -> F {
+        F::sqrt(F::powi(self.eps.x, 2) + F::powi(self.eps.y, 2) + F::powi(self.eps.z, 2))
+    }
     /// Reads an [`Event`] from a single [`Row`] in a Parquet file.
     ///
     /// # Panics
@@ -162,32 +167,32 @@ impl<F: Field> Event<F> {
         for (name, field) in row?.get_column_iter() {
             match (name.as_str(), field) {
                 ("E_Beam", ParquetField::Float(value)) => {
-                    event.beam_p4.set_e(F::convert_f32(*value));
+                    event.beam_p4.set_e(convert!(*value, F));
                     if matches!(method, ReadMethod::EPSInBeam) {
-                        event.beam_p4.set_pz(F::convert_f32(*value));
+                        event.beam_p4.set_pz(convert!(*value, F));
                     }
                 }
                 ("Px_Beam", ParquetField::Float(value)) => {
                     if matches!(method, ReadMethod::EPSInBeam) {
-                        event.eps[0] = F::convert_f32(*value);
+                        event.eps[0] = convert!(*value, F);
                     } else {
-                        event.beam_p4.set_px(F::convert_f32(*value));
+                        event.beam_p4.set_px(convert!(*value, F));
                     }
                 }
                 ("Py_Beam", ParquetField::Float(value)) => {
                     if matches!(method, ReadMethod::EPSInBeam) {
-                        event.eps[1] = F::convert_f32(*value);
+                        event.eps[1] = convert!(*value, F);
                     } else {
-                        event.beam_p4.set_py(F::convert_f32(*value));
+                        event.beam_p4.set_py(convert!(*value, F));
                     }
                 }
                 ("Pz_Beam", ParquetField::Float(value)) => {
                     if !matches!(method, ReadMethod::EPSInBeam) {
-                        event.beam_p4.set_pz(F::convert_f32(*value));
+                        event.beam_p4.set_pz(convert!(*value, F));
                     }
                 }
                 ("Weight", ParquetField::Float(value)) => {
-                    event.weight = F::convert_f32(*value);
+                    event.weight = convert!(*value, F);
                 }
                 ("EPS", ParquetField::ListInternal(list)) => match method {
                     ReadMethod::Standard => {
@@ -196,7 +201,7 @@ impl<F: Field> Event<F> {
                                 .iter()
                                 .map(|field| {
                                     if let ParquetField::Float(value) = field {
-                                        F::convert_f32(*value)
+                                        convert!(*value, F)
                                     } else {
                                         panic!()
                                     }
@@ -213,7 +218,7 @@ impl<F: Field> Event<F> {
                         .iter()
                         .map(|field| {
                             if let ParquetField::Float(value) = field {
-                                F::convert_f32(*value)
+                                convert!(*value, F)
                             } else {
                                 panic!()
                             }
@@ -226,7 +231,7 @@ impl<F: Field> Event<F> {
                         .iter()
                         .map(|field| {
                             if let ParquetField::Float(value) = field {
-                                F::convert_f32(*value)
+                                convert!(*value, F)
                             } else {
                                 panic!()
                             }
@@ -239,7 +244,7 @@ impl<F: Field> Event<F> {
                         .iter()
                         .map(|field| {
                             if let ParquetField::Float(value) = field {
-                                F::convert_f32(*value)
+                                convert!(*value, F)
                             } else {
                                 panic!()
                             }
@@ -252,7 +257,7 @@ impl<F: Field> Event<F> {
                         .iter()
                         .map(|field| {
                             if let ParquetField::Float(value) = field {
-                                F::convert_f32(*value)
+                                convert!(*value, F)
                             } else {
                                 panic!()
                             }
@@ -288,12 +293,12 @@ impl<F: Field> Event<F> {
 /// rarely need to write data to a dataset (splitting/selecting/rejecting events) but often need to
 /// read events from a dataset.
 #[derive(Default, Debug, Clone)]
-pub struct Dataset<F: Field> {
+pub struct Dataset<F: Field + 'static> {
     /// Storage for events.
     pub events: Arc<Vec<Event<F>>>,
 }
 
-impl<F: Field> Dataset<F> {
+impl<F: Field + 'static> Dataset<F> {
     /// Resets the indices of events in a dataset so they start at `0`.
     pub fn reindex(&mut self) {
         self.events = Arc::new(
@@ -379,7 +384,7 @@ impl<F: Field> Dataset<F> {
             })?
             .as_iter::<f64>()
             .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
-            .map(F::convert_f64)
+            .map(|val| convert!(val, F))
             .collect();
         Ok(res)
     }
@@ -401,7 +406,12 @@ impl<F: Field> Dataset<F> {
             })?
             .as_iter::<Slice<f64>>()
             .map_err(|err| RustitudeError::OxyrootError(err.to_string()))?
-            .map(|v| v.into_vec().into_iter().map(F::convert_f64).collect())
+            .map(|v| {
+                v.into_vec()
+                    .into_iter()
+                    .map(|val| convert!(val, F))
+                    .collect()
+            })
             .collect();
         Ok(res)
     }
@@ -429,7 +439,7 @@ impl<F: Field> Dataset<F> {
         let eps_extracted: Vec<Vec<F>> = if matches!(method, ReadMethod::Standard) {
             Self::extract_vec_f32(path, &ttree, "EPS")?
         } else {
-            vec![vec![F::ZERO; 3]; weight.len()]
+            vec![vec![F::zero(); 3]; weight.len()]
         };
         Ok(Self::new(
             izip!(
@@ -453,7 +463,7 @@ impl<F: Field> Dataset<F> {
                             Vector3::from_vec(eps_vec),
                         ),
                         ReadMethod::EPSInBeam => (
-                            FourMomentum::new(e_b, F::ZERO, F::ZERO, e_b),
+                            FourMomentum::new(e_b, F::zero(), F::zero(), e_b),
                             Vector3::new(px_b, py_b, pz_b),
                         ),
                         ReadMethod::EPS(x, y, z) => (
@@ -543,9 +553,9 @@ impl<F: Field> Dataset<F> {
         nbins: usize,
     ) -> (Vec<Vec<usize>>, Vec<usize>, Vec<usize>) {
         let mut bins: Vec<F> = Vec::with_capacity(nbins + 1);
-        let width = (range.1 - range.0) / <F as Field>::convert_usize(nbins);
+        let width = (range.1 - range.0) / convert!(nbins, F);
         for m in 0..=nbins {
-            bins.push(F::fmul_add(width, <F as Field>::convert_usize(m), range.0));
+            bins.push(F::mul_add(width, convert!(m, F), range.0));
         }
         let (underflow, _) = self.get_selected_indices(|event| variable(event) < bins[0]);
         let (overflow, _) =
@@ -565,7 +575,7 @@ impl<F: Field> Dataset<F> {
     }
 }
 
-impl<F: Field> Add for Dataset<F> {
+impl<F: Field + 'static> Add for Dataset<F> {
     type Output = Self;
 
     fn add(self, other: Self) -> Self::Output {
