@@ -50,6 +50,7 @@ use std::{
 use tracing::{debug, info};
 
 use crate::{
+    convert,
     dataset::{Dataset, Event},
     errors::RustitudeError,
     Field,
@@ -88,7 +89,7 @@ impl<F: Field> Parameter<F> {
             index: Some(index),
             fixed_index: None,
             initial: F::one(),
-            bounds: (F::NEG_INFINITY, F::INFINITY),
+            bounds: (F::neg_infinity(), F::infinity()),
         }
     }
 
@@ -129,7 +130,7 @@ impl<F: Field> Display for Parameter<F> {
 /// A trait which contains all the required methods for a functioning [`Amplitude`].
 ///
 /// The [`Node`] trait represents any mathematical structure which takes in some parameters and some
-/// [`Event`] data and computes a [`ComplexField`] for each [`Event`]. This is the fundamental
+/// [`Event`] data and computes a [`Complex`] for each [`Event`]. This is the fundamental
 /// building block of all analyses built with Rustitude. Nodes are intended to be optimized at the
 /// user level, so they should be implemented on structs which can store some precalculated data.
 ///
@@ -203,12 +204,12 @@ impl<F: Field> Display for Parameter<F> {
 ///                 let beam_res_vec = event.beam_p4.boost_along(&resonance).momentum();
 ///                 let recoil_res_vec = event.recoil_p4.boost_along(&resonance).momentum();
 ///                 let daughter_res_vec = event.daughter_p4s[0].boost_along(&resonance).momentum();
-///                 let z = -recoil_res_vec.normalize();
+///                 let z = -recoil_res_vec.unit();
 ///                 let y = event
 ///                     .beam_p4
 ///                     .momentum()
 ///                     .cross(&(-recoil_res_vec))
-///                     .normalize();
+///                     .unit();
 ///                 let x = y.cross(&z);
 ///                 let p = Coordinates::cartesian(
 ///                     daughter_res_vec.dot(&x),
@@ -259,7 +260,7 @@ pub trait Node<F: Field>: Sync + Send + DynClone {
         Ok(())
     }
 
-    /// A method which runs every time the amplitude is evaluated and produces a [`ComplexField`].
+    /// A method which runs every time the amplitude is evaluated and produces a [`Complex`].
     ///
     /// Because this method is run on every evaluation, it should be as lean as possible.
     /// Additionally, you should avoid [`rayon`]'s parallel loops inside this method since we
@@ -404,7 +405,7 @@ pub trait AsTree {
 pub struct Amplitude<F: Field> {
     /// A name which uniquely identifies an [`Amplitude`] within a sum and group.
     pub name: String,
-    /// A [`Node`] which contains all of the operations needed to compute a [`ComplexField`] from an
+    /// A [`Node`] which contains all of the operations needed to compute a [`Complex`] from an
     /// [`Event`] in a [`Dataset`], a [`Vec<Field>`] of parameter values, and possibly some
     /// precomputed values.
     pub node: Box<dyn Node<F>>,
@@ -1392,7 +1393,7 @@ pub fn cscalar<F: Field>(name: &str) -> Amplitude<F> {
 /// - `phi`: The phase of the complex scalar.
 #[derive(Clone)]
 pub struct PolarComplexScalar;
-impl<F: Field + num::Float> Node<F> for PolarComplexScalar {
+impl<F: Field> Node<F> for PolarComplexScalar {
     fn calculate(&self, parameters: &[F], _event: &Event<F>) -> Result<Complex<F>, RustitudeError> {
         Ok(Complex::cis(parameters[1]).mul(parameters[0]))
     }
@@ -1416,7 +1417,7 @@ impl<F: Field + num::Float> Node<F> for PolarComplexScalar {
 /// let my_pcscalar: Amplitude<f64> = pcscalar("MyPolarComplexScalar");
 /// assert_eq!(my_pcscalar.parameters, vec!["mag".to_string(), "phi".to_string()]);
 /// ```
-pub fn pcscalar<F: Field + num::Float>(name: &str) -> Amplitude<F> {
+pub fn pcscalar<F: Field>(name: &str) -> Amplitude<F> {
     Amplitude::new(name, PolarComplexScalar)
 }
 
@@ -1435,17 +1436,17 @@ where
 impl<V, F> Piecewise<V, F>
 where
     V: Fn(&Event<F>) -> F + Send + Sync + Copy,
-    F: Field + num::Float,
+    F: Field,
 {
     /// Create a new [`Piecewise`] struct from a number of bins, a range of values, and a callable
     /// which defines a variable over the [`Event`]s in a [`Dataset`].
     pub fn new(bins: usize, range: (F, F), variable: V) -> Self {
-        let diff = (range.1 - range.0) / <F as Field>::convert_usize(bins);
+        let diff = (range.1 - range.0) / convert!(bins, F);
         let edges = (0..bins)
             .map(|i| {
                 (
-                    num::Float::mul_add(<F as Field>::convert_usize(i), diff, range.0),
-                    num::Float::mul_add(<F as Field>::convert_usize(i + 1), diff, range.0),
+                    F::mul_add(convert!(i, F), diff, range.0),
+                    F::mul_add(convert!(i + 1, F), diff, range.0),
                 )
             })
             .collect();
@@ -1488,7 +1489,7 @@ where
     }
 }
 
-pub fn piecewise_m<F: Field + num::Float>(name: &str, bins: usize, range: (F, F)) -> Amplitude<F> {
+pub fn piecewise_m<F: Field + 'static>(name: &str, bins: usize, range: (F, F)) -> Amplitude<F> {
     //! Creates a named [`Piecewise`] amplitude with the resonance mass as the binning variable.
     Amplitude::new(
         name,
@@ -1500,7 +1501,7 @@ pub fn piecewise_m<F: Field + num::Float>(name: &str, bins: usize, range: (F, F)
 
 macro_rules! impl_sum {
     ($t:ident, $a:ty, $b:ty) => {
-        impl<$t: Field> Add<$b> for $a {
+        impl<$t: Field + 'static> Add<$b> for $a {
             type Output = Sum<$t>;
 
             fn add(self, rhs: $b) -> Self::Output {
@@ -1508,7 +1509,7 @@ macro_rules! impl_sum {
             }
         }
 
-        impl<$t: Field> Add<&$b> for &$a {
+        impl<$t: Field + 'static> Add<&$b> for &$a {
             type Output = <$a as Add<$b>>::Output;
 
             fn add(self, rhs: &$b) -> Self::Output {
@@ -1516,7 +1517,7 @@ macro_rules! impl_sum {
             }
         }
 
-        impl<$t: Field> Add<&$b> for $a {
+        impl<$t: Field + 'static> Add<&$b> for $a {
             type Output = <$a as Add<$b>>::Output;
 
             fn add(self, rhs: &$b) -> Self::Output {
@@ -1524,7 +1525,7 @@ macro_rules! impl_sum {
             }
         }
 
-        impl<$t: Field> Add<$b> for &$a {
+        impl<$t: Field + 'static> Add<$b> for &$a {
             type Output = <$a as Add<$b>>::Output;
 
             fn add(self, rhs: $b) -> Self::Output {
@@ -1532,7 +1533,7 @@ macro_rules! impl_sum {
             }
         }
 
-        impl<$t: Field> Add<$a> for $b {
+        impl<$t: Field + 'static> Add<$a> for $b {
             type Output = Sum<$t>;
 
             fn add(self, rhs: $a) -> Self::Output {
@@ -1540,7 +1541,7 @@ macro_rules! impl_sum {
             }
         }
 
-        impl<$t: Field> Add<&$a> for &$b {
+        impl<$t: Field + 'static> Add<&$a> for &$b {
             type Output = <$b as Add<$a>>::Output;
 
             fn add(self, rhs: &$a) -> Self::Output {
@@ -1548,7 +1549,7 @@ macro_rules! impl_sum {
             }
         }
 
-        impl<$t: Field> Add<&$a> for $b {
+        impl<$t: Field + 'static> Add<&$a> for $b {
             type Output = <$b as Add<$a>>::Output;
 
             fn add(self, rhs: &$a) -> Self::Output {
@@ -1556,7 +1557,7 @@ macro_rules! impl_sum {
             }
         }
 
-        impl<$t: Field> Add<$a> for &$b {
+        impl<$t: Field + 'static> Add<$a> for &$b {
             type Output = <$b as Add<$a>>::Output;
 
             fn add(self, rhs: $a) -> Self::Output {
@@ -1565,7 +1566,7 @@ macro_rules! impl_sum {
         }
     };
     ($t:ident, $a:ty) => {
-        impl<$t: Field> Add<$a> for $a {
+        impl<$t: Field + 'static> Add<$a> for $a {
             type Output = Sum<$t>;
 
             fn add(self, rhs: $a) -> Self::Output {
@@ -1573,7 +1574,7 @@ macro_rules! impl_sum {
             }
         }
 
-        impl<$t: Field> Add<&$a> for &$a {
+        impl<$t: Field + 'static> Add<&$a> for &$a {
             type Output = <$a as Add<$a>>::Output;
 
             fn add(self, rhs: &$a) -> Self::Output {
@@ -1581,7 +1582,7 @@ macro_rules! impl_sum {
             }
         }
 
-        impl<$t: Field> Add<&$a> for $a {
+        impl<$t: Field + 'static> Add<&$a> for $a {
             type Output = <$a as Add<$a>>::Output;
 
             fn add(self, rhs: &$a) -> Self::Output {
@@ -1589,7 +1590,7 @@ macro_rules! impl_sum {
             }
         }
 
-        impl<$t: Field> Add<$a> for &$a {
+        impl<$t: Field + 'static> Add<$a> for &$a {
             type Output = <$a as Add<$a>>::Output;
 
             fn add(self, rhs: $a) -> Self::Output {
@@ -1600,7 +1601,7 @@ macro_rules! impl_sum {
 }
 macro_rules! impl_appending_sum {
     ($t:ident, $a:ty) => {
-        impl<$t: Field> Add<Sum<$t>> for $a {
+        impl<$t: Field + 'static> Add<Sum<$t>> for $a {
             type Output = Sum<$t>;
 
             fn add(self, rhs: Sum<$t>) -> Self::Output {
@@ -1610,7 +1611,7 @@ macro_rules! impl_appending_sum {
             }
         }
 
-        impl<$t: Field> Add<$a> for Sum<$t> {
+        impl<$t: Field + 'static> Add<$a> for Sum<$t> {
             type Output = Sum<$t>;
 
             fn add(self, rhs: $a) -> Self::Output {
@@ -1620,7 +1621,7 @@ macro_rules! impl_appending_sum {
             }
         }
 
-        impl<$t: Field> Add<&Sum<$t>> for &$a {
+        impl<$t: Field + 'static> Add<&Sum<$t>> for &$a {
             type Output = <$a as Add<Sum<$t>>>::Output;
 
             fn add(self, rhs: &Sum<$t>) -> Self::Output {
@@ -1628,7 +1629,7 @@ macro_rules! impl_appending_sum {
             }
         }
 
-        impl<$t: Field> Add<&Sum<$t>> for $a {
+        impl<$t: Field + 'static> Add<&Sum<$t>> for $a {
             type Output = <$a as Add<Sum<$t>>>::Output;
 
             fn add(self, rhs: &Sum<$t>) -> Self::Output {
@@ -1636,7 +1637,7 @@ macro_rules! impl_appending_sum {
             }
         }
 
-        impl<$t: Field> Add<Sum<$t>> for &$a {
+        impl<$t: Field + 'static> Add<Sum<$t>> for &$a {
             type Output = <$a as Add<Sum<$t>>>::Output;
 
             fn add(self, rhs: Sum<$t>) -> Self::Output {
@@ -1644,7 +1645,7 @@ macro_rules! impl_appending_sum {
             }
         }
 
-        impl<$t: Field> Add<&$a> for &Sum<$t> {
+        impl<$t: Field + 'static> Add<&$a> for &Sum<$t> {
             type Output = <Sum<$t> as Add<$a>>::Output;
 
             fn add(self, rhs: &$a) -> Self::Output {
@@ -1652,7 +1653,7 @@ macro_rules! impl_appending_sum {
             }
         }
 
-        impl<$t: Field> Add<&$a> for Sum<$t> {
+        impl<$t: Field + 'static> Add<&$a> for Sum<$t> {
             type Output = <Sum<$t> as Add<$a>>::Output;
 
             fn add(self, rhs: &$a) -> Self::Output {
@@ -1660,7 +1661,7 @@ macro_rules! impl_appending_sum {
             }
         }
 
-        impl<$t: Field> Add<$a> for &Sum<$t> {
+        impl<$t: Field + 'static> Add<$a> for &Sum<$t> {
             type Output = <Sum<$t> as Add<$a>>::Output;
 
             fn add(self, rhs: $a) -> Self::Output {
@@ -1671,7 +1672,7 @@ macro_rules! impl_appending_sum {
 }
 macro_rules! impl_prod {
     ($t:ident, $a:ty, $b:ty) => {
-        impl<$t: Field> Mul<$b> for $a {
+        impl<$t: Field + 'static> Mul<$b> for $a {
             type Output = Product<$t>;
 
             fn mul(self, rhs: $b) -> Self::Output {
@@ -1692,7 +1693,7 @@ macro_rules! impl_prod {
             }
         }
 
-        impl<$t: Field> Mul<&$b> for &$a {
+        impl<$t: Field + 'static> Mul<&$b> for &$a {
             type Output = <$a as Mul<$b>>::Output;
 
             fn mul(self, rhs: &$b) -> Self::Output {
@@ -1700,7 +1701,7 @@ macro_rules! impl_prod {
             }
         }
 
-        impl<$t: Field> Mul<&$b> for $a {
+        impl<$t: Field + 'static> Mul<&$b> for $a {
             type Output = <$a as Mul<$b>>::Output;
 
             fn mul(self, rhs: &$b) -> Self::Output {
@@ -1708,7 +1709,7 @@ macro_rules! impl_prod {
             }
         }
 
-        impl<$t: Field> Mul<$b> for &$a {
+        impl<$t: Field + 'static> Mul<$b> for &$a {
             type Output = <$a as Mul<$b>>::Output;
 
             fn mul(self, rhs: $b) -> Self::Output {
@@ -1716,7 +1717,7 @@ macro_rules! impl_prod {
             }
         }
 
-        impl<$t: Field> Mul<$a> for $b {
+        impl<$t: Field + 'static> Mul<$a> for $b {
             type Output = Product<$t>;
 
             fn mul(self, rhs: $a) -> Self::Output {
@@ -1737,7 +1738,7 @@ macro_rules! impl_prod {
             }
         }
 
-        impl<$t: Field> Mul<&$a> for &$b {
+        impl<$t: Field + 'static> Mul<&$a> for &$b {
             type Output = <$b as Mul<$a>>::Output;
 
             fn mul(self, rhs: &$a) -> Self::Output {
@@ -1745,7 +1746,7 @@ macro_rules! impl_prod {
             }
         }
 
-        impl<$t: Field> Mul<&$a> for $b {
+        impl<$t: Field + 'static> Mul<&$a> for $b {
             type Output = <$b as Mul<$a>>::Output;
 
             fn mul(self, rhs: &$a) -> Self::Output {
@@ -1753,7 +1754,7 @@ macro_rules! impl_prod {
             }
         }
 
-        impl<$t: Field> Mul<$a> for &$b {
+        impl<$t: Field + 'static> Mul<$a> for &$b {
             type Output = <$b as Mul<$a>>::Output;
 
             fn mul(self, rhs: $a) -> Self::Output {
@@ -1762,7 +1763,7 @@ macro_rules! impl_prod {
         }
     };
     ($t:ident, $a:ty) => {
-        impl<$t: Field> Mul<$a> for $a {
+        impl<$t: Field + 'static> Mul<$a> for $a {
             type Output = Product<$t>;
 
             fn mul(self, rhs: $a) -> Self::Output {
@@ -1783,7 +1784,7 @@ macro_rules! impl_prod {
             }
         }
 
-        impl<$t: Field> Mul<&$a> for &$a {
+        impl<$t: Field + 'static> Mul<&$a> for &$a {
             type Output = <$a as Mul<$a>>::Output;
 
             fn mul(self, rhs: &$a) -> Self::Output {
@@ -1791,7 +1792,7 @@ macro_rules! impl_prod {
             }
         }
 
-        impl<$t: Field> Mul<&$a> for $a {
+        impl<$t: Field + 'static> Mul<&$a> for $a {
             type Output = <$a as Mul<$a>>::Output;
 
             fn mul(self, rhs: &$a) -> Self::Output {
@@ -1799,7 +1800,7 @@ macro_rules! impl_prod {
             }
         }
 
-        impl<$t: Field> Mul<$a> for &$a {
+        impl<$t: Field + 'static> Mul<$a> for &$a {
             type Output = <$a as Mul<$a>>::Output;
 
             fn mul(self, rhs: $a) -> Self::Output {
@@ -1810,7 +1811,7 @@ macro_rules! impl_prod {
 }
 macro_rules! impl_box_prod {
     ($t:ident, $a:ty) => {
-        impl<$t: Field> Mul<Box<dyn AmpLike<$t>>> for $a {
+        impl<$t: Field + 'static> Mul<Box<dyn AmpLike<$t>>> for $a {
             type Output = Product<$t>;
             fn mul(self, rhs: Box<dyn AmpLike<$t>>) -> Self::Output {
                 match (self.get_cloned_terms(), rhs.get_cloned_terms()) {
@@ -1829,7 +1830,7 @@ macro_rules! impl_box_prod {
                 }
             }
         }
-        impl<$t: Field> Mul<$a> for Box<dyn AmpLike<$t>> {
+        impl<$t: Field + 'static> Mul<$a> for Box<dyn AmpLike<$t>> {
             type Output = Product<$t>;
             fn mul(self, rhs: $a) -> Self::Output {
                 match (self.get_cloned_terms(), rhs.get_cloned_terms()) {
@@ -1852,7 +1853,7 @@ macro_rules! impl_box_prod {
 }
 macro_rules! impl_box_sum {
     ($t:ident, $a:ty) => {
-        impl<$t: Field> Add<Box<dyn AmpLike<$t>>> for $a {
+        impl<$t: Field + 'static> Add<Box<dyn AmpLike<$t>>> for $a {
             type Output = Sum<$t>;
             fn add(self, rhs: Box<dyn AmpLike<$t>>) -> Self::Output {
                 match (self.get_cloned_terms(), rhs.get_cloned_terms()) {
@@ -1871,7 +1872,7 @@ macro_rules! impl_box_sum {
                 }
             }
         }
-        impl<$t: Field> Add<$a> for Box<dyn AmpLike<$t>> {
+        impl<$t: Field + 'static> Add<$a> for Box<dyn AmpLike<$t>> {
             type Output = Sum<$t>;
             fn add(self, rhs: $a) -> Self::Output {
                 match (self.get_cloned_terms(), rhs.get_cloned_terms()) {
@@ -1894,7 +1895,7 @@ macro_rules! impl_box_sum {
 }
 macro_rules! impl_dist {
     ($t:ident, $a:ty) => {
-        impl<$t: Field> Mul<Sum<$t>> for $a {
+        impl<$t: Field + 'static> Mul<Sum<$t>> for $a {
             type Output = Sum<$t>;
 
             fn mul(self, rhs: Sum<$t>) -> Self::Output {
@@ -1906,7 +1907,7 @@ macro_rules! impl_dist {
             }
         }
 
-        impl<$t: Field> Mul<$a> for Sum<$t> {
+        impl<$t: Field + 'static> Mul<$a> for Sum<$t> {
             type Output = Sum<$t>;
 
             fn mul(self, rhs: $a) -> Self::Output {
@@ -1918,7 +1919,7 @@ macro_rules! impl_dist {
             }
         }
 
-        impl<$t: Field> Mul<&$a> for &Sum<$t> {
+        impl<$t: Field + 'static> Mul<&$a> for &Sum<$t> {
             type Output = <Sum<$t> as Mul<$a>>::Output;
 
             fn mul(self, rhs: &$a) -> Self::Output {
@@ -1926,7 +1927,7 @@ macro_rules! impl_dist {
             }
         }
 
-        impl<$t: Field> Mul<&$a> for Sum<$t> {
+        impl<$t: Field + 'static> Mul<&$a> for Sum<$t> {
             type Output = <Sum<$t> as Mul<$a>>::Output;
 
             fn mul(self, rhs: &$a) -> Self::Output {
@@ -1934,7 +1935,7 @@ macro_rules! impl_dist {
             }
         }
 
-        impl<$t: Field> Mul<$a> for &Sum<$t> {
+        impl<$t: Field + 'static> Mul<$a> for &Sum<$t> {
             type Output = <Sum<$t> as Mul<$a>>::Output;
 
             fn mul(self, rhs: $a) -> Self::Output {
@@ -1942,7 +1943,7 @@ macro_rules! impl_dist {
             }
         }
 
-        impl<$t: Field> Mul<&Sum<$t>> for &$a {
+        impl<$t: Field + 'static> Mul<&Sum<$t>> for &$a {
             type Output = <$a as Mul<Sum<$t>>>::Output;
 
             fn mul(self, rhs: &Sum<$t>) -> Self::Output {
@@ -1950,7 +1951,7 @@ macro_rules! impl_dist {
             }
         }
 
-        impl<$t: Field> Mul<&Sum<$t>> for $a {
+        impl<$t: Field + 'static> Mul<&Sum<$t>> for $a {
             type Output = <$a as Mul<Sum<$t>>>::Output;
 
             fn mul(self, rhs: &Sum<$t>) -> Self::Output {
@@ -1958,7 +1959,7 @@ macro_rules! impl_dist {
             }
         }
 
-        impl<$t: Field> Mul<Sum<$t>> for &$a {
+        impl<$t: Field + 'static> Mul<Sum<$t>> for &$a {
             type Output = <$a as Mul<Sum<$t>>>::Output;
 
             fn mul(self, rhs: Sum<$t>) -> Self::Output {

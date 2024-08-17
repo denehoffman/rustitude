@@ -27,7 +27,7 @@ use std::{
 /// let vec_b = FourMomentum::new(4.2, 0.5, 0.4, 0.5);
 /// ```
 #[derive(Debug, Clone, PartialEq, Copy, Default)]
-pub struct FourMomentum<F: Field>([F; 4]);
+pub struct FourMomentum<F: Field + 'static>(Vector4<F>);
 
 impl<F: Field> Eq for FourMomentum<F> {}
 
@@ -50,7 +50,7 @@ impl<F: Field> FourMomentum<F> {
         //! Create a new [`FourMomentum`] from energy and momentum components.
         //!
         //! Components are listed in the order $` (E, p_x, p_y, p_z) `$
-        Self([e, px, py, pz])
+        Self(Vector4::new(e, px, py, pz))
     }
 
     /// Returns the energy of the given [`FourMomentum`].
@@ -105,10 +105,7 @@ impl<F: Field> FourMomentum<F> {
     /// ```
     #[allow(clippy::suboptimal_flops)]
     pub fn m2(&self) -> F {
-        F::fpowi(self.e(), 2)
-            - F::fpowi(self.px(), 2)
-            - F::fpowi(self.py(), 2)
-            - F::fpowi(self.pz(), 2)
+        F::powi(self.e(), 2) - F::powi(self.px(), 2) - F::powi(self.py(), 2) - F::powi(self.pz(), 2)
     }
 
     /// Calculate the invariant $`m`$ for this [`FourMomentum`] instance.
@@ -119,7 +116,7 @@ impl<F: Field> FourMomentum<F> {
     ///
     /// [`FourMomentum::m2`]
     pub fn m(&self) -> F {
-        F::fsqrt(self.m2())
+        F::sqrt(self.m2())
     }
 
     /// Boosts an instance of [`FourMomentum`] along the $`\vec{\beta}`$
@@ -139,7 +136,7 @@ impl<F: Field> FourMomentum<F> {
     /// ```
     pub fn boost_along(&self, other: &Self) -> Self {
         let m_boost = other.boost_matrix();
-        (m_boost * Vector4::<F>::from(self)).into()
+        (m_boost * self.0).into()
     }
     /// Extract the 3-momentum as a [`nalgebra::Vector3<Field>`]
     ///
@@ -158,7 +155,7 @@ impl<F: Field> FourMomentum<F> {
     /// Returns the $`\cos(\theta)`$ of the momentum 3-vector.
     pub fn costheta(&self) -> F {
         let v = self.momentum();
-        let r = v.norm();
+        let r = F::sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
         v.z / r
     }
 
@@ -171,13 +168,13 @@ impl<F: Field> FourMomentum<F> {
 
     /// Returns the $`\theta`$ polar angle of the momentum 3-vector.
     pub fn theta(&self) -> F {
-        F::facos(self.costheta())
+        F::acos(self.costheta())
     }
 
     /// Returns the $`\phi`$ azimuthal angle of the momentum 3-vector.
     pub fn phi(&self) -> F {
         let v = self.momentum();
-        F::fatan2(v.y, v.x)
+        F::atan2(v.y, v.x)
     }
 
     /// Construct the 3-vector $`\vec{\beta}`$ where
@@ -185,6 +182,13 @@ impl<F: Field> FourMomentum<F> {
     /// $` \vec{\beta} = \frac{\vec{p}}{E} `$
     pub fn beta3(&self) -> Vector3<F> {
         self.momentum() / self.e()
+    }
+
+    /// Constructs the 3-vector normal to the 3-momentum
+    pub fn direction(&self) -> Vector3<F> {
+        let v = self.momentum();
+        let mag = F::sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+        v / mag
     }
 
     /// Construct the Lorentz boost matrix $`\mathbf{\Lambda}`$ where
@@ -202,24 +206,24 @@ impl<F: Field> FourMomentum<F> {
     pub fn boost_matrix(&self) -> Matrix4<F> {
         let b = self.beta3();
         let b2 = b.dot(&b);
-        let g = F::ONE / F::fsqrt(F::ONE - b2);
+        let g = F::one() / F::sqrt(F::one() - b2);
         Matrix4::new(
             g,
             -g * b[0],
             -g * b[1],
             -g * b[2],
             -g * b[0],
-            F::ONE + (g - F::ONE) * b[0] * b[0] / b2,
-            (g - F::ONE) * b[0] * b[1] / b2,
-            (g - F::ONE) * b[0] * b[2] / b2,
+            F::one() + (g - F::one()) * b[0] * b[0] / b2,
+            (g - F::one()) * b[0] * b[1] / b2,
+            (g - F::one()) * b[0] * b[2] / b2,
             -g * b[1],
-            (g - F::ONE) * b[1] * b[0] / b2,
-            F::ONE + (g - F::ONE) * b[1] * b[1] / b2,
-            (g - F::ONE) * b[1] * b[2] / b2,
+            (g - F::one()) * b[1] * b[0] / b2,
+            F::one() + (g - F::one()) * b[1] * b[1] / b2,
+            (g - F::one()) * b[1] * b[2] / b2,
             -g * b[2],
-            (g - F::ONE) * b[2] * b[0] / b2,
-            (g - F::ONE) * b[2] * b[1] / b2,
-            F::ONE + (g - F::ONE) * b[2] * b[2] / b2,
+            (g - F::one()) * b[2] * b[0] / b2,
+            (g - F::one()) * b[2] * b[1] / b2,
+            F::one() + (g - F::one()) * b[2] * b[2] / b2,
         )
     }
 }
@@ -238,37 +242,32 @@ impl<F: Field> From<&FourMomentum<F>> for Vector4<F> {
 
 impl<F: Field> From<Vector4<F>> for FourMomentum<F> {
     fn from(value: Vector4<F>) -> Self {
-        Self([value[0], value[1], value[2], value[3]])
+        Self(value)
     }
 }
 
 impl<F: Field> From<&Vector4<F>> for FourMomentum<F> {
     fn from(value: &Vector4<F>) -> Self {
-        Self([value[0], value[1], value[2], value[3]])
+        Self(*value)
     }
 }
 
 impl<F: Field> From<Vec<F>> for FourMomentum<F> {
     fn from(value: Vec<F>) -> Self {
-        Self([value[0], value[1], value[2], value[3]])
+        Self::new(value[0], value[1], value[2], value[3])
     }
 }
 
 impl<F: Field> From<&Vec<F>> for FourMomentum<F> {
     fn from(value: &Vec<F>) -> Self {
-        Self([value[0], value[1], value[2], value[3]])
+        Self::new(value[0], value[1], value[2], value[3])
     }
 }
 
 impl<F: Field> Add for FourMomentum<F> {
     type Output = Self;
     fn add(self, rhs: Self) -> Self::Output {
-        Self([
-            self.0[0] + rhs.0[0],
-            self.0[1] + rhs.0[1],
-            self.0[2] + rhs.0[2],
-            self.0[3] + rhs.0[3],
-        ])
+        Self(self.0 + rhs.0)
     }
 }
 
@@ -282,12 +281,7 @@ impl<F: Field> Add for &FourMomentum<F> {
 impl<F: Field> Sub for FourMomentum<F> {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self::Output {
-        Self([
-            self.0[0] - rhs.0[0],
-            self.0[1] - rhs.0[1],
-            self.0[2] - rhs.0[2],
-            self.0[3] - rhs.0[3],
-        ])
+        Self(self.0 - rhs.0)
     }
 }
 

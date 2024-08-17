@@ -68,7 +68,8 @@
 //! Because the beam is often directed along the $`z`$-axis, there is an alternative way to store
 //! the `EPS` vector without a new branch (for linear polarization. The $`x`$ and $`y`$ components
 //! of `EPS` can be stored as `Px_Beam` and `Py_Beam` respectively, and the format can be loaded
-//! using [`Dataset::from_parquet_eps_in_beam`](`crate::dataset::Dataset::from_parquet_eps_in_beam`).
+//! using [`Dataset::from_parquet`](`crate::dataset::Dataset::from_parquet`) with the
+//! [`ReadMethod::EPSInBeam`](`crate::dataset::ReadMethod::EPSInBeam`) method.
 //!
 //! # Creating a New Amplitude
 //!
@@ -181,17 +182,12 @@
 //! majority of an analysis in 32-bit mode, switching over to 64-bit mode when we actually get near
 //! a solution and want the increased accuracy!
 //!
-//! The [`Field`] trait contains a few helper constants and functions to make this easier for those
-//! who aren't as familiar with rust. Constants are provided for whole numbers between zero and ten
-//! (inclusively), and the [`Field`] trait also contains a few mathematical constants like
+//! The [`Field`] trait contains a few mathematical constants like
 //! [`Field::PI()`][`num::traits::FloatConst::PI()`] and
-//! [`Field::SQRT_2()`][`num::traits::FloatConst::SQRT_2()`]. Most mathematical functions are
-//! aliased with a leading "f" to simplify duplicated function definitions in the [`num::Float`]
-//! and [`nalgebra::RealField`] traits. For instance, [`Field::fabs()`] calls
-//! [`num::Float::abs()`], since the alternative would be to use the fully qualified name to
-//! distinguish it from [`nalgebra::ComplexField::abs()`].
+//! [`Field::SQRT_2()`][`num::traits::FloatConst::SQRT_2()`] as well as traits which
+//! implement most standard mathematical functions. See the [`Float`] trait for more details.
 //!
-//! # Combining Amplitudes into Models
+//! //! # Combining Amplitudes into Models
 //! We can use several operations to modify and combine amplitudes. Since amplitudes yield complex
 //! values, the following convenience methods are provided:
 //! [`real`](`amplitude::AmpLike::real`), and [`imag`](`amplitude::AmpLike::imag`) give the real and
@@ -361,6 +357,15 @@
     missing_docs
 )]
 #![allow(deprecated)]
+
+use std::fmt::{Debug, Display};
+use std::iter::{Product, Sum};
+
+use nalgebra::Vector3;
+use num::{
+    traits::{FloatConst, NumAssignOps},
+    Float, FromPrimitive,
+};
 pub mod amplitude;
 pub mod dataset;
 pub mod four_momentum;
@@ -375,320 +380,71 @@ pub mod prelude {
     pub use crate::errors::RustitudeError;
     pub use crate::four_momentum::FourMomentum;
     pub use crate::manager::{ExtendedLogLikelihood, Manager};
-    pub use crate::{model, Field};
-    // pub use crate::{constants::*, ComplexField, Field};
-    pub use nalgebra::{ComplexField, RealField, Vector3};
+    pub use crate::{convert, convert_array, convert_vec, model, Field, UnitVector};
+    pub use nalgebra::Vector3;
     pub use num::Complex;
 }
 
-/// A trait which describes a field of "Real" numbers which can be used in calculating amplitudes.
+/// A trait representing a numeric field which can be used in calculating amplitudes.
 pub trait Field:
-    nalgebra::RealField
-    + std::iter::Sum
-    + std::iter::Product
-    + Copy
-    + Clone
+    Float
+    + Sum
+    + Product
+    + FloatConst
+    + NumAssignOps
+    + Debug
+    + Display
     + Default
-    + ganesh::core::Field
-    + num::Float
-    + num::traits::FloatConst
+    + Send
+    + Sync
+    + FromPrimitive
 {
-    /// See [`f64::MIN_POSITIVE`]
-    const MIN_POSITIVE: Self;
-    /// See [`f64::MAX`]
-    const MAX: Self;
-    /// See [`f64::MIN`]
-    const MIN: Self;
-    /// See [`f64::INFINITY`]
-    const INFINITY: Self;
-    /// See [`f64::NEG_INFINITY`]
-    const NEG_INFINITY: Self;
-    /// Alias for 0.0
-    const ZERO: Self;
-    /// Alias for 1.0
-    const ONE: Self;
-    /// Alias for 2.0
-    const TWO: Self;
-    /// Alias for 3.0
-    const THREE: Self;
-    /// Alias for 4.0
-    const FOUR: Self;
-    /// Alias for 5.0
-    const FIVE: Self;
-    /// Alias for 6.0
-    const SIX: Self;
-    /// Alias for 7.0
-    const SEVEN: Self;
-    /// Alias for 8.0
-    const EIGHT: Self;
-    /// Alias for 9.0
-    const NINE: Self;
-    /// Alias for 10.0
-    const TEN: Self;
-    ///Alias for the imaginary constant
-    const I: num::Complex<Self>;
-    /// Shorthand to convert an `f64` into a [`Field`].
-    /// See also: [`Field::convert_f64`].
-    fn f(x: f64) -> Self {
-        Self::convert_f64(x)
-    }
-    /// Shorthand to convert a [`Vec<f64>`] into a [`Vec<Field>`].
-    /// See also: [`Field::convert_vec_f64`].
-    fn fv(x: Vec<f64>) -> Vec<Self> {
-        Self::convert_vec_f64(x)
-    }
-    /// Shorthand to convert a `[f64; N]` into a `[Field; N]`.
-    /// See also: [`Field::convert_array_f64`].
-    fn fa<const N: usize>(x: [f64; N]) -> [Self; N] {
-        Self::convert_array_f64(x)
-    }
-    /// Converts a `[f64; N]` into a `[Field; N]`.
-    fn convert_array_f64<const N: usize>(x: [f64; N]) -> [Self; N] {
-        std::array::from_fn(|i| Self::convert_f64(x[i]))
-    }
-    /// Converts a [`Vec<f64>`] into a [`Vec<Field>`].
-    fn convert_vec_f64(x: Vec<f64>) -> Vec<Self> {
-        x.into_iter().map(Self::f).collect()
-    }
-    /// Converts an `f64` into a [`Field`].
-    fn convert_f64(x: f64) -> Self;
-    /// Converts an `f32` into a [`Field`].
-    fn convert_f32(x: f32) -> Self;
-    /// Converts a `usize` into a [`Field`].
-    fn convert_usize(x: usize) -> Self;
-    /// Converts an `isize` into a [`Field`].
-    fn convert_isize(x: isize) -> Self;
-    /// Converts a `u32` into a [`Field`].
-    fn convert_u32(x: u32) -> Self;
-    /// Converts a [`Field`] into the real part of a [`Complex<Field>`].
-    fn c(self) -> num::Complex<Self> {
-        num::Complex::from(self)
-    }
-    /// Shorthand for [`num::Complex::i`].
-    fn i() -> num::Complex<Self> {
-        Field::I
-    }
-    /// Shorthand for [`num::Float::abs`].
-    fn fabs(self) -> Self {
-        num::Float::abs(self)
-    }
-    /// Shorthand for [`num::Float::sqrt`].
-    fn fsqrt(self) -> Self {
-        num::Float::sqrt(self)
-    }
-    /// Shorthand for [`num::Float::cbrt`].
-    fn fcbrt(self) -> Self {
-        num::Float::cbrt(self)
-    }
-    /// Shorthand for [`num::Float::powi`].
-    fn fpowi(self, n: i32) -> Self {
-        num::Float::powi(self, n)
-    }
-    /// Shorthand for [`num::Float::powf`].
-    fn fpowf(self, n: Self) -> Self {
-        num::Float::powf(self, n)
-    }
-    /// Shorthand for [`num::Float::sin`].
-    fn fsin(self) -> Self {
-        num::Float::sin(self)
-    }
-    /// Shorthand for [`num::Float::cos`].
-    fn fcos(self) -> Self {
-        num::Float::cos(self)
-    }
-    /// Shorthand for [`num::Float::tan`].
-    fn ftan(self) -> Self {
-        num::Float::tan(self)
-    }
-    /// Shorthand for [`num::Float::asin`].
-    fn fasin(self) -> Self {
-        num::Float::asin(self)
-    }
-    /// Shorthand for [`num::Float::acos`].
-    fn facos(self) -> Self {
-        num::Float::acos(self)
-    }
-    /// Shorthand for [`num::Float::atan`].
-    fn fatan(self) -> Self {
-        num::Float::atan(self)
-    }
-    /// Shorthand for [`nalgebra::RealField::atan2`].
-    fn fatan2(self, other: Self) -> Self {
-        nalgebra::RealField::atan2(self, other)
-    }
-    /// Shorthand for [`num::Float::sinh`].
-    fn fsinh(self) -> Self {
-        num::Float::sinh(self)
-    }
-    /// Shorthand for [`num::Float::cosh`].
-    fn fcosh(self) -> Self {
-        num::Float::cosh(self)
-    }
-    /// Shorthand for [`num::Float::tanh`].
-    fn ftanh(self) -> Self {
-        num::Float::tanh(self)
-    }
-    /// Shorthand for [`num::Float::asinh`].
-    fn fasinh(self) -> Self {
-        num::Float::asinh(self)
-    }
-    /// Shorthand for [`num::Float::acosh`].
-    fn facosh(self) -> Self {
-        num::Float::acosh(self)
-    }
-    /// Shorthand for [`num::Float::atanh`].
-    fn fatanh(self) -> Self {
-        num::Float::atanh(self)
-    }
-    /// Shorthand for [`num::Float::log`].
-    fn flog(self, base: Self) -> Self {
-        num::Float::log(self, base)
-    }
-    /// Shorthand for [`num::Float::log2`].
-    fn flog2(self) -> Self {
-        num::Float::log2(self)
-    }
-    /// Shorthand for [`num::Float::log10`].
-    fn flog10(self) -> Self {
-        num::Float::log10(self)
-    }
-    /// Shorthand for [`num::Float::ln`].
-    fn fln(self) -> Self {
-        num::Float::ln(self)
-    }
-    /// Shorthand for [`num::Float::ln_1p`].
-    fn fln_1p(self) -> Self {
-        num::Float::ln_1p(self)
-    }
-    /// Shorthand for [`num::Float::exp`].
-    fn fexp(self) -> Self {
-        num::Float::exp(self)
-    }
-    /// Shorthand for [`num::Float::exp2`].
-    fn fexp2(self) -> Self {
-        num::Float::exp2(self)
-    }
-    /// Shorthand for [`num::Float::exp_m1`].
-    fn fexp_m1(self) -> Self {
-        num::Float::exp_m1(self)
-    }
-    /// Shorthand for [`num::Float::hypot`].
-    fn fhypot(self, other: Self) -> Self {
-        num::Float::hypot(self, other)
-    }
-    /// Shorthand for [`num::Float::recip`].
-    fn frecip(self) -> Self {
-        num::Float::recip(self)
-    }
-    /// Shorthand for [`num::Float::mul_add`].
-    fn fmul_add(self, a: Self, b: Self) -> Self {
-        num::Float::mul_add(self, a, b)
-    }
-    /// Shorthand for [`num::Float::floor`].
-    fn ffloor(self) -> Self {
-        num::Float::floor(self)
-    }
-    /// Shorthand for [`num::Float::ceil`].
-    fn fceil(self) -> Self {
-        num::Float::ceil(self)
-    }
-    /// Shorthand for [`num::Float::round`].
-    fn fround(self) -> Self {
-        num::Float::round(self)
-    }
-    /// Shorthand for [`num::Float::trunc`].
-    fn ftrunc(self) -> Self {
-        num::Float::trunc(self)
-    }
-    /// Shorthand for [`num::Float::fract`].
-    fn ffract(self) -> Self {
-        num::Float::fract(self)
-    }
-    /// Shorthand for [`num::Float::min`].
-    fn fmin(self, other: Self) -> Self {
-        num::Float::min(self, other)
-    }
-    /// Shorthand for [`num::Float::max`].
-    fn fmax(self, other: Self) -> Self {
-        num::Float::max(self, other)
-    }
+}
+impl Field for f64 {}
+impl Field for f32 {}
+
+#[macro_export]
+/// Convenience macro for converting raw numeric values to a generic.
+macro_rules! convert {
+    ($value:expr, $type:ty) => {{
+        #[allow(clippy::unwrap_used)]
+        <$type as num::NumCast>::from($value).unwrap()
+    }};
 }
 
-impl Field for f64 {
-    const MIN_POSITIVE: Self = Self::MIN_POSITIVE;
-    const MAX: Self = Self::MAX;
-    const MIN: Self = Self::MIN;
-    const INFINITY: Self = Self::INFINITY;
-    const NEG_INFINITY: Self = Self::NEG_INFINITY;
-    const ZERO: Self = 0.0;
-    const ONE: Self = 1.0;
-    const TWO: Self = 2.0;
-    const THREE: Self = 3.0;
-    const FOUR: Self = 4.0;
-    const FIVE: Self = 5.0;
-    const SIX: Self = 6.0;
-    const SEVEN: Self = 7.0;
-    const EIGHT: Self = 8.0;
-    const NINE: Self = 9.0;
-    const TEN: Self = 10.0;
-    const I: num::Complex<Self> = num::Complex::<Self>::I;
-
-    fn convert_f64(x: f64) -> Self {
-        x
-    }
-
-    fn convert_f32(x: f32) -> Self {
-        x as Self
-    }
-
-    fn convert_usize(x: usize) -> Self {
-        x as Self
-    }
-
-    fn convert_isize(x: isize) -> Self {
-        x as Self
-    }
-    fn convert_u32(x: u32) -> Self {
-        x as Self
-    }
+#[macro_export]
+/// Convenience macro for converting a raw numeric [`Vec`] to a generic [`Vec`].
+macro_rules! convert_vec {
+    ($vec:expr, $type:ty) => {{
+        $vec.into_iter()
+            .map(|value| $crate::convert!(value, $type))
+            .collect::<Vec<$type>>()
+    }};
 }
-impl Field for f32 {
-    const MIN_POSITIVE: Self = Self::MIN_POSITIVE;
-    const MAX: Self = Self::MAX;
-    const MIN: Self = Self::MIN;
-    const INFINITY: Self = Self::INFINITY;
-    const NEG_INFINITY: Self = Self::NEG_INFINITY;
-    const ZERO: Self = 0.0;
-    const ONE: Self = 1.0;
-    const TWO: Self = 2.0;
-    const THREE: Self = 3.0;
-    const FOUR: Self = 4.0;
-    const FIVE: Self = 5.0;
-    const SIX: Self = 6.0;
-    const SEVEN: Self = 7.0;
-    const EIGHT: Self = 8.0;
-    const NINE: Self = 9.0;
-    const TEN: Self = 10.0;
-    const I: num::Complex<Self> = num::Complex::<Self>::I;
 
-    fn convert_f64(x: f64) -> Self {
-        x as Self
-    }
+#[macro_export]
+/// Convenience macro for converting a raw numeric array to a generic array.
+macro_rules! convert_array {
+    ($arr:expr, $type:ty) => {{
+        let temp_vec: Vec<_> = $arr
+            .iter()
+            .map(|&value| $crate::convert!(value, $type))
+            .collect();
+        #[allow(clippy::unwrap_used)]
+        temp_vec.try_into().unwrap()
+    }};
+}
 
-    fn convert_f32(x: f32) -> Self {
-        x
-    }
+/// A trait to normalize structs (mostly to use on nalgebra vectors without needing [`nalgebra::RealField`])
+pub trait UnitVector {
+    /// Returns a normalized form of the input.
+    fn unit(&self) -> Self;
+}
 
-    fn convert_usize(x: usize) -> Self {
-        x as Self
-    }
-
-    fn convert_isize(x: isize) -> Self {
-        x as Self
-    }
-
-    fn convert_u32(x: u32) -> Self {
-        x as Self
+impl<F: Field + 'static> UnitVector for Vector3<F> {
+    fn unit(&self) -> Self {
+        let mag = F::sqrt(self.x * self.x + self.y * self.y + self.z * self.z);
+        self / mag
     }
 }
 
@@ -1036,15 +792,15 @@ pub mod utils {
     /// Checks if two floating point numbers are essentially equal.
     /// See [https://floating-point-gui.de/errors/comparison/](https://floating-point-gui.de/errors/comparison/).
     pub fn is_close<F: Field>(a: F, b: F, epsilon: F) -> bool {
-        let abs_a = F::fabs(a);
-        let abs_b = F::fabs(b);
-        let diff = F::fabs(a - b);
+        let abs_a = F::abs(a);
+        let abs_b = F::abs(b);
+        let diff = F::abs(a - b);
         if a == b {
             true
-        } else if a == F::ZERO || b == F::ZERO || (abs_a + abs_b < F::MIN_POSITIVE) {
-            diff < (epsilon * F::MIN_POSITIVE)
+        } else if a == F::zero() || b == F::zero() || (abs_a + abs_b < F::min_positive_value()) {
+            diff < (epsilon * F::min_positive_value())
         } else {
-            diff / F::fmin(abs_a + abs_b, F::MAX) < epsilon
+            diff / F::min(abs_a + abs_b, F::max_value()) < epsilon
         }
     }
 

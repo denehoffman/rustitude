@@ -79,8 +79,8 @@ f2 = gluex.resonances.KMatrixF2('f2', channel=2)
 a0p = gluex.resonances.KMatrixA0('a0+', channel=1)
 a0n = gluex.resonances.KMatrixA0('a0-', channel=1)
 a2 = gluex.resonances.KMatrixA2('a2', channel=1)
-s0p = gluex.harmonics.Zlm('Z00+', 0, 0, reflectivity=gluex.Reflectivity.Positive)
-s0n = gluex.harmonics.Zlm('Z00-', 0, 0, reflectivity=gluex.Reflectivity.Negative)
+s0p = gluex.harmonics.Zlm('Z00+', l=0, m=0, reflectivity='+')
+s0n = gluex.harmonics.Zlm('Z00-', 0, 0, '-')
 d2p = gluex.harmonics.Zlm('Z22+', 2, 2) # positive reflectivity is the default
 
 # Next, let's put them together into a model
@@ -122,6 +122,10 @@ nll = rt.ExtendedLogLikelihood(m_data, m_mc)
 
 res = nll([10.0] * mod.n_free) # automatic CPU parallelism without GIL
 print(res) # prints some value for the NLL
+
+mi = rt.minimizer(nll, method='Minuit') # use iminuit to create a Minuit minimizer
+mi.migrad() # run the Migrad algorithm
+print(mi) # print the fit result
 ```
 
 Automatic parallelism over the CPU can be disabled via function calls which support it (for example, `nll([10.0] * mod.n_free, parallel=False)` would run without parallel processing), and the number of CPUs used can be controlled via the `RAYON_NUM_THREADS` environment variable, which can be set before the code is run or modified inside the code (for example, `os.environ['RAYON_NUM_THREADS] = '5'` would ensure only five threads are used past that point in the code). By default, an unset value or the value of `'0'` will use all available cores.

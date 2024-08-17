@@ -1,5 +1,5 @@
 use rayon::prelude::*;
-use rustitude_core::prelude::*;
+use rustitude_core::{convert, prelude::*};
 use sphrs::{ComplexSH, SHEval};
 
 use crate::utils::{Decay, Frame, Sign, Wave};
@@ -68,25 +68,21 @@ impl<F: Field + num::Float> Node<F> for Zlm<F> {
             .map(|event| {
                 let (_, y, _, p) = self.decay.coordinates(self.frame, 0, event);
                 let ylm = ComplexSH::Spherical.eval(self.wave.l(), self.wave.m(), &p);
-                let big_phi = F::fatan2(
+                let big_phi = F::atan2(
                     y.dot(&event.eps),
-                    event
-                        .beam_p4
-                        .momentum()
-                        .normalize()
-                        .dot(&event.eps.cross(&y)),
+                    event.beam_p4.direction().dot(&event.eps.cross(&y)),
                 );
-                let pgamma = event.eps.norm();
+                let pgamma = event.eps_mag();
                 let phase = Complex::cis(-big_phi);
                 let zlm = ylm * phase;
                 match self.reflectivity {
                     Sign::Positive => Complex::new(
-                        F::fsqrt(F::ONE + pgamma) * zlm.re,
-                        F::fsqrt(F::ONE - pgamma) * zlm.im,
+                        F::sqrt(F::one() + pgamma) * zlm.re,
+                        F::sqrt(F::one() - pgamma) * zlm.im,
                     ),
                     Sign::Negative => Complex::new(
-                        F::fsqrt(F::ONE - pgamma) * zlm.re,
-                        F::fsqrt(F::ONE + pgamma) * zlm.im,
+                        F::sqrt(F::one() - pgamma) * zlm.re,
+                        F::sqrt(F::one() + pgamma) * zlm.im,
                     ),
                 }
             })
@@ -122,24 +118,21 @@ impl<F: Field> Node<F> for OnePS<F> {
             .par_iter()
             .map(|event| {
                 let (_, y, _, _) = self.decay.coordinates(self.frame, 0, event);
-                let pol_angle = event.eps[0].facos();
-                let big_phi = y.dot(&event.eps).fatan2(
-                    event
-                        .beam_p4
-                        .momentum()
-                        .normalize()
-                        .dot(&event.eps.cross(&y)),
+                let pol_angle = F::acos(event.eps[0]);
+                let big_phi = F::atan2(
+                    y.dot(&event.eps),
+                    event.beam_p4.direction().dot(&event.eps.cross(&y)),
                 );
-                let pgamma = event.eps.norm();
+                let pgamma = event.eps_mag();
                 let phase = Complex::cis(-(pol_angle + big_phi));
                 match self.reflectivity {
                     Sign::Positive => Complex::new(
-                        F::fsqrt(F::ONE + pgamma) * phase.re,
-                        F::fsqrt(F::ONE - pgamma) * phase.im,
+                        F::sqrt(F::one() + pgamma) * phase.re,
+                        F::sqrt(F::one() - pgamma) * phase.im,
                     ),
                     Sign::Negative => Complex::new(
-                        F::fsqrt(F::ONE - pgamma) * phase.re,
-                        F::fsqrt(F::ONE + pgamma) * phase.im,
+                        F::sqrt(F::one() - pgamma) * phase.re,
+                        F::sqrt(F::one() + pgamma) * phase.im,
                     ),
                 }
             })
@@ -184,19 +177,22 @@ impl<F: Field> Node<F> for TwoPS<F> {
                 let ylm_m = ComplexSH::Spherical
                     .eval(self.wave.l(), -self.wave.m(), &p)
                     .conj();
-                let m_refl = F::convert_isize(if self.wave.m() % 2 == 0 {
-                    self.reflectivity as isize
-                } else {
-                    -(self.reflectivity as isize)
-                });
+                let m_refl = convert!(
+                    if self.wave.m() % 2 == 0 {
+                        self.reflectivity as isize
+                    } else {
+                        -(self.reflectivity as isize)
+                    },
+                    F
+                );
                 let big_theta = match self.wave.m().cmp(&0) {
-                    std::cmp::Ordering::Less => F::ZERO,
-                    std::cmp::Ordering::Equal => F::f(0.5),
-                    std::cmp::Ordering::Greater => F::fsqrt(F::f(0.5)),
+                    std::cmp::Ordering::Less => F::zero(),
+                    std::cmp::Ordering::Equal => convert!(0.5, F),
+                    std::cmp::Ordering::Greater => F::FRAC_1_SQRT_2(),
                 };
-                let wigner_d_lm0_m = ylm_m.scale(F::fsqrt(
-                    F::FOUR * F::PI()
-                        / (F::TWO * <F as Field>::convert_usize(self.wave.l() as usize) + F::ONE),
+                let wigner_d_lm0_m = ylm_m.scale(F::sqrt(
+                    convert!(4, F) * F::PI()
+                        / (convert!(2, F) * convert!(self.wave.l(), F) + F::one()),
                 ));
                 ylm_p.scale(big_theta) - wigner_d_lm0_m.scale(m_refl)
             })

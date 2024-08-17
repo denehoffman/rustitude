@@ -9,7 +9,6 @@
 project = "rustitude"
 copyright = "2024, Nathaniel Dene Hoffman"
 author = "Nathaniel Dene Hoffman"
-release = "0.7.4"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

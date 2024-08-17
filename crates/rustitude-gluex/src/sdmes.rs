@@ -32,18 +32,15 @@ impl<F: Field> Node<F> for TwoPiSDME<F> {
             .par_iter()
             .map(|event| {
                 let (_, y, _, p) = self.decay.coordinates(self.frame, 0, event);
-                let big_phi = y.dot(&event.eps).fatan2(
-                    event
-                        .beam_p4
-                        .momentum()
-                        .normalize()
-                        .dot(&event.eps.cross(&y)),
+                let big_phi = F::atan2(
+                    y.dot(&event.eps),
+                    event.beam_p4.direction().dot(&event.eps.cross(&y)),
                 );
-                let pgamma = event.eps.norm();
+                let pgamma = event.eps_mag();
                 (
-                    p.theta_cos().fpowi(2),
-                    F::fsin(p.theta()).fpowi(2),
-                    F::fsin(F::TWO * p.theta()),
+                    p.theta_cos().powi(2),
+                    F::sin(p.theta()).powi(2),
+                    F::sin(convert!(2, F) * p.theta()),
                     p.phi(),
                     big_phi,
                     pgamma,
@@ -65,23 +62,22 @@ impl<F: Field> Node<F> for TwoPiSDME<F> {
         let rho_102 = parameters[7];
         let rho_1n12 = parameters[8];
 
-        Ok(F::fsqrt(F::fabs(
-            (F::THREE / (F::FOUR * F::PI()))
-                * (F::f(0.5) * (F::ONE - rho_000)
-                    + F::f(0.5) * (F::THREE * rho_000 - F::ONE) * cossqtheta
-                    - F::SQRT_2() * rho_100 * sin2theta * F::fcos(phi)
-                    - rho_1n10 * sinsqtheta * F::fcos(F::TWO * phi))
+        Ok(Complex::from(F::sqrt(F::abs(
+            (convert!(3, F) / (convert!(4, F) * F::PI()))
+                * (convert!(0.5, F) * (F::one() - rho_000)
+                    + convert!(0.5, F) * (convert!(3, F) * rho_000 - F::one()) * cossqtheta
+                    - F::SQRT_2() * rho_100 * sin2theta * F::cos(phi)
+                    - rho_1n10 * sinsqtheta * F::cos(convert!(2, F) * phi))
                 - pgamma
-                    * F::fcos(F::TWO * big_phi)
+                    * F::cos(convert!(2, F) * big_phi)
                     * (rho_111 * sinsqtheta + rho_001 * cossqtheta
-                        - F::SQRT_2() * rho_101 * sin2theta * F::fcos(phi)
-                        - rho_1n11 * sinsqtheta * F::fcos(F::TWO * phi))
+                        - F::SQRT_2() * rho_101 * sin2theta * F::cos(phi)
+                        - rho_1n11 * sinsqtheta * F::cos(convert!(2, F) * phi))
                 - pgamma
-                    * F::fsin(F::TWO * big_phi)
-                    * (F::SQRT_2() * rho_102 * sin2theta * F::fsin(phi)
-                        + rho_1n12 * sinsqtheta * F::fsin(F::TWO * phi)),
-        ))
-        .c())
+                    * F::sin(convert!(2, F) * big_phi)
+                    * (F::SQRT_2() * rho_102 * sin2theta * F::sin(phi)
+                        + rho_1n12 * sinsqtheta * F::sin(convert!(2, F) * phi)),
+        ))))
     }
 
     fn parameters(&self) -> Vec<String> {
@@ -129,26 +125,19 @@ impl<F: Field> Node<F> for ThreePiSDME<F> {
                 let res_p4 = self.decay.resonance_p4(event);
                 let p1_res_p4 = self.decay.primary_p4(event).boost_along(&res_p4);
                 let p2_res_p4 = self.decay.primary_p4(event).boost_along(&res_p4);
-                let norm = p1_res_p4
-                    .momentum()
-                    .cross(&p2_res_p4.momentum())
-                    .normalize();
+                let norm = p1_res_p4.momentum().cross(&p2_res_p4.momentum()).unit();
                 let (_, y, _, p) = self
                     .frame
                     .coordinates_from_boosted_vec(self.decay, &norm, event);
-                let big_phi = F::fatan2(
+                let big_phi = F::atan2(
                     y.dot(&event.eps),
-                    event
-                        .beam_p4
-                        .momentum()
-                        .normalize()
-                        .dot(&event.eps.cross(&y)),
+                    event.beam_p4.direction().dot(&event.eps.cross(&y)),
                 );
-                let pgamma = event.eps.norm();
+                let pgamma = event.eps_mag();
                 (
-                    p.theta_cos().fpowi(2),
-                    F::fsin(p.theta()).fpowi(2),
-                    F::fsin(F::TWO * p.theta()),
+                    p.theta_cos().powi(2),
+                    F::sin(p.theta()).powi(2),
+                    F::sin(convert!(2, F) * p.theta()),
                     p.phi(),
                     big_phi,
                     pgamma,
@@ -170,23 +159,22 @@ impl<F: Field> Node<F> for ThreePiSDME<F> {
         let rho_102 = parameters[7];
         let rho_1n12 = parameters[8];
 
-        Ok(F::fsqrt(F::fabs(
-            (F::THREE / (F::FOUR * F::PI()))
-                * (F::f(0.5) * (F::ONE - rho_000)
-                    + F::f(0.5) * (F::THREE * rho_000 - F::ONE) * cossqtheta
-                    - F::SQRT_2() * rho_100 * sin2theta * F::fcos(phi)
-                    - rho_1n10 * sinsqtheta * F::fcos(F::TWO * phi))
+        Ok(Complex::from(F::sqrt(F::abs(
+            (convert!(3, F) / (convert!(4, F) * F::PI()))
+                * (convert!(0.5, F) * (F::one() - rho_000)
+                    + convert!(0.5, F) * (convert!(3, F) * rho_000 - F::one()) * cossqtheta
+                    - F::SQRT_2() * rho_100 * sin2theta * F::cos(phi)
+                    - rho_1n10 * sinsqtheta * F::cos(convert!(2, F) * phi))
                 - pgamma
-                    * F::fcos(F::TWO * big_phi)
+                    * F::cos(convert!(2, F) * big_phi)
                     * (rho_111 * sinsqtheta + rho_001 * cossqtheta
-                        - F::SQRT_2() * rho_101 * sin2theta * F::fcos(phi)
-                        - rho_1n11 * sinsqtheta * F::fcos(F::TWO * phi))
+                        - F::SQRT_2() * rho_101 * sin2theta * F::cos(phi)
+                        - rho_1n11 * sinsqtheta * F::cos(convert!(2, F) * phi))
                 - pgamma
-                    * F::fsin(F::TWO * big_phi)
-                    * (F::SQRT_2() * rho_102 * sin2theta * F::fsin(phi)
-                        + rho_1n12 * sinsqtheta * F::fsin(F::TWO * phi)),
-        ))
-        .c())
+                    * F::sin(convert!(2, F) * big_phi)
+                    * (F::SQRT_2() * rho_102 * sin2theta * F::sin(phi)
+                        + rho_1n12 * sinsqtheta * F::sin(convert!(2, F) * phi)),
+        ))))
     }
 
     fn parameters(&self) -> Vec<String> {
@@ -232,18 +220,15 @@ impl<F: Field> Node<F> for VecRadiativeSDME<F> {
             .par_iter()
             .map(|event| {
                 let (_, y, _, p) = self.decay.coordinates(self.frame, 0, event);
-                let big_phi = y.dot(&event.eps).fatan2(
-                    event
-                        .beam_p4
-                        .momentum()
-                        .normalize()
-                        .dot(&event.eps.cross(&y)),
+                let big_phi = F::atan2(
+                    y.dot(&event.eps),
+                    event.beam_p4.direction().dot(&event.eps.cross(&y)),
                 );
-                let pgamma = event.eps.norm();
+                let pgamma = event.eps_mag();
                 (
-                    p.theta_cos().fpowi(2),
-                    F::fsin(p.theta()).fpowi(2),
-                    F::fsin(F::TWO * p.theta()),
+                    p.theta_cos().powi(2),
+                    F::sin(p.theta()).powi(2),
+                    F::sin(convert!(2, F) * p.theta()),
                     p.phi(),
                     big_phi,
                     pgamma,
@@ -265,23 +250,24 @@ impl<F: Field> Node<F> for VecRadiativeSDME<F> {
         let rho_102 = parameters[7];
         let rho_1n12 = parameters[8];
 
-        Ok(F::fsqrt(F::fabs(
-            (F::THREE / (F::EIGHT * F::PI()))
-                * (F::ONE - sinsqtheta * F::f(0.5) * (F::ONE - rho_000) - rho_000 * cossqtheta
-                    + rho_1n10 * sinsqtheta * F::fcos(F::TWO * phi)
-                    + F::SQRT_2() * rho_100 * sin2theta * F::fcos(phi)
+        Ok(Complex::from(F::sqrt(F::abs(
+            (convert!(3, F) / (convert!(8, F) * F::PI()))
+                * (F::one()
+                    - sinsqtheta * convert!(0.5, F) * (F::one() - rho_000)
+                    - rho_000 * cossqtheta
+                    + rho_1n10 * sinsqtheta * F::cos(convert!(2, F) * phi)
+                    + F::SQRT_2() * rho_100 * sin2theta * F::cos(phi)
                     - pgamma
-                        * F::fcos(F::TWO * big_phi)
-                        * (F::TWO * rho_111
+                        * F::cos(convert!(2, F) * big_phi)
+                        * (convert!(2, F) * rho_111
                             + (rho_001 - rho_111) * sinsqtheta
-                            + rho_1n11 * sinsqtheta * F::fcos(F::TWO * phi)
-                            + F::SQRT_2() * rho_101 * sin2theta * F::fcos(phi))
+                            + rho_1n11 * sinsqtheta * F::cos(convert!(2, F) * phi)
+                            + F::SQRT_2() * rho_101 * sin2theta * F::cos(phi))
                     + pgamma
-                        * F::fsin(F::TWO * big_phi)
-                        * (rho_1n12 * sinsqtheta * F::fsin(F::TWO * phi)
-                            + F::SQRT_2() * rho_102 * sin2theta * F::fsin(phi))),
-        ))
-        .c())
+                        * F::sin(convert!(2, F) * big_phi)
+                        * (rho_1n12 * sinsqtheta * F::sin(convert!(2, F) * phi)
+                            + F::SQRT_2() * rho_102 * sin2theta * F::sin(phi))),
+        ))))
     }
 
     fn parameters(&self) -> Vec<String> {

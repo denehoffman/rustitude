@@ -143,7 +143,7 @@ impl Node for OmegaDalitz {
 }
 ```
 
-Let's walk through this code. First, we need to define a `struct` which has all of the general information about the amplitude, and in this case some kind of `Vec` for storing precalculated data. We consider this precalculated data to correspond to a single dataset, and each dataset gets its own copy of the amplitude `struct`. Because this particular amplitude doesn't have any input parameters, we can `#[derive(Default)]` on it to make a default constructor, which allows the amplitude to be initialized with something like `let amp = OmegaDalitz::default();`. If we wanted a parameterized constructor, we have to define our own, and while Rust has no default name for constructors, `pub fn new(...) -> rustitude_core::AmpOp` is preferred.
+Let's walk through this code. First, we need to define a `struct` which has all of the general information about the amplitude, and in this case some kind of `Vec` for storing precalculated data. We consider this precalculated data to correspond to a single dataset, and each dataset gets its own copy of the amplitude `struct`. Because this particular amplitude doesn't have any input parameters, we can `#[derive(Default)]` on it to make a default constructor, which allows the amplitude to be initialized with something like `let amp = OmegaDalitz::default();`. If we wanted a parameterized constructor, we have to define our own, and while Rust has no default name for constructors, `pub fn new(...) -> rustitude_core::Amplitude_64` (or `_32`) is preferred.
 
 Next, we implement the `Node` trait for the `struct`. Traits in Rust are kind of like abstract classes or interfaces in object-oriented languages, they provide some set of methods which a `struct` must implement. The first of these methods is `fn precalculate(&mut self, dataset: &Dataset) -> Result<(), RustitudeError>`. As the signature suggests, it takes a `Dataset` and mutates the `struct` in some way. It should raise a `RustitudeError` if anything goes wrong in the evaluation. The intended usage of this function is to precalculate some terms in the amplitude's mathematical expression, things which don't change when you update the free parameter inputs to the amplitude. In this case, the four input parameters, $`\alpha`$, $`\beta`$, $`\gamma`$, and $`\delta`$, are independent from `dalitz_z`, `dalitz_sin3theta`, and `lambda`, so we can safely calculate those ahead of time and just pull from their respective `Vec`s when needed later. I won't go too far into Rust's syntax here, but typical precalculation functions will start by iterating over the dataset's events in parallel (the line `use rayon::prelude::*;` is needed to use `par_iter` here) and collecting or unzipping that iterator into a `Vec` or group of `Vec`s.
 
@@ -159,12 +159,13 @@ To make Python bindings, `pyo3` needs to be included as a dependency:
 
 ```rust
 use pyo3::prelude::*;
+use rustitude_core::amplitude::Amplitude_64;
 
 // OmegaDalitz code here
 
 #[pyfunction(name = "OmegaDalitz")]
-fn omega_dalitz(name: &str) -> AmpOp {
-    Amplitude::new(name, OmegaDalitz::default()).into()
+fn omega_dalitz(name: &str) -> PyResult<Amplitude_64> {
+    Ok(Amplitude_64::new(name, OmegaDalitz::default()))
 }
 
 pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -173,7 +174,7 @@ pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
 }
 ```
 
-Rather than bind the `struct` directly, we prefer to bind a function which returns a `PyAmpOp`, a wrapper struct that implements `#[pyclass]` and can be used in the Python interface. The `pyo3_module` function will then need to be added to the `py-rustitude` crate's [`lib.rs`](https://github.com/denehoffman/rustitude/blob/main/py-rustitude/src/lib.rs) file. This step is a bit problematic, since it means new amplitudes cannot be added without modifying `py-rustitude` itself. For this reason, developers may want to work with their own fork of the repository rather than using the one installed by `cargo` if they wish to use Python with custom amplitudes. This is a limitation of `pyo3`, which doesn't recognize class bindings across crates. There is also a mechanism to implement `Amplitude`s via pure Python classes, but it is currently incompatible with multithreading due to the GIL (see the [Python docs](https://rustitude.readthedocs.io/en/latest/custom_nodes.html)).
+Rather than bind the `struct` directly, we prefer to bind a function which returns a `Amplitude_64` (or a `PyResult` of one), a wrapper struct that implements `#[pyclass]` and can be used in the Python interface. The `pyo3_module` function will then need to be added to the `py-rustitude` crate's [`lib.rs`](https://github.com/denehoffman/rustitude/blob/main/py-rustitude/src/lib.rs) file. This step is a bit problematic, since it means new amplitudes cannot be added without modifying `py-rustitude` itself. For this reason, developers may want to work with their own fork of the repository rather than using the one installed by `cargo` if they wish to use Python with custom amplitudes. This is a limitation of `pyo3`, which doesn't recognize class bindings across crates. There is also a mechanism to implement `Amplitude`s via pure Python classes, but it is currently incompatible with multithreading due to the GIL (see the [Python docs](https://rustitude.readthedocs.io/en/latest/custom_nodes.html)).
 
 # TODOs
 

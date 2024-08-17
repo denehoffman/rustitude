@@ -5,10 +5,11 @@
 
 use std::fmt::{Debug, Display};
 
-use ganesh::prelude::Function;
+use ganesh::prelude::{DVector, Function};
 use rayon::prelude::*;
 
 use crate::{
+    convert,
     errors::RustitudeError,
     prelude::{Amplitude, Dataset, Event, Model, Parameter},
     Field,
@@ -17,7 +18,7 @@ use crate::{
 /// The [`Manager`] struct links a [`Model`] to a [`Dataset`] and provides methods to manipulate
 /// the [`Model`] and evaluate it over the [`Dataset`].
 #[derive(Clone)]
-pub struct Manager<F: Field> {
+pub struct Manager<F: Field + 'static> {
     /// The associated [`Model`].
     pub model: Model<F>,
     /// The associated [`Dataset`].
@@ -364,7 +365,7 @@ impl<F: Field> Manager<F> {
 /// dataset used for acceptance correction. These should probably have the same [`Manager`] in
 /// practice, but this is left to the user.
 #[derive(Clone)]
-pub struct ExtendedLogLikelihood<F: Field> {
+pub struct ExtendedLogLikelihood<F: Field + 'static> {
     /// [`Manager`] for data
     pub data_manager: Manager<F>,
     /// [`Manager`] for Monte-Carlo
@@ -410,7 +411,7 @@ impl<F: Field> ExtendedLogLikelihood<F> {
         let ln_l = (data_res
             .iter()
             .zip(data_weights)
-            .map(|(l, w)| w * F::fln(*l))
+            .map(|(l, w)| w * F::ln(*l))
             .sum::<F>())
             - (n_data / n_mc)
                 * (mc_norm_int
@@ -418,7 +419,7 @@ impl<F: Field> ExtendedLogLikelihood<F> {
                     .zip(mc_weights)
                     .map(|(l, w)| w * *l)
                     .sum::<F>());
-        Ok(F::convert_f64(-2.0) * ln_l)
+        Ok(convert!(-2, F) * ln_l)
     }
 
     /// Evaluate the [`ExtendedLogLikelihood`] over the [`Dataset`] with the given free parameters.
@@ -449,7 +450,7 @@ impl<F: Field> ExtendedLogLikelihood<F> {
         let ln_l = (data_res
             .iter()
             .zip(data_weights)
-            .map(|(l, w)| w * F::fln(*l))
+            .map(|(l, w)| w * F::ln(*l))
             .sum::<F>())
             - (n_data / n_mc)
                 * (mc_norm_int
@@ -457,7 +458,7 @@ impl<F: Field> ExtendedLogLikelihood<F> {
                     .zip(mc_weights)
                     .map(|(l, w)| w * *l)
                     .sum::<F>());
-        Ok(F::convert_f64(-2.0) * ln_l)
+        Ok(convert!(-2, F) * ln_l)
     }
 
     /// Evaluate the [`ExtendedLogLikelihood`] over the [`Dataset`] with the given free parameters.
@@ -488,7 +489,7 @@ impl<F: Field> ExtendedLogLikelihood<F> {
         let ln_l = (data_res
             .par_iter()
             .zip(data_weights)
-            .map(|(l, w)| w * F::fln(*l))
+            .map(|(l, w)| w * F::ln(*l))
             .sum::<F>())
             - (n_data / n_mc)
                 * (mc_norm_int
@@ -496,7 +497,7 @@ impl<F: Field> ExtendedLogLikelihood<F> {
                     .zip(mc_weights)
                     .map(|(l, w)| w * *l)
                     .sum::<F>());
-        Ok(F::convert_f64(-2.0) * ln_l)
+        Ok(convert!(-2, F) * ln_l)
     }
 
     /// Evaluate the [`ExtendedLogLikelihood`] over the [`Dataset`] with the given free parameters.
@@ -540,7 +541,7 @@ impl<F: Field> ExtendedLogLikelihood<F> {
         let ln_l = (data_res
             .par_iter()
             .zip(data_weights)
-            .map(|(l, w)| w * F::fln(*l))
+            .map(|(l, w)| w * F::ln(*l))
             .sum::<F>())
             - (n_data / n_mc)
                 * (mc_norm_int
@@ -548,7 +549,7 @@ impl<F: Field> ExtendedLogLikelihood<F> {
                     .zip(mc_weights)
                     .map(|(l, w)| w * *l)
                     .sum::<F>());
-        Ok(F::convert_f64(-2.0) * ln_l)
+        Ok(convert!(-2, F) * ln_l)
     }
 
     /// Evaluate the normalized intensity function over the given Monte-Carlo [`Dataset`] with the
@@ -899,8 +900,8 @@ impl<F: Field> ExtendedLogLikelihood<F> {
     }
 }
 
-impl<F: Field> Function<F, (), RustitudeError> for ExtendedLogLikelihood<F> {
-    fn evaluate(&self, x: &[F], _args: Option<&()>) -> Result<F, RustitudeError> {
-        self.par_evaluate(x)
+impl<F: Field + ganesh::core::Field> Function<F, (), RustitudeError> for ExtendedLogLikelihood<F> {
+    fn evaluate(&self, x: &DVector<F>, _args: Option<&()>) -> Result<F, RustitudeError> {
+        self.par_evaluate(x.as_slice())
     }
 }

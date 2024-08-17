@@ -1,6 +1,6 @@
 use crate::utils::{self, Decay, Frame, Sign};
 use rayon::prelude::*;
-use rustitude_core::prelude::*;
+use rustitude_core::{convert, prelude::*};
 use sphrs::{ComplexSH, SHEval};
 
 #[derive(Clone)]
@@ -35,13 +35,13 @@ impl<F: Field> ThreePiPolFrac<F> {
         match (decay_resonance, decay_isobar) {
             (Decay::ThreeBodyDecay(_), Decay::TwoBodyDecay(_)) => Self {
                 beam_pol: match beam_pol {
-                    Sign::Positive => F::ONE,
-                    Sign::Negative => -F::ONE,
+                    Sign::Positive => F::one(),
+                    Sign::Negative => -F::one(),
                 },
                 j_resonance,
                 p_resonance: match p_resonance {
-                    Sign::Positive => F::ONE,
-                    Sign::Negative => -F::ONE,
+                    Sign::Positive => F::one(),
+                    Sign::Negative => -F::one(),
                 },
                 i_resonance,
                 l_resonance,
@@ -59,7 +59,7 @@ impl<F: Field> ThreePiPolFrac<F> {
 
 impl<F: Field> Node<F> for ThreePiPolFrac<F> {
     fn calculate(&self, parameters: &[F], event: &Event<F>) -> Result<Complex<F>, RustitudeError> {
-        Ok(self.data[event.index] * (F::ONE + self.beam_pol * parameters[0]) / F::FOUR)
+        Ok(self.data[event.index] * (F::one() + self.beam_pol * parameters[0]) / convert!(4, F))
     }
 
     fn precalculate(&mut self, dataset: &Dataset<F>) -> Result<(), RustitudeError> {
@@ -85,37 +85,44 @@ impl<F: Field> Node<F> for ThreePiPolFrac<F> {
                     self.decay_isobar.primary_p4(event).m(),
                     self.decay_isobar.secondary_p4(event).m(),
                 );
-                let neg_res_hel_prod =
-                    Complex::new(F::fcos(F::TWO * alpha), F::fsin(F::TWO * alpha))
-                        * self.beam_pol
-                        * self.p_resonance
-                        * (F::convert_u32((self.j_resonance % 2) * 2) / F::TWO);
-                let mut res = F::ZERO.c();
+                let neg_res_hel_prod = Complex::new(
+                    F::cos(convert!(2, F) * alpha),
+                    F::sin(convert!(2, F) * alpha),
+                ) * self.beam_pol
+                    * self.p_resonance
+                    * convert!(self.j_resonance % 2, F);
+                let mut res = Complex::default();
                 for m_res in -(self.l_resonance as isize)..(self.l_resonance as isize) {
-                    let mut term = F::ZERO.c();
+                    let mut term = Complex::default();
                     for m_iso in -(self.j_isobar as isize)..(self.j_isobar as isize) {
                         let ylm = ComplexSH::Spherical.eval(
                             self.j_isobar as i64,
                             m_iso as i64,
                             &p1_iso_coords,
                         );
-                        let cg_neg = F::f(wigners::clebsch_gordan(
-                            self.j_isobar,
-                            self.l_resonance as i32,
-                            m_iso as u32,
-                            m_res as i32,
-                            self.j_resonance,
-                            -1,
-                        ));
-                        let cg_pos = F::f(wigners::clebsch_gordan(
-                            self.j_isobar,
-                            self.l_resonance as i32,
-                            m_iso as u32,
-                            m_res as i32,
-                            self.j_resonance,
-                            1,
-                        ));
-                        term += ylm * (neg_res_hel_prod * cg_neg + cg_pos);
+                        let cg_neg = convert!(
+                            wigners::clebsch_gordan(
+                                self.j_isobar,
+                                self.l_resonance as i32,
+                                m_iso as u32,
+                                m_res as i32,
+                                self.j_resonance,
+                                -1,
+                            ),
+                            F
+                        );
+                        let cg_pos = convert!(
+                            wigners::clebsch_gordan(
+                                self.j_isobar,
+                                self.l_resonance as i32,
+                                m_iso as u32,
+                                m_res as i32,
+                                self.j_resonance,
+                                1,
+                            ),
+                            F
+                        );
+                        term += ylm * neg_res_hel_prod * cg_neg + cg_pos;
                     }
                     let ylm = ComplexSH::Spherical.eval(
                         self.l_resonance as i64,
@@ -125,7 +132,7 @@ impl<F: Field> Node<F> for ThreePiPolFrac<F> {
                     term *= ylm;
                     res += term;
                 }
-                res *= F::f(
+                res *= convert!(
                     wigners::clebsch_gordan(
                         1,
                         1,
@@ -141,8 +148,9 @@ impl<F: Field> Node<F> for ThreePiPolFrac<F> {
                         self.i_resonance as u32,
                         (self.iz_daughters[0] + self.iz_daughters[1] + self.iz_daughters[2]) as i32,
                     ),
-                ) * k.fpowi(self.l_resonance as i32)
-                    * q.fpowi(self.j_isobar as i32);
+                    F
+                ) * k.powi(self.l_resonance as i32)
+                    * q.powi(self.j_isobar as i32);
                 res
             })
             .collect();
