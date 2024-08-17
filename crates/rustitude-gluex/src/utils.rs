@@ -1,32 +1,30 @@
 use std::{fmt::Display, num::ParseIntError, str::FromStr};
 
 use factorial::Factorial;
-use rustitude_core::prelude::*;
+use rustitude_core::{convert, prelude::*};
 use sphrs::Coordinates;
 use thiserror::Error;
 
 pub fn breakup_momentum<F: Field>(m0: F, m1: F, m2: F) -> F {
-    F::fsqrt(F::fabs(
-        m0.fpowi(4) + m1.fpowi(4) + m2.fpowi(4)
-            - F::TWO
-                * (m0.fpowi(2) * m1.fpowi(2)
-                    + m0.fpowi(2) * m2.fpowi(2)
-                    + m1.fpowi(2) * m2.fpowi(2)),
-    )) / (F::TWO * m0)
+    F::sqrt(F::abs(
+        m0.powi(4) + m1.powi(4) + m2.powi(4)
+            - convert!(2, F)
+                * (m0.powi(2) * m1.powi(2) + m0.powi(2) * m2.powi(2) + m1.powi(2) * m2.powi(2)),
+    )) / (convert!(2, F) * m0)
 }
 
 /// Computes the ([`Complex<F>`]) breakup momentum of a particle with mass `m0` decaying into two particles
 /// with masses `m1` and `m2`.
 pub fn breakup_momentum_c<F: Field>(m0: F, m1: F, m2: F) -> Complex<F> {
-    rho(m0.fpowi(2), m1, m2) * m0 / F::TWO
+    rho(m0.powi(2), m1, m2) * m0 / convert!(2, F)
 }
 
 pub fn chi_plus<F: Field>(s: F, m1: F, m2: F) -> Complex<F> {
-    (F::ONE - ((m1 + m2) * (m1 + m2)) / s).c()
+    Complex::from(F::one() - ((m1 + m2) * (m1 + m2)) / s)
 }
 
 pub fn chi_minus<F: Field>(s: F, m1: F, m2: F) -> Complex<F> {
-    (F::ONE - ((m1 - m2) * (m1 - m2)) / s).c()
+    Complex::from(F::one() - ((m1 - m2) * (m1 - m2)) / s)
 }
 
 pub fn rho<F: Field>(s: F, m1: F, m2: F) -> Complex<F> {
@@ -35,18 +33,22 @@ pub fn rho<F: Field>(s: F, m1: F, m2: F) -> Complex<F> {
 
 pub fn blatt_weisskopf<F: Field>(m0: F, m1: F, m2: F, l: usize) -> F {
     let q = breakup_momentum(m0, m1, m2);
-    let z = q.fpowi(2) / F::f(0.1973).fpowi(2);
+    let z = q.powi(2) / convert!(0.1973, F).powi(2);
     match l {
-        0 => F::ONE,
-        1 => F::fsqrt((F::TWO * z) / (z + F::ONE)),
-        2 => F::fsqrt((F::f(13.0) * z.fpowi(2)) / ((z - F::THREE).fpowi(2) + F::NINE * z)),
-        3 => F::fsqrt(
-            (F::f(277.0) * z.fpowi(3))
-                / (z * (z - F::f(15.0)).fpowi(2) + F::NINE * (F::TWO * z - F::FIVE).fpowi(2)),
+        0 => F::one(),
+        1 => F::sqrt((convert!(2, F) * z) / (z + F::one())),
+        2 => F::sqrt(
+            (convert!(13.0, F) * z.powi(2)) / ((z - convert!(3, F)).powi(2) + convert!(9, F) * z),
         ),
-        4 => F::fsqrt(
-            (F::f(12746.0) * z.fpowi(4)) / (z.fpowi(2) - F::f(45.0) * z + F::f(105.0)).fpowi(2)
-                + F::f(25.0) * z * (F::TWO * z - F::f(21.0)).fpowi(2),
+        3 => F::sqrt(
+            (convert!(277.0, F) * z.powi(3))
+                / (z * (z - convert!(15.0, F)).powi(2)
+                    + convert!(9, F) * (convert!(2, F) * z - convert!(5, F)).powi(2)),
+        ),
+        4 => F::sqrt(
+            (convert!(12746.0, F) * z.powi(4))
+                / (z.powi(2) - convert!(45.0, F) * z + convert!(105.0, F)).powi(2)
+                + convert!(25.0, F) * z * (convert!(2, F) * z - convert!(21.0, F)).powi(2),
         ),
         l => panic!("L = {l} is not yet implemented"),
     }
@@ -59,19 +61,23 @@ pub fn blatt_weisskopf<F: Field>(m0: F, m1: F, m2: F, l: usize) -> F {
 /// `m2`, the absolute value of this function can be safely assumed to be equal to its value.
 pub fn blatt_weisskopf_c<F: Field>(m0: F, m1: F, m2: F, l: usize) -> Complex<F> {
     let q = breakup_momentum_c(m0, m1, m2);
-    let z = q.powi(2) / F::f(0.1973).fpowi(2);
+    let z = q.powi(2) / convert!(0.1973, F).powi(2);
     match l {
-        0 => F::ONE.c(),
-        1 => Complex::sqrt((F::TWO.c() * z) / (z + F::ONE)),
-        2 => Complex::sqrt((z.powi(2) * F::f(13.0)) / ((z - F::THREE).powi(2) + z * F::NINE)),
+        0 => Complex::from(F::one()),
+        1 => Complex::sqrt((Complex::from(convert!(2, F)) * z) / (z + F::one())),
+        2 => Complex::sqrt(
+            (z.powi(2) * convert!(13.0, F)) / ((z - convert!(3, F)).powi(2) + z * convert!(9, F)),
+        ),
         3 => Complex::sqrt(
-            (z.powi(3) * F::f(277.0))
-                / (z * (z - F::f(15.0)).powi(2) + (z * F::TWO - F::FIVE).powi(2))
-                * F::NINE,
+            (z.powi(3) * convert!(277.0, F))
+                / (z * (z - convert!(15.0, F)).powi(2)
+                    + (z * convert!(2, F) - convert!(5, F)).powi(2))
+                * convert!(9, F),
         ),
         4 => Complex::sqrt(
-            (z.powi(4) * F::f(12746.0)) / (z.powi(2) - z * F::f(45.0) + F::f(105.0)).powi(2)
-                + z * F::f(25.0) * (z * F::TWO - F::f(21.0)).powi(2),
+            (z.powi(4) * convert!(12746.0, F))
+                / (z.powi(2) - z * convert!(45.0, F) + convert!(105.0, F)).powi(2)
+                + z * convert!(25.0, F) * (z * convert!(2, F) - convert!(21.0, F)).powi(2),
         ),
         l => panic!("L = {l} is not yet implemented"),
     }
@@ -82,22 +88,24 @@ pub fn small_wigner_d_matrix<F: Field>(beta: F, j: usize, m: isize, n: isize) ->
     let jmm = (j as i32 - m as i32) as u32;
     let jpn = (j as i32 + n as i32) as u32;
     let jmn = (j as i32 - n as i32) as u32;
-    let prefactor = F::fsqrt(F::convert_u32(
+    let prefactor = F::sqrt(convert!(
         jpm.factorial() * jmm.factorial() * jpn.factorial() * jmn.factorial(),
+        F
     ));
     let s_min = isize::max(0, n - m) as usize;
     let s_max = isize::min(jpn as isize, jmm as isize) as usize;
     let sum: F = (s_min..=s_max)
         .map(|s| {
-            (F::fpowi(-F::ONE, m as i32 - n as i32 + s as i32)
-                * (F::fcos(beta / F::TWO)
-                    .fpowi(2 * (j as i32) + n as i32 - m as i32 - 2 * (s as i32)))
-                * (F::fsin(beta / F::TWO).fpowi(m as i32 - n as i32 + 2 * s as i32)))
-                / F::convert_u32(
+            (F::powi(-F::one(), m as i32 - n as i32 + s as i32)
+                * (F::cos(beta / convert!(2, F))
+                    .powi(2 * (j as i32) + n as i32 - m as i32 - 2 * (s as i32)))
+                * (F::sin(beta / convert!(2, F)).powi(m as i32 - n as i32 + 2 * s as i32)))
+                / convert!(
                     (jpm - s as u32).factorial()
                         * (s as u32).factorial()
                         * ((m - n + s as isize) as u32).factorial()
                         * (jmm - s as u32).factorial(),
+                    F
                 )
         })
         .sum();
@@ -112,9 +120,9 @@ pub fn wigner_d_matrix<F: Field>(
     m: isize,
     n: isize,
 ) -> Complex<F> {
-    Complex::cis(-(F::convert_isize(m)) * alpha)
+    Complex::cis(convert!(-m, F) * alpha)
         * small_wigner_d_matrix(beta, j, m, n)
-        * Complex::cis(-(F::convert_isize(n)) * gamma)
+        * Complex::cis(convert!(-n, F) * gamma)
 }
 
 #[derive(Clone, Copy, Default, PartialEq)]
@@ -223,7 +231,7 @@ impl FromStr for Frame {
     }
 }
 
-pub fn coordinates<F: Field>(
+pub fn coordinates<F: Field + 'static>(
     x: &Vector3<F>,
     y: &Vector3<F>,
     z: &Vector3<F>,
@@ -245,18 +253,14 @@ impl Frame {
         let other_res_vec = other_p4.boost_along(&resonance_p4).momentum();
         let (x, y, z) = match self {
             Frame::Helicity => {
-                let z = -recoil_res_vec.normalize();
-                let y = beam_res_vec.cross(&z).normalize();
+                let z = -recoil_res_vec.unit();
+                let y = beam_res_vec.cross(&z).unit();
                 let x = y.cross(&z);
                 (x, y, z)
             }
             Frame::GottfriedJackson => {
-                let z = beam_res_vec.normalize();
-                let y = event
-                    .beam_p4
-                    .momentum()
-                    .cross(&(-recoil_res_vec))
-                    .normalize();
+                let z = beam_res_vec.unit();
+                let y = event.beam_p4.momentum().cross(&(-recoil_res_vec)).unit();
                 let x = y.cross(&z);
                 (x, y, z)
             }
@@ -274,18 +278,14 @@ impl Frame {
         let recoil_res_vec = event.recoil_p4.boost_along(&resonance_p4).momentum();
         let (x, y, z) = match self {
             Frame::Helicity => {
-                let z = -recoil_res_vec.normalize();
-                let y = beam_res_vec.cross(&z).normalize();
+                let z = -recoil_res_vec.unit();
+                let y = beam_res_vec.cross(&z).unit();
                 let x = y.cross(&z);
                 (x, y, z)
             }
             Frame::GottfriedJackson => {
-                let z = beam_res_vec.normalize();
-                let y = event
-                    .beam_p4
-                    .momentum()
-                    .cross(&(-recoil_res_vec))
-                    .normalize();
+                let z = beam_res_vec.unit();
+                let y = event.beam_p4.momentum().cross(&(-recoil_res_vec)).unit();
                 let x = y.cross(&z);
                 (x, y, z)
             }
