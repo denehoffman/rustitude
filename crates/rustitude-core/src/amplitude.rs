@@ -130,7 +130,7 @@ impl<F: Field> Display for Parameter<F> {
 /// A trait which contains all the required methods for a functioning [`Amplitude`].
 ///
 /// The [`Node`] trait represents any mathematical structure which takes in some parameters and some
-/// [`Event`] data and computes a [`ComplexField`] for each [`Event`]. This is the fundamental
+/// [`Event`] data and computes a [`Complex`] for each [`Event`]. This is the fundamental
 /// building block of all analyses built with Rustitude. Nodes are intended to be optimized at the
 /// user level, so they should be implemented on structs which can store some precalculated data.
 ///
@@ -260,7 +260,7 @@ pub trait Node<F: Field>: Sync + Send + DynClone {
         Ok(())
     }
 
-    /// A method which runs every time the amplitude is evaluated and produces a [`ComplexField`].
+    /// A method which runs every time the amplitude is evaluated and produces a [`Complex`].
     ///
     /// Because this method is run on every evaluation, it should be as lean as possible.
     /// Additionally, you should avoid [`rayon`]'s parallel loops inside this method since we
@@ -405,7 +405,7 @@ pub trait AsTree {
 pub struct Amplitude<F: Field> {
     /// A name which uniquely identifies an [`Amplitude`] within a sum and group.
     pub name: String,
-    /// A [`Node`] which contains all of the operations needed to compute a [`ComplexField`] from an
+    /// A [`Node`] which contains all of the operations needed to compute a [`Complex`] from an
     /// [`Event`] in a [`Dataset`], a [`Vec<Field>`] of parameter values, and possibly some
     /// precomputed values.
     pub node: Box<dyn Node<F>>,

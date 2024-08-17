@@ -34,42 +34,19 @@
 //! [`Dataset::from_parquet`] or [`Dataset::from_root`].
 //!
 //! There are also several methods used to split up [`Dataset`]s based on their component
-//! values. The [`Dataset::select`] method takes mutable access to a dataset along with a query
-//! function which takes an [`Event`] and returns a [`bool`]. For each event, if the query
-//! returns `true`, the event is removed from the original dataset and added to a new dataset
-//! which is then returned by the `select` function. The [`Dataset::reject`] method does the
-//! opposite. For example,
+//! values. The [`Dataset::get_selected_indices`] method returns a `Vec<usize>` of event indices
+//! corresponding to events for which some input query returns `True`.
 //!
-//! ```ignore
-//! let ds_original = Dataset::from_root("path.root", ReadMethod::Standard).unwrap();
-//! let ds_a = ds_original.clone();
-//! let ds_b = ds_original.clone();
-//! let mass_gt_1_gev = |e: &Event| -> bool {
-//!     (e.daughter_p4s[0] + e.daughter_p4s[1]).m() > 1.0
-//! };
-//! let ds_a_selected = ds_a.select(mass_gt_1_gev);
-//! let ds_b_rejected = ds_b.reject(mass_gt_1_gev);
-//! ```
+//! Often, we want to use a query to divide data into many bins, so there is a method
+//! [`Dataset::get_binned_indices`] which will bin data by a query which takes an [`Event`] and
+//! returns an [`Field`] value (rather than a [`bool`]).
 //!
-//! After this, `ds_a` and `ds_b_rejected` will contain events where the four-momentum of the
-//! first two daughter particles combined has a mass *less than* $`1.0`$ ``GeV``. On the other hand,
-//! `ds_a_selected` and `ds_b` will have events where the opposite is true and the mass is
-//! *greater than* $`1.0`$ ``GeV``. The reason for this logic is two-fold. First, we might be
-//! dealing with large datasets, so we don't want to create copies of events if it can be
-//! avoided. If copies are needed, they should be made explicitly with [`Dataset::clone`].
-//! Otherwise, we just extract the events from the dataset. The other reason is that the syntax
-//! reads in a "correct" way. We expect `let selected = data.select(condition);` to put the
-//! selected data into the `selected` dataset. We can then choose if we want to hold on to the
-//! rejected data.
-//!
-//! Since it is a common operation, there is also a method [`Dataset::split`] which will bin data
-//! by a query which takes an [`Event`] and returns an [`Field`] value (rather than a [`bool`]).
 //! This method also takes a `range: (Field, Field)` and a number of bins `nbins: usize`, and it
-//! returns a `(Vec<Dataset>, Dataset, Dataset)`. These fields correspond to the binned datasets,
-//! the underflow bin, and the overflow bin respectively, so no data should ever be "lost" by this
-//! operation. There is also a convenience method, [`Dataset::split_m`], to split the dataset by
-//! the mass of the summed four-momentum of any of the daughter particles, specified by their
-//! index.
+//! returns a `(Vec<Vec<usize>>, Vec<usize>, Vec<usize>)`. These fields correspond to the binned
+//! datasets, the underflow bin, and the overflow bin respectively, so no data should ever be
+//! "lost" by this operation. There is also a convenience method, [`Dataset::split_m`], to split
+//! the dataset by the mass of the summed four-momentum of any of the daughter particles,
+//! specified by their index.
 use std::ops::Add;
 use std::{fmt::Display, fs::File, iter::repeat_with, path::Path, sync::Arc};
 

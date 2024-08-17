@@ -68,7 +68,8 @@
 //! Because the beam is often directed along the $`z`$-axis, there is an alternative way to store
 //! the `EPS` vector without a new branch (for linear polarization. The $`x`$ and $`y`$ components
 //! of `EPS` can be stored as `Px_Beam` and `Py_Beam` respectively, and the format can be loaded
-//! using [`Dataset::from_parquet_eps_in_beam`](`crate::dataset::Dataset::from_parquet_eps_in_beam`).
+//! using [`Dataset::from_parquet`](`crate::dataset::Dataset::from_parquet`) with the
+//! [`ReadMethod::EPSInBeam`](`crate::dataset::ReadMethod::EPSInBeam`) method.
 //!
 //! # Creating a New Amplitude
 //!
@@ -181,17 +182,12 @@
 //! majority of an analysis in 32-bit mode, switching over to 64-bit mode when we actually get near
 //! a solution and want the increased accuracy!
 //!
-//! The [`Field`] trait contains a few helper constants and functions to make this easier for those
-//! who aren't as familiar with rust. Constants are provided for whole numbers between zero and ten
-//! (inclusively), and the [`Field`] trait also contains a few mathematical constants like
+//! The [`Field`] trait contains a few mathematical constants like
 //! [`Field::PI()`][`num::traits::FloatConst::PI()`] and
-//! [`Field::SQRT_2()`][`num::traits::FloatConst::SQRT_2()`]. Most mathematical functions are
-//! aliased with a leading "f" to simplify duplicated function definitions in the [`num::Float`]
-//! and [`nalgebra::RealField`] traits. For instance, [`Field::fabs()`] calls
-//! [`num::Float::abs()`], since the alternative would be to use the fully qualified name to
-//! distinguish it from [`nalgebra::ComplexField::abs()`].
+//! [`Field::SQRT_2()`][`num::traits::FloatConst::SQRT_2()`] as well as traits which
+//! implement most standard mathematical functions. See the [`Float`] trait for more details.
 //!
-//! # Combining Amplitudes into Models
+//! //! # Combining Amplitudes into Models
 //! We can use several operations to modify and combine amplitudes. Since amplitudes yield complex
 //! values, the following convenience methods are provided:
 //! [`real`](`amplitude::AmpLike::real`), and [`imag`](`amplitude::AmpLike::imag`) give the real and
