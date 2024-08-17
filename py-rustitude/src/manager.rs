@@ -1011,7 +1011,7 @@ impl NelderMead_64 {
     }
     fn best(&self) -> (Vec<f64>, f64) {
         let (x_best, fx_best) = self.0.best();
-        (x_best.clone(), *fx_best)
+        (x_best.data.as_vec().to_vec(), *fx_best)
     }
 }
 
@@ -1088,7 +1088,7 @@ impl NelderMead_32 {
     }
     fn best(&self) -> (Vec<f32>, f32) {
         let (x_best, fx_best) = self.0.best();
-        (x_best.clone(), *fx_best)
+        (x_best.data.as_vec().to_vec(), *fx_best)
     }
 }
 

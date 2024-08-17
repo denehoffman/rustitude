@@ -5,7 +5,7 @@
 
 use std::fmt::{Debug, Display};
 
-use ganesh::prelude::Function;
+use ganesh::prelude::{DVector, Function};
 use rayon::prelude::*;
 
 use crate::{
@@ -901,7 +901,7 @@ impl<F: Field> ExtendedLogLikelihood<F> {
 }
 
 impl<F: Field + ganesh::core::Field> Function<F, (), RustitudeError> for ExtendedLogLikelihood<F> {
-    fn evaluate(&self, x: &[F], _args: Option<&()>) -> Result<F, RustitudeError> {
-        self.par_evaluate(x)
+    fn evaluate(&self, x: &DVector<F>, _args: Option<&()>) -> Result<F, RustitudeError> {
+        self.par_evaluate(x.as_slice())
     }
 }

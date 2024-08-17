@@ -122,7 +122,7 @@ impl<F: Field> Node<F> for ThreePiPolFrac<F> {
                             ),
                             F
                         );
-                        term += ylm * Complex::from(neg_res_hel_prod * cg_neg + cg_pos);
+                        term += ylm * neg_res_hel_prod * cg_neg + cg_pos;
                     }
                     let ylm = ComplexSH::Spherical.eval(
                         self.l_resonance as i64,
