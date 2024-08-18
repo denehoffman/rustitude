@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.2](https://github.com/denehoffman/rustitude/compare/rustitude-gluex-v0.6.1...rustitude-gluex-v0.6.2) - 2024-08-18
+
+### Added
+- update ganesh dependency
+- update all amplitudes and methods to be compatible with the latest changes in the `Field` trait
+
 ## [0.6.1](https://github.com/denehoffman/rustitude/compare/rustitude-gluex-v0.6.0...rustitude-gluex-v0.6.1) - 2024-08-02
 
 ### Other
