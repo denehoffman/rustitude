@@ -1,6 +1,8 @@
-use ganesh::algorithms::nelder_mead;
-use ganesh::core::Minimizer;
-use pyo3::{exceptions::PyRuntimeError, prelude::*};
+use nalgebra::Storage;
+use pyo3::{
+    exceptions::{PyException, PyRuntimeError},
+    prelude::*,
+};
 use rustitude_core as rust;
 
 use crate::{
@@ -662,6 +664,31 @@ impl ExtendedLogLikelihood_64 {
     fn deactivate_all(&mut self) {
         self.0.deactivate_all()
     }
+    #[pyo3(signature=(indices_data=None, indices_mc=None))]
+    pub fn minimize(
+        &self,
+        indices_data: Option<Vec<usize>>,
+        indices_mc: Option<Vec<usize>>,
+    ) -> PyResult<Status_64> {
+        let mut indices_tuple = match (indices_data, indices_mc) {
+            (None, None) => None,
+            (None, Some(i_mc)) => Some((
+                (0..self.0.data_manager.dataset.len()).collect::<Vec<usize>>(),
+                i_mc,
+            )),
+            (Some(i_data), None) => Some((
+                i_data,
+                (0..self.0.mc_manager.dataset.len()).collect::<Vec<usize>>(),
+            )),
+            (Some(i_data), Some(i_mc)) => Some((i_data, i_mc)),
+        };
+        let algo = ganesh::algorithms::LBFGSB::default();
+        let mut m = ganesh::Minimizer::new(algo, self.0.get_n_free())
+            .with_bounds(Some(self.0.get_bounds()));
+        m.minimize(&self.0, &self.0.get_initial(), &mut indices_tuple)
+            .map_err(PyErr::from)?;
+        Ok(m.status.into())
+    }
 }
 
 #[pyclass]
@@ -936,159 +963,192 @@ impl ExtendedLogLikelihood_32 {
     fn deactivate_all(&mut self) {
         self.0.deactivate_all()
     }
-}
-
-#[pyclass]
-pub struct NelderMead_64(nelder_mead::NelderMead<f64, (), rust::errors::RustitudeError>);
-impl_convert!(NelderMead_64, nelder_mead::NelderMead<f64, (), rust::errors::RustitudeError>);
-
-#[pymethods]
-impl NelderMead_64 {
-    #[new]
-    #[pyo3(signature = (ell, *, simplex_size = 1.0, reflection_coeff = 1.0, expansion_coeff = 2.0, outside_contraction_coeff = 0.5, inside_contraction_coeff = 0.5, shrink_coeff = 0.5, min_simplex_standard_deviation = 1e-8))]
-    #[allow(clippy::too_many_arguments)]
-    fn new(
-        ell: &ExtendedLogLikelihood_64,
-        simplex_size: f64,
-        reflection_coeff: f64,
-        expansion_coeff: f64,
-        outside_contraction_coeff: f64,
-        inside_contraction_coeff: f64,
-        shrink_coeff: f64,
-        min_simplex_standard_deviation: f64,
-    ) -> Self {
-        nelder_mead::NelderMead::new(
-            ell.0.clone(),
-            &ell.0.get_initial(),
-            Some(
-                nelder_mead::NelderMeadOptions::builder()
-                    .simplex_size(simplex_size)
-                    .reflection_coeff(reflection_coeff)
-                    .expansion_coeff(expansion_coeff)
-                    .outside_contraction_coeff(outside_contraction_coeff)
-                    .inside_contraction_coeff(inside_contraction_coeff)
-                    .shrink_coeff(shrink_coeff)
-                    .min_simplex_standard_deviation(min_simplex_standard_deviation)
-                    .build(),
-            ),
-        )
-        .into()
-    }
-    #[staticmethod]
-    #[pyo3(signature = (ell, *, simplex_size = 1.0, min_simplex_standard_deviation = 1e-8))]
-    fn adaptive(
-        ell: &ExtendedLogLikelihood_64,
-        simplex_size: f64,
-        min_simplex_standard_deviation: f64,
-    ) -> Self {
-        nelder_mead::NelderMead::new(
-            ell.0.clone(),
-            &ell.0.get_initial(),
-            Some(
-                nelder_mead::NelderMeadOptions::adaptive(ell.0.get_n_free())
-                    .simplex_size(simplex_size)
-                    .min_simplex_standard_deviation(min_simplex_standard_deviation)
-                    .build(),
-            ),
-        )
-        .into()
-    }
-    fn initialize(&mut self) -> PyResult<()> {
-        self.0.initialize(None).map_err(PyErr::from)
-    }
-    fn step(&mut self) -> PyResult<()> {
-        self.0.step(None).map_err(PyErr::from)?;
-        self.0.update_best();
-        // this is added to allow for Python users to step through the algorithm
-        // without having to manually call `update_best` every step
-        Ok(())
-    }
-    fn check_for_termination(&self) -> bool {
-        self.0.check_for_termination()
-    }
-    fn minimize(&mut self, steps: usize) -> PyResult<()> {
-        self.0.minimize(None, steps, |_| {}).map_err(PyErr::from)
-    }
-    fn best(&self) -> (Vec<f64>, f64) {
-        let (x_best, fx_best) = self.0.best();
-        (x_best.data.as_vec().to_vec(), *fx_best)
+    #[pyo3(signature=(method=None, indices_data=None, indices_mc=None))]
+    pub fn minimize(
+        &self,
+        method: Option<String>,
+        indices_data: Option<Vec<usize>>,
+        indices_mc: Option<Vec<usize>>,
+    ) -> PyResult<Status_32> {
+        let mut indices_tuple = match (indices_data, indices_mc) {
+            (None, None) => None,
+            (None, Some(i_mc)) => Some((
+                (0..self.0.data_manager.dataset.len()).collect::<Vec<usize>>(),
+                i_mc,
+            )),
+            (Some(i_data), None) => Some((
+                i_data,
+                (0..self.0.mc_manager.dataset.len()).collect::<Vec<usize>>(),
+            )),
+            (Some(i_data), Some(i_mc)) => Some((i_data, i_mc)),
+        };
+        if let Some(method) = method {
+            match method.as_str() {
+                "L-BFGS-B" => {
+                    let algo = ganesh::algorithms::LBFGSB::default();
+                    let mut m = ganesh::Minimizer::new(algo, self.0.get_n_free())
+                        .with_bounds(Some(self.0.get_bounds()));
+                    m.minimize(&self.0, &self.0.get_initial(), &mut indices_tuple)
+                        .map_err(PyErr::from)?;
+                    Ok(m.status.into())
+                }
+                "Nelder-Mead" => {
+                    let algo = ganesh::algorithms::NelderMead::default();
+                    let mut m = ganesh::Minimizer::new(algo, self.0.get_n_free())
+                        .with_bounds(Some(self.0.get_bounds()));
+                    m.minimize(&self.0, &self.0.get_initial(), &mut indices_tuple)
+                        .map_err(PyErr::from)?;
+                    Ok(m.status.into())
+                }
+                "Adaptive Nelder-Mead" => {
+                    let algo = ganesh::algorithms::NelderMead::default()
+                        .with_adaptive(self.0.get_n_free());
+                    let mut m = ganesh::Minimizer::new(algo, self.0.get_n_free())
+                        .with_bounds(Some(self.0.get_bounds()));
+                    m.minimize(&self.0, &self.0.get_initial(), &mut indices_tuple)
+                        .map_err(PyErr::from)?;
+                    Ok(m.status.into())
+                }
+                _ => Err(PyException::new_err(format!("Unknown method: {}", method))),
+            }
+        } else {
+            let algo = ganesh::algorithms::LBFGSB::default();
+            let mut m = ganesh::Minimizer::new(algo, self.0.get_n_free())
+                .with_bounds(Some(self.0.get_bounds()));
+            m.minimize(&self.0, &self.0.get_initial(), &mut indices_tuple)
+                .map_err(PyErr::from)?;
+            Ok(m.status.into())
+        }
     }
 }
 
 #[pyclass]
-pub struct NelderMead_32(nelder_mead::NelderMead<f32, (), rust::errors::RustitudeError>);
-impl_convert!(NelderMead_32, nelder_mead::NelderMead<f32, (), rust::errors::RustitudeError>);
+pub struct Status_64(ganesh::Status<f64>);
+impl_convert!(Status_64, ganesh::Status<f64>);
 
 #[pymethods]
-impl NelderMead_32 {
-    #[new]
-    #[pyo3(signature = (ell, *, simplex_size = 1.0, reflection_coeff = 1.0, expansion_coeff = 2.0, outside_contraction_coeff = 0.5, inside_contraction_coeff = 0.5, shrink_coeff = 0.5, min_simplex_standard_deviation = 1e-8))]
-    #[allow(clippy::too_many_arguments)]
-    fn new(
-        ell: &ExtendedLogLikelihood_32,
-        simplex_size: f32,
-        reflection_coeff: f32,
-        expansion_coeff: f32,
-        outside_contraction_coeff: f32,
-        inside_contraction_coeff: f32,
-        shrink_coeff: f32,
-        min_simplex_standard_deviation: f32,
-    ) -> Self {
-        nelder_mead::NelderMead::new(
-            ell.0.clone(),
-            &ell.0.get_initial(),
-            Some(
-                nelder_mead::NelderMeadOptions::builder()
-                    .simplex_size(simplex_size)
-                    .reflection_coeff(reflection_coeff)
-                    .expansion_coeff(expansion_coeff)
-                    .outside_contraction_coeff(outside_contraction_coeff)
-                    .inside_contraction_coeff(inside_contraction_coeff)
-                    .shrink_coeff(shrink_coeff)
-                    .min_simplex_standard_deviation(min_simplex_standard_deviation)
-                    .build(),
-            ),
+impl Status_64 {
+    fn __str__(&self) -> String {
+        format!("{}", self.0)
+    }
+    fn __repr__(&self) -> String {
+        format!(
+            "<{}>",
+            if self.0.converged {
+                "Status: Converged"
+            } else {
+                "Status"
+            }
         )
-        .into()
     }
-    #[staticmethod]
-    #[pyo3(signature = (ell, *, simplex_size = 1.0, min_simplex_standard_deviation = 1e-8))]
-    fn adaptive(
-        ell: &ExtendedLogLikelihood_32,
-        simplex_size: f32,
-        min_simplex_standard_deviation: f32,
-    ) -> Self {
-        nelder_mead::NelderMead::new(
-            ell.0.clone(),
-            &ell.0.get_initial(),
-            Some(
-                nelder_mead::NelderMeadOptions::adaptive(ell.0.get_n_free())
-                    .simplex_size(simplex_size)
-                    .min_simplex_standard_deviation(min_simplex_standard_deviation)
-                    .build(),
-            ),
+    #[getter]
+    fn x(&self) -> Vec<f64> {
+        self.0.x.data.as_vec().to_vec()
+    }
+    #[getter]
+    fn fx(&self) -> f64 {
+        self.0.fx
+    }
+    #[getter]
+    fn message(&self) -> String {
+        self.0.message.clone()
+    }
+    #[getter]
+    fn converged(&self) -> bool {
+        self.0.converged
+    }
+    #[getter]
+    fn err(&self) -> Option<Vec<f64>> {
+        self.0.err.clone().map(|e| e.data.as_vec().to_vec())
+    }
+    #[getter]
+    fn n_f_evals(&self) -> usize {
+        self.0.n_f_evals
+    }
+    #[getter]
+    fn n_g_evals(&self) -> usize {
+        self.0.n_g_evals
+    }
+    #[getter]
+    fn cov(&self) -> Option<Vec<Vec<f64>>> {
+        self.0.cov.clone().map(|c| {
+            c.row_iter()
+                .map(|row| row.data.into_owned().as_vec().to_vec())
+                .collect()
+        })
+    }
+    #[getter]
+    fn hess(&self) -> Option<Vec<Vec<f64>>> {
+        self.0.hess.clone().map(|c| {
+            c.row_iter()
+                .map(|row| row.data.into_owned().as_vec().to_vec())
+                .collect()
+        })
+    }
+}
+
+#[pyclass]
+pub struct Status_32(ganesh::Status<f32>);
+impl_convert!(Status_32, ganesh::Status<f32>);
+
+#[pymethods]
+impl Status_32 {
+    fn __str__(&self) -> String {
+        format!("{}", self.0)
+    }
+    fn __repr__(&self) -> String {
+        format!(
+            "<{}>",
+            if self.0.converged {
+                "Status: Converged"
+            } else {
+                "Status"
+            }
         )
-        .into()
     }
-    fn initialize(&mut self) -> PyResult<()> {
-        self.0.initialize(None).map_err(PyErr::from)
+    #[getter]
+    fn x(&self) -> Vec<f32> {
+        self.0.x.data.as_vec().to_vec()
     }
-    fn step(&mut self) -> PyResult<()> {
-        self.0.step(None).map_err(PyErr::from)?;
-        self.0.update_best();
-        // this is added to allow for Python users to step through the algorithm
-        // without having to manually call `update_best` every step
-        Ok(())
+    #[getter]
+    fn fx(&self) -> f32 {
+        self.0.fx
     }
-    fn check_for_termination(&self) -> bool {
-        self.0.check_for_termination()
+    #[getter]
+    fn message(&self) -> String {
+        self.0.message.clone()
     }
-    fn minimize(&mut self, steps: usize) -> PyResult<()> {
-        self.0.minimize(None, steps, |_| {}).map_err(PyErr::from)
+    #[getter]
+    fn converged(&self) -> bool {
+        self.0.converged
     }
-    fn best(&self) -> (Vec<f32>, f32) {
-        let (x_best, fx_best) = self.0.best();
-        (x_best.data.as_vec().to_vec(), *fx_best)
+    #[getter]
+    fn err(&self) -> Option<Vec<f32>> {
+        self.0.err.clone().map(|e| e.data.as_vec().to_vec())
+    }
+    #[getter]
+    fn n_f_evals(&self) -> usize {
+        self.0.n_f_evals
+    }
+    #[getter]
+    fn n_g_evals(&self) -> usize {
+        self.0.n_g_evals
+    }
+    #[getter]
+    fn cov(&self) -> Option<Vec<Vec<f32>>> {
+        self.0.cov.clone().map(|c| {
+            c.row_iter()
+                .map(|row| row.data.into_owned().as_vec().to_vec())
+                .collect()
+        })
+    }
+    #[getter]
+    fn hess(&self) -> Option<Vec<Vec<f32>>> {
+        self.0.hess.clone().map(|c| {
+            c.row_iter()
+                .map(|row| row.data.into_owned().as_vec().to_vec())
+                .collect()
+        })
     }
 }
 
@@ -1097,7 +1157,7 @@ pub fn pyo3_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Manager_32>()?;
     m.add_class::<ExtendedLogLikelihood_64>()?;
     m.add_class::<ExtendedLogLikelihood_32>()?;
-    m.add_class::<NelderMead_64>()?;
-    m.add_class::<NelderMead_32>()?;
+    m.add_class::<Status_64>()?;
+    m.add_class::<Status_32>()?;
     Ok(())
 }

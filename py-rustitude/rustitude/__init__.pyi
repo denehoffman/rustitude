@@ -501,6 +501,12 @@ class ExtendedLogLikelihood_64:
     def isolate(self, amplitudes: list[str]) -> None: ...
     def deactivate(self, amplitude: str) -> None: ...
     def deactivate_all(self) -> None: ...
+    def minimize(
+        self,
+        *,
+        indices_data: list[int] | None = None,
+        indices_mc: list[int] | None = None,
+    ) -> Status_64: ...
 
 class ExtendedLogLikelihood_32:
     data_manager: Manager_32
@@ -550,56 +556,38 @@ class ExtendedLogLikelihood_32:
     def isolate(self, amplitudes: list[str]) -> None: ...
     def deactivate(self, amplitude: str) -> None: ...
     def deactivate_all(self) -> None: ...
+    def minimize(
+        self,
+        *,
+        indices_data: list[int] | None = None,
+        indices_mc: list[int] | None = None,
+    ) -> Status_32: ...
 
 ExtendedLogLikelihood = ExtendedLogLikelihood_64
 
-class NelderMead_64:
-    def __init__(
-        self,
-        ell: ExtendedLogLikelihood_64,
-        *,
-        simplex_size: float = 1.0,
-        reflection_coeff: float = 1.0,
-        expansion_coeff: float = 2.0,
-        outside_contraction_coeff: float = 0.5,
-        inside_contraction_coeff: float = 0.5,
-        shrink_coeff: float = 0.5,
-        min_simplex_standard_deviation: float = 1e-8,
-    ) -> None: ...
-    @staticmethod
-    def adaptive(
-        ell, *, simplex_size=1.0, min_simplex_standard_deviation=1e-8
-    ) -> NelderMead_64: ...
-    def initialize(self) -> None: ...
-    def step(self) -> None: ...
-    def check_for_termination(self) -> bool: ...
-    def minimize(self, steps: int) -> None: ...
-    def best(self) -> tuple[list[float], float]: ...
+class Status_64:
+    x: list[float]
+    fx: float
+    message: str
+    converged: bool
+    err: list[float] | None
+    n_f_evals: int
+    n_g_evals: int
+    cov: list[list[float]] | None
+    hess: list[list[float]] | None
 
-class NelderMead_32:
-    def __init__(
-        self,
-        ell: ExtendedLogLikelihood_32,
-        *,
-        simplex_size: float = 1.0,
-        reflection_coeff: float = 1.0,
-        expansion_coeff: float = 2.0,
-        outside_contraction_coeff: float = 0.5,
-        inside_contraction_coeff: float = 0.5,
-        shrink_coeff: float = 0.5,
-        min_simplex_standard_deviation: float = 1e-8,
-    ) -> None: ...
-    @staticmethod
-    def adaptive(
-        ell, *, simplex_size=1.0, min_simplex_standard_deviation=1e-8
-    ) -> NelderMead_32: ...
-    def initialize(self) -> None: ...
-    def step(self) -> None: ...
-    def check_for_termination(self) -> bool: ...
-    def minimize(self, steps: int) -> None: ...
-    def best(self) -> tuple[list[float], float]: ...
+class Status_32:
+    x: list[float]
+    fx: float
+    message: str
+    converged: bool
+    err: list[float] | None
+    n_f_evals: int
+    n_g_evals: int
+    cov: list[list[float]] | None
+    hess: list[list[float]] | None
 
-NelderMead = NelderMead_64
+Status = Status_64
 
 @overload
 def open(
@@ -629,21 +617,21 @@ def open(
 ) -> Dataset_64 | Dataset_32: ...  # noqa: A001
 
 ScipyOptMethods = Literal[
-    'py-Nelder-Mead',
-    'py-Powell',
-    'py-CG',
-    'py-BFGS',
-    'py-Newton-CG',
-    'py-L-BFGS-B',
-    'py-TNC',
-    'py-COBYLA',
-    'py-COBYQA',
-    'py-SLSQP',
-    'py-trust-constr',
-    'py-dogleg',
-    'py-trust-ncg',
-    'py-trust-exact',
-    'py-trust-krylov',
+    'Nelder-Mead',
+    'Powell',
+    'CG',
+    'BFGS',
+    'Newton-CG',
+    'L-BFGS-B',
+    'TNC',
+    'COBYLA',
+    'COBYQA',
+    'SLSQP',
+    'trust-constr',
+    'dogleg',
+    'trust-ncg',
+    'trust-exact',
+    'trust-krylov',
 ]
 
 class ScipyCallable(Protocol):
@@ -653,9 +641,6 @@ class ScipyMinCallable(Protocol):
     def __call__(
         self, fun: ScipyCallable, x0: ArrayLike, args: tuple[Any], **kwargs_and_options: Any
     ) -> OptimizeResult: ...
-
-RustMethods = Literal['Nelder-Mead', 'Adaptive Nelder-Mead']
-RustMinimizer = NelderMead_64 | NelderMead_32
 
 @overload
 def minimizer(
@@ -675,20 +660,3 @@ def minimizer(
     indices_mc: list[int] | None = None,
     minimizer_kwargs: dict[str, Any] | None = None,
 ) -> Callable[[], OptimizeResult]: ...
-@overload
-def minimizer(
-    ell: ExtendedLogLikelihood_64 | ExtendedLogLikelihood_32,
-    method: RustMethods,
-    *args: Any,
-    indices_data: list[int] | None = None,
-    indices_mc: list[int] | None = None,
-    minimizer_kwargs: dict[str, Any] | None = None,
-) -> RustMinimizer: ...
-def minimizer(
-    ell: ExtendedLogLikelihood_64 | ExtendedLogLikelihood_32,
-    method: RustMethods | Literal['Minuit'] | ScipyOptMethods | ScipyMinCallable | None = None,
-    *args: Any,
-    indices_data: list[int] | None = None,
-    indices_mc: list[int] | None = None,
-    minimizer_kwargs: dict[str, Any] | None = None,
-) -> Minuit | Callable[[], OptimizeResult] | RustMinimizer: ...

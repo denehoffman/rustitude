@@ -11,7 +11,7 @@ from scipy.optimize import OptimizeResult
 import scipy.optimize as opt
 from uproot.behaviors.TBranch import HasBranches
 
-from ._rustitude import (
+from ._rustitude import (  # type:ignore
     amplitude,
     dataset,
     four_momentum,
@@ -19,7 +19,7 @@ from ._rustitude import (
     manager,
     __version__,
 )
-from .amplitude import (
+from .amplitude import (  # type:ignore
     Scalar_64,
     Scalar_32,
     CScalar_64,
@@ -47,14 +47,14 @@ from .amplitude import (
     Node_64,
     Node_32,
 )
-from .dataset import Event_64, Event_32, Dataset_64, Dataset_32
-from .manager import (
+from .dataset import Event_64, Event_32, Dataset_64, Dataset_32  # type:ignore
+from .manager import (  # type:ignore
     ExtendedLogLikelihood_64,
     ExtendedLogLikelihood_32,
     Manager_64,
     Manager_32,
-    NelderMead_64,
-    NelderMead_32,
+    Status_64,
+    Status_32,
 )
 
 from abc import ABCMeta, abstractmethod
@@ -76,7 +76,7 @@ Event = Event_64
 Dataset = Dataset_64
 ExtendedLogLikelihood = ExtendedLogLikelihood_64
 Manager = Manager_64
-NelderMead = NelderMead_64
+Status = Status_64
 
 __version__: str = __version__
 
@@ -98,6 +98,9 @@ __all__ = [
     'ExtendedLogLikelihood',
     'ExtendedLogLikelihood_64',
     'ExtendedLogLikelihood_32',
+    'Status',
+    'Status_64',
+    'Status_32',
     'Amplitude',
     'Amplitude_64',
     'Amplitude_32',
@@ -134,9 +137,6 @@ __all__ = [
     'Model',
     'Model_64',
     'Model_32',
-    'NelderMead',
-    'NelderMead_64',
-    'NelderMead_32',
     'Node',
     'Node_64',
     'Node_32',
@@ -230,26 +230,22 @@ class PyNode_32(metaclass=ABCMeta):
 
 
 ScipyOptMethods = Literal[
-    'py-Nelder-Mead',
-    'py-Powell',
-    'py-CG',
-    'py-BFGS',
-    'py-Newton-CG',
-    'py-L-BFGS-B',
-    'py-TNC',
-    'py-COBYLA',
-    'py-COBYQA',
-    'py-SLSQP',
-    'py-trust-constr',
-    'py-dogleg',
-    'py-trust-ncg',
-    'py-trust-exact',
-    'py-trust-krylov',
+    'Nelder-Mead',
+    'Powell',
+    'CG',
+    'BFGS',
+    'Newton-CG',
+    'L-BFGS-B',
+    'TNC',
+    'COBYLA',
+    'COBYQA',
+    'SLSQP',
+    'trust-constr',
+    'dogleg',
+    'trust-ncg',
+    'trust-exact',
+    'trust-krylov',
 ]
-
-RustMethods = Literal['Nelder-Mead', 'Adaptive Nelder-Mead']
-
-type RustMinimizer = NelderMead_64 | NelderMead_32
 
 
 class ScipyCallable(Protocol):
@@ -264,16 +260,14 @@ class ScipyMinCallable(Protocol):
 
 
 def minimizer(
-    ell: ExtendedLogLikelihood_64 | ExtendedLogLikelihood_32,
-    method: Literal[Literal['Minuit'], RustMethods, ScipyOptMethods]
-    | ScipyMinCallable
-    | None = None,
+    ell: ExtendedLogLikelihood_64,
+    method: Literal[Literal['Minuit'], ScipyOptMethods] | ScipyMinCallable | None = None,
     *args: Any,
     indices_data: list[int] | None = None,
     indices_mc: list[int] | None = None,
     parallel: bool = True,
     minimizer_kwargs: dict[str, Any] | None = None,
-) -> Minuit | Callable[[], OptimizeResult] | RustMinimizer:
+) -> Minuit | Callable[[], OptimizeResult]:
     bounds = []
     unbounded = True
     for bound in ell.bounds:
@@ -282,70 +276,53 @@ def minimizer(
         if lb or ub:
             unbounded = False
         bounds.append((lb, ub))
-    if isinstance(method, str) and method != 'Minuit' and not method.startswith('py-'):
-        if method == 'Nelder-Mead':
-            if isinstance(ell, ExtendedLogLikelihood_64):
-                return NelderMead_64(ell, **minimizer_kwargs)
+    if isinstance(ell, ExtendedLogLikelihood_32):
+        raise Exception(
+            'The 32-bit ExtendedLogLikelihood is incompatible with Python-based fitting methods and Minuit'
+        )
+    if (
+        isinstance(method, ScipyMinCallable)
+        or method is None
+        or (isinstance(method, str) and method != 'Minuit')
+    ):
+        if minimizer_kwargs is None:
+            minimizer_kwargs = {}
+        if unbounded:
+            bounds = None
+
+        def fcn_scipy(x: ArrayLike):
+            return ell(x, indices_data=indices_data, indices_mc=indices_mc, parallel=parallel)
+
+        def fit() -> OptimizeResult:
+            if method is None:
+                return opt.minimize(
+                    fcn_scipy, ell.initial, args, method, bounds=bounds, **minimizer_kwargs
+                )
             else:
-                return NelderMead_32(ell, **minimizer_kwargs)
-        elif method == 'Adaptive Nelder-Mead':
-            if isinstance(ell, ExtendedLogLikelihood_64):
-                return NelderMead_64.adaptive(ell, **minimizer_kwargs)
-            else:
-                return NelderMead_32.adaptive(ell, **minimizer_kwargs)
-        else:
-            raise Exception(f'Unknown fit method: {method}')
-    else:
-        if isinstance(ell, ExtendedLogLikelihood_32):
-            raise Exception(
-                'The 32-bit ExtendedLogLikelihood is incompatible with Python-based fitting methods and Minuit'
-            )
-        if (
-            isinstance(method, ScipyMinCallable)
-            or method is None
-            or (isinstance(method, str) and method.startswith('py-'))
-        ):
-            if minimizer_kwargs is None:
-                minimizer_kwargs = {}
-            if unbounded:
-                bounds = None
-            scipy_method = None
-            if isinstance(method, str) and method.startswith('py-'):
-                scipy_method = method.replace('py-', '')
-
-            def fcn_scipy(x: ArrayLike, *_args: Any):
-                return ell(x, indices_data=indices_data, indices_mc=indices_mc, parallel=parallel)
-
-            def fit() -> OptimizeResult:
-                if scipy_method is None:
-                    return opt.minimize(
-                        fcn_scipy, ell.initial, args, method, bounds=bounds, **minimizer_kwargs
-                    )
-                else:
-                    return opt.minimize(
-                        fcn_scipy,
-                        ell.initial,
-                        args,
-                        scipy_method,
-                        bounds=bounds,
-                        **minimizer_kwargs,
-                    )
-
-            return fit
-
-        else:
-
-            def fcn_minuit(*args: float):
-                # error def is correct because of implicit multiplication by 2 in ELL
-                return ell(
-                    list(args),
-                    indices_data=indices_data,
-                    indices_mc=indices_mc,
-                    parallel=parallel,
+                return opt.minimize(
+                    fcn_scipy,
+                    ell.initial,
+                    args,
+                    method,
+                    bounds=bounds,
+                    **minimizer_kwargs,
                 )
 
-            minuit_par_names = [f'{p.amplitude} - {p.name}' for p in ell.parameters if p.free]
-            m = Minuit(fcn_minuit, *ell.initial, name=minuit_par_names)
-            for par_name, bound in zip(minuit_par_names, bounds):
-                m.limits[par_name] = bound
-            return m
+        return fit
+
+    else:
+
+        def fcn_minuit(*args: float):
+            # error def is correct because of implicit multiplication by 2 in ELL
+            return ell(
+                list(args),
+                indices_data=indices_data,
+                indices_mc=indices_mc,
+                parallel=parallel,
+            )
+
+        minuit_par_names = [f'{p.amplitude} - {p.name}' for p in ell.parameters if p.free]
+        m = Minuit(fcn_minuit, *ell.initial, name=minuit_par_names)
+        for par_name, bound in zip(minuit_par_names, bounds):
+            m.limits[par_name] = bound
+        return m

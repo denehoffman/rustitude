@@ -5,7 +5,10 @@
 
 use std::fmt::{Debug, Display};
 
-use ganesh::prelude::{DVector, Function};
+use ganesh::prelude::Function;
+use nalgebra::Scalar;
+use num::Float;
+use num_traits::NumAssign;
 use rayon::prelude::*;
 
 use crate::{
@@ -900,8 +903,19 @@ impl<F: Field> ExtendedLogLikelihood<F> {
     }
 }
 
-impl<F: Field + ganesh::core::Field> Function<F, (), RustitudeError> for ExtendedLogLikelihood<F> {
-    fn evaluate(&self, x: &DVector<F>, _args: Option<&()>) -> Result<F, RustitudeError> {
-        self.par_evaluate(x.as_slice())
+impl<T> Function<T, Option<(Vec<usize>, Vec<usize>)>, RustitudeError> for ExtendedLogLikelihood<T>
+where
+    T: Float + Scalar + NumAssign + Field,
+{
+    fn evaluate(
+        &self,
+        x: &[T],
+        user_data: &mut Option<(Vec<usize>, Vec<usize>)>,
+    ) -> Result<T, RustitudeError> {
+        if let Some((indices_data, indices_mc)) = user_data {
+            self.par_evaluate_indexed(x, indices_data, indices_mc)
+        } else {
+            self.par_evaluate(x)
+        }
     }
 }
