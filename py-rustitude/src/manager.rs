@@ -963,10 +963,10 @@ impl ExtendedLogLikelihood_32 {
     fn deactivate_all(&mut self) {
         self.0.deactivate_all()
     }
-    #[pyo3(signature=(method=None, indices_data=None, indices_mc=None))]
+    #[pyo3(signature=(method="L-BFGS-B", *, indices_data=None, indices_mc=None))]
     pub fn minimize(
         &self,
-        method: Option<String>,
+        method: &str,
         indices_data: Option<Vec<usize>>,
         indices_mc: Option<Vec<usize>>,
     ) -> PyResult<Status_32> {
@@ -982,42 +982,33 @@ impl ExtendedLogLikelihood_32 {
             )),
             (Some(i_data), Some(i_mc)) => Some((i_data, i_mc)),
         };
-        if let Some(method) = method {
-            match method.as_str() {
-                "L-BFGS-B" => {
-                    let algo = ganesh::algorithms::LBFGSB::default();
-                    let mut m = ganesh::Minimizer::new(algo, self.0.get_n_free())
-                        .with_bounds(Some(self.0.get_bounds()));
-                    m.minimize(&self.0, &self.0.get_initial(), &mut indices_tuple)
-                        .map_err(PyErr::from)?;
-                    Ok(m.status.into())
-                }
-                "Nelder-Mead" => {
-                    let algo = ganesh::algorithms::NelderMead::default();
-                    let mut m = ganesh::Minimizer::new(algo, self.0.get_n_free())
-                        .with_bounds(Some(self.0.get_bounds()));
-                    m.minimize(&self.0, &self.0.get_initial(), &mut indices_tuple)
-                        .map_err(PyErr::from)?;
-                    Ok(m.status.into())
-                }
-                "Adaptive Nelder-Mead" => {
-                    let algo = ganesh::algorithms::NelderMead::default()
-                        .with_adaptive(self.0.get_n_free());
-                    let mut m = ganesh::Minimizer::new(algo, self.0.get_n_free())
-                        .with_bounds(Some(self.0.get_bounds()));
-                    m.minimize(&self.0, &self.0.get_initial(), &mut indices_tuple)
-                        .map_err(PyErr::from)?;
-                    Ok(m.status.into())
-                }
-                _ => Err(PyException::new_err(format!("Unknown method: {}", method))),
+        match method {
+            "L-BFGS-B" => {
+                let algo = ganesh::algorithms::LBFGSB::default();
+                let mut m = ganesh::Minimizer::new(algo, self.0.get_n_free())
+                    .with_bounds(Some(self.0.get_bounds()));
+                m.minimize(&self.0, &self.0.get_initial(), &mut indices_tuple)
+                    .map_err(PyErr::from)?;
+                Ok(m.status.into())
             }
-        } else {
-            let algo = ganesh::algorithms::LBFGSB::default();
-            let mut m = ganesh::Minimizer::new(algo, self.0.get_n_free())
-                .with_bounds(Some(self.0.get_bounds()));
-            m.minimize(&self.0, &self.0.get_initial(), &mut indices_tuple)
-                .map_err(PyErr::from)?;
-            Ok(m.status.into())
+            "Nelder-Mead" => {
+                let algo = ganesh::algorithms::NelderMead::default();
+                let mut m = ganesh::Minimizer::new(algo, self.0.get_n_free())
+                    .with_bounds(Some(self.0.get_bounds()));
+                m.minimize(&self.0, &self.0.get_initial(), &mut indices_tuple)
+                    .map_err(PyErr::from)?;
+                Ok(m.status.into())
+            }
+            "Adaptive Nelder-Mead" => {
+                let algo =
+                    ganesh::algorithms::NelderMead::default().with_adaptive(self.0.get_n_free());
+                let mut m = ganesh::Minimizer::new(algo, self.0.get_n_free())
+                    .with_bounds(Some(self.0.get_bounds()));
+                m.minimize(&self.0, &self.0.get_initial(), &mut indices_tuple)
+                    .map_err(PyErr::from)?;
+                Ok(m.status.into())
+            }
+            _ => Err(PyException::new_err(format!("Unknown method: {}", method))),
         }
     }
 }

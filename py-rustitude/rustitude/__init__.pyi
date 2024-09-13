@@ -503,6 +503,7 @@ class ExtendedLogLikelihood_64:
     def deactivate_all(self) -> None: ...
     def minimize(
         self,
+        method: Literal['L-BFGS-B', 'Nelder-Mead', 'Adaptive Nelder-Mead'] = 'L-BFGS-B',
         *,
         indices_data: list[int] | None = None,
         indices_mc: list[int] | None = None,
@@ -558,6 +559,7 @@ class ExtendedLogLikelihood_32:
     def deactivate_all(self) -> None: ...
     def minimize(
         self,
+        method: Literal['L-BFGS-B', 'Nelder-Mead', 'Adaptive Nelder-Mead'] = 'L-BFGS-B',
         *,
         indices_data: list[int] | None = None,
         indices_mc: list[int] | None = None,
